@@ -1,44 +1,45 @@
-name: KIS 자동매매
+name: 옥동자 자동매매
 
 on:
   schedule:
-    # 평일 장 시작 전 (KST 08:55 = UTC 23:55 전날)
-    - cron: '55 23 * * 0-4'
-    # 평일 장중 매 5분 (KST 09:00~15:30 = UTC 00:00~06:30)
-    - cron: '0-30/5 0-6 * * 1-5'
-    # 평일 장 종료 후 결산 (KST 15:35 = UTC 06:35)
-    - cron: '35 6 * * 1-5'
+    # 매일(월~금) 한국시간 08:50 실행
+    # KST 08:50 = UTC 23:50 (전날) → 일~목(UTC) = 월~금(KST)
+    - cron: '50 23 * * 0-4'
+
   workflow_dispatch:
     inputs:
       mode:
         description: '실행 모드'
         required: true
-        default: 'run-once'
+        default: 'check-watchlist'
         type: choice
         options:
-          - run-once
-          - balance
-          - market
+          - morning          # 옥동자 오전 수급 전략 (실제 매매)
+          - balance          # 잔고 조회
+          - check-watchlist  # 80종목 API 테스트
+          - market           # 단일 종목 시세
       code:
-        description: '종목코드 (market 모드 시)'
+        description: '종목코드 (market 모드 전용)'
         required: false
         default: '005930'
 
 concurrency:
-  group: trading
-  cancel-in-progress: false
+  group: okdongja-trading
+  cancel-in-progress: false   # 실행 중인 매매 절대 중단 금지
 
 jobs:
   trade:
-    name: 매매 실행
+    name: 옥동자 매매
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 90       # 08:50 시작 → 09:55 종료 여유 포함
 
     steps:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
+        with:
+          ref: claude/stock-trading-system-z6xQh
 
-      - name: Python 설정
+      - name: Python 3.11 설정
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -47,43 +48,69 @@ jobs:
       - name: 패키지 설치
         run: pip install -r requirements.txt
 
-      - name: 잔고 조회 (수동 balance 모드)
-        if: github.event.inputs.mode == 'balance'
+      # ── 자동 스케줄 실행 (매일 08:50 KST) ─────────────────────
+      - name: 옥동자 오전 수급 전략 (자동)
+        if: github.event_name == 'schedule'
         env:
-          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
-          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
-          KIS_ACCOUNT_NO: ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
           KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOG_LEVEL:            INFO
+        run: python main.py --mode morning
+
+      # ── 수동 실행: 옥동자 오전 전략 ────────────────────────────
+      - name: 옥동자 오전 전략 (수동)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning'
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOG_LEVEL:            INFO
+        run: python main.py --mode morning
+
+      # ── 수동 실행: 잔고 조회 ────────────────────────────────────
+      - name: 잔고 조회
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'balance'
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
         run: python main.py --mode balance
 
-      - name: 종목 시세 조회 (수동 market 모드)
-        if: github.event.inputs.mode == 'market'
+      # ── 수동 실행: 80종목 API 테스트 ────────────────────────────
+      - name: 80종목 API 연결 테스트
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'check-watchlist'
         env:
-          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
-          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
-          KIS_ACCOUNT_NO: ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          LOG_LEVEL:            INFO
+        run: python main.py --mode check-watchlist
+
+      # ── 수동 실행: 단일 종목 시세 ───────────────────────────────
+      - name: 종목 시세 조회
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'market'
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
           KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
         run: python main.py --mode market --code ${{ github.event.inputs.code || '005930' }}
 
-      - name: 자동매매 단일 사이클
-        if: github.event_name == 'schedule' || github.event.inputs.mode == 'run-once'
-        env:
-          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
-          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
-          KIS_ACCOUNT_NO: ${{ secrets.KIS_ACCOUNT_NO }}
-          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          LOG_LEVEL: INFO
-        run: python main.py --run-once
-
-      - name: 로그 아티팩트 저장
+      # ── 로그 아티팩트 저장 ───────────────────────────────────────
+      - name: 로그 저장
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: trading-logs-${{ github.run_id }}
+          name: okdongja-log-${{ github.run_id }}
           path: logs/
-          retention-days: 30
+          retention-days: 90
           if-no-files-found: ignore
