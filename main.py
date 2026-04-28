@@ -59,6 +59,47 @@ def run_market(kis: KIS, code: str) -> None:
     )
 
 
+def run_debug_investor(kis: KIS, code: str) -> None:
+    """투자자 동향 API raw 응답 전체 출력 — 실제 필드명 확인용"""
+    import json
+    from data.watchlist import CODE_MAP
+    name = CODE_MAP.get(code, {}).get("name", code)
+    print(f"\n[디버그] [{code}] {name} 투자자 동향 API raw 응답\n")
+
+    try:
+        # 직접 client로 raw JSON 수신
+        data = kis.market.client.get(
+            "/uapi/domestic-stock/v1/quotations/inquire-investor",
+            tr_id="FHKST01010900",
+            params={"fid_cond_mrkt_div_code": "J", "fid_input_iscd": code},
+        )
+
+        print("=== 응답 최상위 keys ===")
+        print(list(data.keys()))
+
+        # output / output1 / output2 모두 확인
+        for key in ["output", "output1", "output2"]:
+            val = data.get(key)
+            if val is None:
+                continue
+            print(f"\n=== {key} (타입: {type(val).__name__}) ===")
+            if isinstance(val, list):
+                print(f"  리스트 길이: {len(val)}")
+                if val:
+                    print(f"  [0] keys: {list(val[0].keys()) if isinstance(val[0], dict) else type(val[0])}")
+                    print(json.dumps(val[0], ensure_ascii=False, indent=2))
+            elif isinstance(val, dict):
+                print(f"  keys: {list(val.keys())}")
+                print(json.dumps(val, ensure_ascii=False, indent=2))
+            else:
+                print(f"  값: {val}")
+
+    except Exception as e:
+        logger.error(f"디버그 호출 실패: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def run_check_watchlist(kis: KIS) -> None:
     """종목 API 연결 및 수급 데이터 로딩 테스트
     - 수급(get_investor_trend) 1회만 호출 (실제 전략과 동일한 방식)
@@ -100,7 +141,7 @@ def main():
     parser = argparse.ArgumentParser(description="옥동자 KIS 자동매매 시스템")
     parser.add_argument(
         "--mode",
-        choices=["morning", "balance", "market", "check-watchlist", "auto"],
+        choices=["morning", "balance", "market", "check-watchlist", "debug-investor", "auto"],
         default="morning",
         help="실행 모드 (기본: morning)"
     )
@@ -133,6 +174,10 @@ def main():
 
     elif args.mode == "check-watchlist":
         run_check_watchlist(kis)
+
+    elif args.mode == "debug-investor":
+        code = args.code or "005930"
+        run_debug_investor(kis, code)
 
     elif args.mode == "auto":
         # 구형 멀티전략 스케줄러 (참고용)

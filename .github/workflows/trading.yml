@@ -16,7 +16,8 @@ on:
         options:
           - morning          # 옥동자 오전 수급 전략 (실제 매매)
           - balance          # 잔고 조회
-          - check-watchlist  # 80종목 API 테스트
+          - check-watchlist  # 84종목 수급 API 테스트
+          - debug-investor   # 단일 종목 raw JSON 덤프 (필드명 확인)
           - market           # 단일 종목 시세
       code:
         description: '종목코드 (market 모드 전용)'
@@ -94,6 +95,17 @@ jobs:
           KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
           LOG_LEVEL:            INFO
         run: python main.py --mode check-watchlist
+
+      # ── 수동 실행: 투자자 동향 raw 덤프 (필드명 확인) ─────────────
+      - name: 투자자 동향 raw 응답 덤프
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'debug-investor'
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          LOG_LEVEL:            DEBUG
+        run: python main.py --mode debug-investor --code ${{ github.event.inputs.code || '005930' }}
 
       # ── 수동 실행: 단일 종목 시세 ───────────────────────────────
       - name: 종목 시세 조회
