@@ -172,10 +172,16 @@ class KISMarket:
 
     # ── 투자자별 매매동향 ─────────────────────────────────────────
     def get_investor_trend(self, code: str) -> dict:
-        """투자자별 매매동향 (국내주식-061)"""
+        """투자자별 매매동향 (국내주식-061)
+        KIS API는 output을 list로 반환 — 첫 번째 요소가 당일 누적 데이터
+        장 마감 후에는 빈 리스트이거나 전 거래일 데이터일 수 있음
+        """
         data = self.client.get(
             "/uapi/domestic-stock/v1/quotations/inquire-investor",
             tr_id="FHKST01010900",
             params={"fid_cond_mrkt_div_code": "J", "fid_input_iscd": code},
         )
-        return data.get("output", {})
+        output = data.get("output", {})
+        if isinstance(output, list):
+            return output[0] if output else {}
+        return output if isinstance(output, dict) else {}

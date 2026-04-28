@@ -60,36 +60,39 @@ def run_market(kis: KIS, code: str) -> None:
 
 
 def run_check_watchlist(kis: KIS) -> None:
-    """80개 종목 API 연결 및 데이터 로딩 테스트"""
-    logger.info(f"=== 종목 데이터 로딩 테스트 ({len(OKDONGJA_WATCHLIST)}개 종목) ===")
+    """종목 API 연결 및 수급 데이터 로딩 테스트
+    - 수급(get_investor_trend) 1회만 호출 (실제 전략과 동일한 방식)
+    - 장 마감 시간엔 수급 데이터 0이 정상
+    """
+    n = len(OKDONGJA_WATCHLIST)
+    logger.info(f"=== 수급 API 연결 테스트 ({n}개 종목) ===")
     ok_list, fail_list = [], []
 
     for i, stock in enumerate(OKDONGJA_WATCHLIST, 1):
         code = stock["code"]
         name = stock["name"]
+        sect = stock["sector"]
         try:
-            quote = kis.market.get_quote(code)
-            inv   = kis.market.get_investor_trend(code)
-
+            inv  = kis.market.get_investor_trend(code)
             fgn  = int(str(inv.get("frgn_ntby_tr_pbmn", "0") or "0").replace(",", "") or 0)
             orgn = int(str(inv.get("orgn_ntby_tr_pbmn", "0") or "0").replace(",", "") or 0)
 
             logger.info(
-                f"[{i:02d}/{len(OKDONGJA_WATCHLIST)}] ✓ [{code}] {name:12s}  "
-                f"현재가:{quote.price:>8,}원  외국인:{fgn:>12,}  기관:{orgn:>12,}"
+                f"[{i:02d}/{n}] ✓ [{code}] {name:12s} ({sect:10s})  "
+                f"외국인:{fgn:>13,}  기관:{orgn:>13,}"
             )
             ok_list.append(code)
         except Exception as e:
-            logger.warning(f"[{i:02d}/{len(OKDONGJA_WATCHLIST)}] ✗ [{code}] {name} — {e}")
+            logger.warning(f"[{i:02d}/{n}] ✗ [{code}] {name} — {e}")
             fail_list.append(code)
-        time.sleep(0.15)  # rate limit
+        time.sleep(0.12)  # rate limit
 
     print("\n" + "="*60)
     print(f"테스트 완료: 성공 {len(ok_list)}개 / 실패 {len(fail_list)}개")
     if fail_list:
         print(f"실패 종목: {fail_list}")
     if is_market_holiday():
-        print("※ 현재 장 마감 시간 — 수급(투자자) 데이터는 0으로 표시될 수 있음 (정상)")
+        print("※ 현재 장 마감 시간 — 수급 데이터 0은 정상 (장중에 실제 값 표시됨)")
     print("="*60)
 
 
