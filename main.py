@@ -60,39 +60,40 @@ def run_market(kis: KIS, code: str) -> None:
 
 
 def run_debug_investor(kis: KIS, code: str) -> None:
-    """투자자 동향 API raw 응답 전체 출력 — 실제 필드명 확인용"""
+    """프로그램 매매 API raw 응답 전체 출력 — 실제 필드명 확인용"""
     import json
     from data.watchlist import CODE_MAP
     name = CODE_MAP.get(code, {}).get("name", code)
-    print(f"\n[디버그] [{code}] {name} 투자자 동향 API raw 응답\n")
+    print(f"\n[디버그] [{code}] {name} 현재가시세(FHKST01010100) raw 응답\n")
+    print("※ pgtr_ntby_tr_pbmn 필드 존재 여부 및 값 확인이 목적\n")
 
     try:
-        # 직접 client로 raw JSON 수신
         data = kis.market.client.get(
-            "/uapi/domestic-stock/v1/quotations/inquire-investor",
-            tr_id="FHKST01010900",
+            "/uapi/domestic-stock/v1/quotations/inquire-price",
+            tr_id="FHKST01010100",
             params={"fid_cond_mrkt_div_code": "J", "fid_input_iscd": code},
         )
+        output = data.get("output", {})
 
         print("=== 응답 최상위 keys ===")
         print(list(data.keys()))
+        print(f"\n=== output keys ({len(output)}개) ===")
+        print(list(output.keys()))
 
-        # output / output1 / output2 모두 확인
-        for key in ["output", "output1", "output2"]:
-            val = data.get(key)
-            if val is None:
-                continue
-            print(f"\n=== {key} (타입: {type(val).__name__}) ===")
-            if isinstance(val, list):
-                print(f"  리스트 길이: {len(val)}")
-                if val:
-                    print(f"  [0] keys: {list(val[0].keys()) if isinstance(val[0], dict) else type(val[0])}")
-                    print(json.dumps(val[0], ensure_ascii=False, indent=2))
-            elif isinstance(val, dict):
-                print(f"  keys: {list(val.keys())}")
-                print(json.dumps(val, ensure_ascii=False, indent=2))
-            else:
-                print(f"  값: {val}")
+        # 프로그램 매매 관련 필드만 따로 출력
+        pgtr_fields = {k: v for k, v in output.items() if "pgtr" in k or "program" in k.lower()}
+        print(f"\n=== 프로그램 매매 관련 필드 ===")
+        if pgtr_fields:
+            print(json.dumps(pgtr_fields, ensure_ascii=False, indent=2))
+        else:
+            print("  pgtr 관련 필드 없음 — output 전체 출력:")
+            print(json.dumps(output, ensure_ascii=False, indent=2))
+
+        # get_program_trade 결과도 출력
+        print("\n=== get_program_trade() 결과 ===")
+        pt = kis.market.get_program_trade(code)
+        pt_display = {k: v for k, v in pt.items() if k != "_raw"}
+        print(json.dumps(pt_display, ensure_ascii=False, indent=2))
 
     except Exception as e:
         logger.error(f"디버그 호출 실패: {e}")
@@ -101,12 +102,16 @@ def run_debug_investor(kis: KIS, code: str) -> None:
 
 
 def run_check_watchlist(kis: KIS) -> None:
-    """종목 API 연결 및 수급 데이터 로딩 테스트
-    - 수급(get_investor_trend) 1회만 호출 (실제 전략과 동일한 방식)
-    - 장 마감 시간엔 수급 데이터 0이 정상
+    """프로그램 매매 API 연결 및 데이터 로딩 테스트
+    - get_program_trade() 1회 호출 (실제 전략과 동일)
+    - Throttle 적용 (초당 9건 이하)
+    - 장 마감 시간엔 pgtr 값 0이 정상
     """
+    from utils.throttler import RateThrottler
+    throttler = RateThrottler(max_per_second=9)
+
     n = len(OKDONGJA_WATCHLIST)
-    logger.info(f"=== 수급 API 연결 테스트 ({n}개 종목) ===")
+    logger.info(f"=== 프로그램 매매 API 연결 테스트 ({n}개 종목, 초당 9건 throttle) ===")
     ok_list, fail_list = [], []
 
     for i, stock in enumerate(OKDONGJA_WATCHLIST, 1):
@@ -114,26 +119,23 @@ def run_check_watchlist(kis: KIS) -> None:
         name = stock["name"]
         sect = stock["sector"]
         try:
-            inv  = kis.market.get_investor_trend(code)
-            fgn  = int(str(inv.get("frgn_ntby_tr_pbmn", "0") or "0").replace(",", "") or 0)
-            orgn = int(str(inv.get("orgn_ntby_tr_pbmn", "0") or "0").replace(",", "") or 0)
-
+            with throttler:
+                pt = kis.market.get_program_trade(code)
+            pgtr = pt.get("pgtr_ntby_tr_pbmn", 0)
             logger.info(
                 f"[{i:02d}/{n}] ✓ [{code}] {name:12s} ({sect:10s})  "
-                f"외국인:{fgn:>13,}  기관:{orgn:>13,}"
+                f"프로그램순매수:{pgtr:>14,}원  현재가:{pt.get('price',0):,}"
             )
             ok_list.append(code)
         except Exception as e:
             logger.warning(f"[{i:02d}/{n}] ✗ [{code}] {name} — {e}")
             fail_list.append(code)
-        time.sleep(0.12)  # rate limit
 
     print("\n" + "="*60)
     print(f"테스트 완료: 성공 {len(ok_list)}개 / 실패 {len(fail_list)}개")
     if fail_list:
         print(f"실패 종목: {fail_list}")
-    if is_market_holiday():
-        print("※ 현재 장 마감 시간 — 수급 데이터 0은 정상 (장중에 실제 값 표시됨)")
+    print("※ 장 마감 시간엔 pgtr=0 정상 / 장중엔 실제 프로그램 매매 금액 표시")
     print("="*60)
 
 

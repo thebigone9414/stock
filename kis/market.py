@@ -1,11 +1,20 @@
 """
 KIS 시장 데이터 모듈
-- 주식 현재가 조회
+- 주식 현재가 조회 + 프로그램 매매 데이터
 - 일/주/월봉 OHLCV 조회
-- 종목 검색
-- 상한가/하한가/거래량 상위 조회
+- 종목 검색, 거래량/등락률 순위
 """
 from dataclasses import dataclass
+
+
+def _safe_int(val) -> int:
+    """빈 문자열 / None / 숫자 문자열을 안전하게 int 변환"""
+    try:
+        return int(str(val).replace(",", "").strip() or "0")
+    except (ValueError, TypeError):
+        return 0
+
+
 from typing import List, Optional
 import pandas as pd
 from loguru import logger
@@ -62,6 +71,33 @@ class KISMarket:
             low=int(o.get("stck_lwpr", 0)),
             market_cap=int(o.get("hts_avls", 0)),
         )
+
+    def get_program_trade(self, code: str) -> dict:
+        """실시간 프로그램 매매 데이터 조회
+        FHKST01010100 (현재가시세) output 내 프로그램매매 필드 추출.
+        pgtr_ntby_tr_pbmn: 프로그램 순매수 거래대금 (장중 실시간 누적)
+        반환: {"pgtr_ntby_qty": int, "pgtr_ntby_tr_pbmn": int, "price": int, ...}
+        """
+        data = self.client.get(
+            "/uapi/domestic-stock/v1/quotations/inquire-price",
+            tr_id="FHKST01010100",
+            params={"fid_cond_mrkt_div_code": "J", "fid_input_iscd": code},
+        )
+        o = data.get("output", {})
+        return {
+            "code":               code,
+            "price":              _safe_int(o.get("stck_prpr")),
+            "change_rate":        float(o.get("prdy_ctrt", 0) or 0),
+            "volume":             _safe_int(o.get("acml_vol")),
+            # 프로그램 매매 핵심 필드
+            "pgtr_ntby_qty":      _safe_int(o.get("pgtr_ntby_qty")),       # 순매수 수량
+            "pgtr_ntby_tr_pbmn":  _safe_int(o.get("pgtr_ntby_tr_pbmn")),   # 순매수 거래대금
+            # 참고: 매수/매도 분리
+            "pgtr_shnu_tr_pbmn":  _safe_int(o.get("pgtr_shnu_tr_pbmn")),   # 프로그램 매수대금
+            "pgtr_seln_tr_pbmn":  _safe_int(o.get("pgtr_seln_tr_pbmn")),   # 프로그램 매도대금
+            # 전체 output (디버그/향후 확장용)
+            "_raw": o,
+        }
 
     # ── 일봉/주봉/월봉 OHLCV ────────────────────────────────────
     def get_ohlcv(

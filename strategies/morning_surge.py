@@ -1,14 +1,16 @@
 """
-옥동자 전략 1호 — 전일 수급 기반 오전 단기 매매
+옥동자 전략 1호 — 실시간 프로그램 매매 기반 오전 단기 매매
 
-[수급 데이터 특성]
-KIS FHKST01010900 API는 일별 확정 데이터만 제공.
-당일(output[0])은 장중에 투자자 필드가 빈 문자열 → 실제 값 있는 전거래일 사용.
-전일 외국인+기관 순매수가 강했던 섹터/종목의 오전 연속 상승을 狙.
+[수급 포착 방법]
+KIS FHKST01010100(현재가시세) output의 pgtr_ntby_tr_pbmn 필드:
+  → 장중 실시간 누적 프로그램 순매수 거래대금
+  → 외국인·기관의 차익/비차익 프로그램 매수를 메이저 수급 신호로 사용
 
-Phase 1  09:00~09:10  전거래일 수급 데이터 수집 (1분 간격 × 84종목)
-Phase 2  09:10        최강 섹터 → 최강 종목 선정 후 전량 시장가 매수
-Phase 3  09:10~09:55  포지션 모니터링
+[Phase 흐름]
+Phase 1  09:00~09:09  84종목 프로그램 매매 데이터 수집 (초당 9건 이하 throttle)
+Phase 2  09:09~09:10  최강 섹터 → 섹터 내 최강 종목 선정
+Phase 3  09:10        전량 시장가 매수
+Phase 4  09:10~09:55  포지션 모니터링
   · 익절: 매수가 대비 +5% 즉시 매도
   · 손절: 장중 고점 대비 -2.36%(피보나치) 즉시 매도
   · 타임컷: 09:55 무조건 전량 매도
@@ -29,49 +31,41 @@ from kis.market import KISMarket
 from kis.order import KISOrder, OrderType
 from kis.account import KISAccount
 from utils.notifier import Notifier
+from utils.throttler import RateThrottler
 
 KST = pytz.timezone("Asia/Seoul")
 
 # ── 전략 상수 ──────────────────────────────────────────────────────────
-STOP_LOSS_RATIO    = 0.0236   # 고점 대비 손절 비율 (피보나치 2.36%)
-TAKE_PROFIT_RATIO  = 0.05     # 매수가 대비 익절 비율 5%
-FOREIGN_WEIGHT     = 1.5      # 외국인 순매수 가중치 (기관 대비)
-MONITOR_INTERVAL   = 20       # 포지션 모니터링 주기(초)
-API_CALL_DELAY     = 0.12     # 종목 간 API 호출 딜레이(초) — rate limit 대응
-CASH_USE_RATIO     = 0.99     # 주문 가능 금액 사용 비율 (수수료 여유)
+STOP_LOSS_RATIO   = 0.0236   # 고점 대비 손절 (피보나치 2.36%)
+TAKE_PROFIT_RATIO = 0.05     # 매수가 대비 익절 5%
+FOREIGN_WEIGHT    = 1.0      # 프로그램매매 단일 지표이므로 가중치 1.0
+MONITOR_INTERVAL  = 20       # 포지션 모니터링 주기(초)
+COLLECT_INTERVAL  = 60       # 수급 수집 반복 주기(초)
+CASH_USE_RATIO    = 0.99     # 주문 가능 금액 사용 비율
 
 
 # ── 데이터 클래스 ──────────────────────────────────────────────────────
 @dataclass
-class StockSnapshot:
+class ProgramSnapshot:
     code: str
     name: str
     sector: str
-    foreign_net: int = 0       # 외국인 순매수 금액 (원)
-    institution_net: int = 0   # 기관 순매수 금액 (원)
-
-    @property
-    def weighted_score(self) -> float:
-        """외국인 가중 합산 스코어"""
-        return self.foreign_net * FOREIGN_WEIGHT + self.institution_net
+    pgtr_net: int = 0      # 프로그램 순매수 거래대금 (원, 음수=순매도)
+    price: int = 0
+    change_rate: float = 0.0
 
 
 @dataclass
 class SectorScore:
     sector: str
-    total_foreign: int = 0
-    total_institution: int = 0
-
-    @property
-    def weighted_score(self) -> float:
-        return self.total_foreign * FOREIGN_WEIGHT + self.total_institution
+    total_pgtr_net: int = 0
 
 
 # ── 메인 전략 클래스 ───────────────────────────────────────────────────
 class MorningSurgeStrategy:
-    """옥동자 오전 수급 전략"""
+    """옥동자 프로그램 매매 기반 오전 전략"""
 
-    name = "MorningSurge"
+    name = "MorningSurge_ProgramTrade"
 
     def __init__(
         self,
@@ -81,21 +75,24 @@ class MorningSurgeStrategy:
         notifier: Notifier,
         is_paper: bool = True,
     ):
-        self.market    = market
-        self.order     = order
-        self.account   = account
-        self.notifier  = notifier
-        self.is_paper  = is_paper
+        self.market   = market
+        self.order    = order
+        self.account  = account
+        self.notifier = notifier
+        self.is_paper = is_paper
+
+        # 초당 9건 제한 (KIS TPS 10건 이하 안전 마진)
+        self._throttler = RateThrottler(max_per_second=9)
 
         # 수집 버퍼: code → 스냅샷 리스트
-        self._buffer: Dict[str, List[StockSnapshot]] = defaultdict(list)
+        self._buffer: Dict[str, List[ProgramSnapshot]] = defaultdict(list)
 
         # 포지션 정보
-        self._code:           Optional[str] = None
-        self._name:           Optional[str] = None
-        self._entry_price:    int = 0
-        self._quantity:       int = 0
-        self._intraday_high:  int = 0
+        self._code:          Optional[str] = None
+        self._name:          Optional[str] = None
+        self._entry_price:   int = 0
+        self._quantity:      int = 0
+        self._intraday_high: int = 0
 
     # ═══════════════════════════════════════════════════════════════════
     #  PUBLIC: 전략 실행 진입점
@@ -103,10 +100,11 @@ class MorningSurgeStrategy:
     def run(self) -> None:
         today = datetime.now(KST).strftime("%Y-%m-%d (%a)")
         mode  = "모의투자" if self.is_paper else "실전투자"
-        logger.info(f"══════════════════════════════════════════")
+        logger.info("══════════════════════════════════════════")
         logger.info(f" 옥동자 전략 시작 [{mode}] {today}")
-        logger.info(f" 수급 기준: 전거래일 외국인+기관 순매수")
-        logger.info(f"══════════════════════════════════════════")
+        logger.info(f" 수급 기준: 실시간 프로그램 매매 순매수 (pgtr_ntby_tr_pbmn)")
+        logger.info(f" TPS 제한: 초당 9건 이하 (Throttle 적용)")
+        logger.info("══════════════════════════════════════════")
 
         # 휴장일 체크
         if is_market_holiday():
@@ -117,11 +115,11 @@ class MorningSurgeStrategy:
 
         self.notifier.notify(f"[옥동자] 전략 시작 {today} [{mode}]")
 
-        # Phase 1: 09:00 ~ 09:10 수급 수집
+        # Phase 1: 09:00 ~ 09:09 프로그램 매매 수집
         self._wait_until(9, 0, "장 시작")
         self._collect_phase()
 
-        # Phase 2: 09:10 매수
+        # Phase 2: 09:09 분석, 09:10 매수
         self._wait_until(9, 10, "매수 실행")
         self._buy_phase()
 
@@ -139,68 +137,83 @@ class MorningSurgeStrategy:
         logger.info("══════════════════════════════════════════")
 
     # ═══════════════════════════════════════════════════════════════════
-    #  PHASE 1: 수급 데이터 수집
+    #  PHASE 1: 프로그램 매매 데이터 수집
     # ═══════════════════════════════════════════════════════════════════
     def _collect_phase(self) -> None:
-        logger.info("[Phase 1] 수급 수집 시작 (09:00 ~ 09:10, 1분 간격)")
-        end_dt = _kst_time(9, 10)
+        logger.info("[Phase 1] 프로그램 매매 수집 시작 (09:00~09:09, 1분 간격)")
+        end_dt = _kst_time(9, 9)
         pass_no = 0
 
         while _now_kst() < end_dt:
             pass_no += 1
             remaining = (end_dt - _now_kst()).total_seconds()
-            logger.info(f"[수급수집] {pass_no}차 수집 — 잔여시간 {remaining:.0f}초")
+            logger.info(f"[수집] {pass_no}차 — 잔여 {remaining:.0f}초 / 대상 {len(WATCHLIST)}종목")
             self._fetch_all_stocks()
 
-            # 다음 수집까지 대기 (남은 시간이 5초 미만이면 루프 종료)
             remaining = (end_dt - _now_kst()).total_seconds()
             if remaining < 5:
                 break
-            time.sleep(min(60, remaining - 2))
+            time.sleep(min(COLLECT_INTERVAL, remaining - 2))
 
-        logger.info(f"[Phase 1] 수급 수집 완료 ({pass_no}회, {len(self._buffer)}종목)")
+        logger.info(f"[Phase 1] 수집 완료 ({pass_no}회, {len(self._buffer)}종목)")
 
     def _fetch_all_stocks(self) -> None:
-        """80개 종목 수급 1회 수집"""
-        success, fail = 0, 0
+        """Throttle 적용하여 전 종목 프로그램 매매 1회 수집"""
+        ok, fail, zero = 0, 0, 0
+
         for stock in WATCHLIST:
             code   = stock["code"]
             name   = stock["name"]
             sector = stock["sector"]
             try:
-                raw   = self.market.get_investor_trend(code)
-                fgn   = _safe_int(raw.get("frgn_ntby_tr_pbmn"))
-                orgn  = _safe_int(raw.get("orgn_ntby_tr_pbmn"))
-                self._buffer[code].append(
-                    StockSnapshot(code=code, name=name, sector=sector,
-                                  foreign_net=fgn, institution_net=orgn)
-                )
-                logger.debug(f"  [{code}] {name:10s} 외국인:{fgn:>12,} 기관:{orgn:>12,}")
-                success += 1
-            except Exception as e:
-                logger.warning(f"  [{code}] {name} 수급 조회 실패: {e}")
-                fail += 1
-            time.sleep(API_CALL_DELAY)
+                with self._throttler:   # 초당 9건 이하 보장
+                    pt = self.market.get_program_trade(code)
 
-        logger.info(f"  → 수집 결과: 성공 {success}건 / 실패 {fail}건")
+                pgtr_net = pt.get("pgtr_ntby_tr_pbmn", 0)
+                snap = ProgramSnapshot(
+                    code=code, name=name, sector=sector,
+                    pgtr_net=pgtr_net,
+                    price=pt.get("price", 0),
+                    change_rate=pt.get("change_rate", 0.0),
+                )
+                self._buffer[code].append(snap)
+
+                if pgtr_net == 0:
+                    zero += 1
+                    logger.debug(f"  [{code}] {name:10s} 프로그램매매=0 (장초반 또는 미집계)")
+                else:
+                    logger.debug(
+                        f"  [{code}] {name:10s} "
+                        f"프로그램순매수:{pgtr_net:>13,}원  현재가:{snap.price:,}"
+                    )
+                ok += 1
+
+            except Exception as e:
+                logger.warning(f"  [{code}] {name} 조회 실패: {e}")
+                fail += 1
+
+        logger.info(
+            f"  → 성공:{ok} / 실패:{fail} / 프로그램0:{zero} "
+            f"(0은 장 초반 또는 해당일 프로그램 없음)"
+        )
 
     # ═══════════════════════════════════════════════════════════════════
-    #  PHASE 2: 수급 분석 → 매수
+    #  PHASE 2: 분석 → 매수
     # ═══════════════════════════════════════════════════════════════════
     def _buy_phase(self) -> None:
-        logger.info("[Phase 2] 수급 분석 및 매수 실행")
-
+        logger.info("[Phase 2] 프로그램 매매 분석 및 매수")
         result = self._analyze()
         if not result:
-            logger.warning("[Phase 2] 분석 실패 — 매수 포기")
+            logger.warning("[Phase 2] 유효한 프로그램 매매 신호 없음 — 매수 포기")
             return
 
         best_sector, target = result
 
-        # 현재가 조회
+        # 현재가 재조회 (최신값)
         try:
-            quote = self.market.get_quote(target.code)
-            current_price = quote.price
+            with self._throttler:
+                pt = self.market.get_program_trade(target.code)
+            current_price = pt.get("price", 0) or target.price
         except Exception as e:
             logger.error(f"현재가 조회 실패 [{target.code}]: {e}")
             return
@@ -209,10 +222,10 @@ class MorningSurgeStrategy:
             logger.error(f"현재가 0 — 매수 취소 [{target.code}]")
             return
 
-        # 주문 가능 금액 조회
+        # 주문 가능 금액
         try:
-            balance  = self.account.get_balance()
-            cash     = balance.cash
+            balance = self.account.get_balance()
+            cash    = balance.cash
         except Exception as e:
             logger.error(f"잔고 조회 실패: {e}")
             return
@@ -223,7 +236,6 @@ class MorningSurgeStrategy:
 
         quantity = int(cash * CASH_USE_RATIO / current_price)
         if quantity <= 0:
-            logger.warning(f"매수 수량 0 (현금:{cash:,} 현재가:{current_price:,})")
             return
 
         msg = (
@@ -231,8 +243,8 @@ class MorningSurgeStrategy:
             f"섹터: {best_sector}\n"
             f"종목: [{target.code}] {target.name}\n"
             f"현재가: {current_price:,}원 × {quantity:,}주\n"
-            f"투자금액: {current_price * quantity:,}원\n"
-            f"외국인순매수: {target.foreign_net:,}원  기관: {target.institution_net:,}원"
+            f"투자금: {current_price * quantity:,}원\n"
+            f"프로그램순매수: {target.pgtr_net:,}원"
         )
         logger.info(msg)
 
@@ -248,72 +260,80 @@ class MorningSurgeStrategy:
             logger.info(f"매수 완료 — 주문번호: {result_order.order_no}")
         else:
             logger.error(f"매수 실패: {result_order.message}")
-            self.notifier.notify(f"[옥동자 매수 실패] {target.code} {result_order.message}")
+            self.notifier.notify(
+                f"[옥동자 매수 실패] {target.code} {result_order.message}"
+            )
 
-    def _analyze(self) -> Optional[Tuple[str, StockSnapshot]]:
-        """수집 버퍼 → (최강 섹터, 최강 종목) 반환"""
+    def _analyze(self) -> Optional[Tuple[str, ProgramSnapshot]]:
+        """수집 버퍼 → (최강 섹터, 최강 종목) 반환
+        프로그램 순매수가 모두 0이면 None 반환 (신호 없음)
+        """
         if not self._buffer:
             logger.warning("수집 데이터 없음")
             return None
 
-        # 종목별 평균 스코어
-        avg_stocks: List[StockSnapshot] = []
+        # 종목별 평균 프로그램 순매수
+        avg_list: List[ProgramSnapshot] = []
         for code, snaps in self._buffer.items():
             if not snaps:
                 continue
-            info   = CODE_MAP.get(code, {})
-            avg_fgn  = int(sum(s.foreign_net  for s in snaps) / len(snaps))
-            avg_orgn = int(sum(s.institution_net for s in snaps) / len(snaps))
-            avg_stocks.append(StockSnapshot(
+            info     = CODE_MAP.get(code, {})
+            avg_pgtr = int(sum(s.pgtr_net for s in snaps) / len(snaps))
+            last     = snaps[-1]
+            avg_list.append(ProgramSnapshot(
                 code=code, name=info.get("name", code),
                 sector=info.get("sector", "기타"),
-                foreign_net=avg_fgn, institution_net=avg_orgn,
+                pgtr_net=avg_pgtr,
+                price=last.price, change_rate=last.change_rate,
             ))
 
-        if not avg_stocks:
+        # 프로그램 순매수 > 0인 종목이 하나도 없으면 신호 없음
+        positive = [s for s in avg_list if s.pgtr_net > 0]
+        if not positive:
+            logger.warning(
+                "전 종목 프로그램 순매수 ≤ 0 — 오늘 프로그램 매수 신호 없음\n"
+                "원인: 장 초반 미집계 / 프로그램 매도 우위 / 필드명 불일치"
+            )
             return None
 
         # 섹터별 합산
         sector_map: Dict[str, SectorScore] = {}
-        for s in avg_stocks:
+        for s in avg_list:
             if s.sector not in sector_map:
                 sector_map[s.sector] = SectorScore(sector=s.sector)
-            sector_map[s.sector].total_foreign     += s.foreign_net
-            sector_map[s.sector].total_institution += s.institution_net
+            sector_map[s.sector].total_pgtr_net += s.pgtr_net
 
-        # 최강 섹터 선정
-        best_sec = max(sector_map.values(), key=lambda x: x.weighted_score)
+        best_sec = max(sector_map.values(), key=lambda x: x.total_pgtr_net)
 
         # 섹터 순위 로그
-        logger.info("── 섹터 수급 순위 ──────────────────────────")
+        logger.info("── 섹터 프로그램 매매 순위 ───────────────────")
         for rank, sec in enumerate(
-            sorted(sector_map.values(), key=lambda x: x.weighted_score, reverse=True)[:8], 1
+            sorted(sector_map.values(), key=lambda x: x.total_pgtr_net, reverse=True)[:8], 1
         ):
             marker = "★" if sec.sector == best_sec.sector else " "
             logger.info(
-                f" {marker}{rank}. {sec.sector:12s} "
-                f"외국인:{sec.total_foreign:>13,}  기관:{sec.total_institution:>13,}  "
-                f"가중:{sec.weighted_score:>14,.0f}"
+                f" {marker}{rank}. {sec.sector:12s}  "
+                f"프로그램순매수:{sec.total_pgtr_net:>14,}원"
             )
 
-        # 해당 섹터 내 최강 종목 선정
-        sector_stocks = [s for s in avg_stocks if s.sector == best_sec.sector]
-        best_stock = max(sector_stocks, key=lambda x: x.weighted_score)
+        # 최강 섹터 내 최강 종목
+        sector_stocks = [s for s in avg_list if s.sector == best_sec.sector]
+        best_stock    = max(sector_stocks, key=lambda x: x.pgtr_net)
 
-        logger.info("── 종목 수급 순위 (최강 섹터 내) ───────────")
+        logger.info("── 종목 프로그램 매매 순위 (최강 섹터 내) ───")
         for rank, st in enumerate(
-            sorted(sector_stocks, key=lambda x: x.weighted_score, reverse=True), 1
+            sorted(sector_stocks, key=lambda x: x.pgtr_net, reverse=True), 1
         ):
             marker = "★" if st.code == best_stock.code else " "
             logger.info(
-                f" {marker}{rank}. [{st.code}] {st.name:12s} "
-                f"외국인:{st.foreign_net:>12,}  기관:{st.institution_net:>12,}"
+                f" {marker}{rank}. [{st.code}] {st.name:12s}  "
+                f"프로그램순매수:{st.pgtr_net:>12,}원  현재가:{st.price:,}"
             )
 
         logger.info(
             f"[분석 결과] 섹터={best_sec.sector}  "
             f"종목=[{best_stock.code}] {best_stock.name}  "
-            f"가중스코어={best_stock.weighted_score:,.0f}"
+            f"프로그램순매수={best_stock.pgtr_net:,}원"
         )
         return best_sec.sector, best_stock
 
@@ -321,9 +341,9 @@ class MorningSurgeStrategy:
     #  PHASE 3: 포지션 모니터링
     # ═══════════════════════════════════════════════════════════════════
     def _monitor_phase(self) -> None:
-        time_cut    = _kst_time(9, 55)
-        stop_price  = self._entry_price * (1 - STOP_LOSS_RATIO)   # 최초 손절가
-        tp_price    = self._entry_price * (1 + TAKE_PROFIT_RATIO)  # 익절가
+        time_cut   = _kst_time(9, 55)
+        stop_price = self._entry_price * (1 - STOP_LOSS_RATIO)
+        tp_price   = self._entry_price * (1 + TAKE_PROFIT_RATIO)
 
         logger.info(
             f"[Phase 3] 모니터링 시작\n"
@@ -343,12 +363,13 @@ class MorningSurgeStrategy:
                 self._sell_all("타임컷 09:55")
                 return
 
-            # ── 현재가 조회 ───────────────────────────────────
+            # ── 현재가 조회 (throttle 적용) ───────────────────
             try:
-                quote = self.market.get_quote(self._code)
-                cur   = quote.price
+                with self._throttler:
+                    quote = self.market.get_quote(self._code)
+                cur = quote.price
             except Exception as e:
-                logger.warning(f"현재가 조회 실패: {e} — 재시도")
+                logger.warning(f"현재가 조회 실패: {e}")
                 time.sleep(MONITOR_INTERVAL)
                 continue
 
@@ -356,7 +377,7 @@ class MorningSurgeStrategy:
                 time.sleep(MONITOR_INTERVAL)
                 continue
 
-            # ── 고점 갱신 → 트레일링 손절가 재계산 ──────────
+            # ── 고점 갱신 → 트레일링 손절가 ─────────────────
             if cur > self._intraday_high:
                 self._intraday_high = cur
                 stop_price = self._intraday_high * (1 - STOP_LOSS_RATIO)
@@ -365,12 +386,12 @@ class MorningSurgeStrategy:
                     f"손절가 → {stop_price:,.0f}원"
                 )
 
-            pnl_rate = (cur - self._entry_price) / self._entry_price * 100
+            pnl_rate  = (cur - self._entry_price) / self._entry_price * 100
+            remaining = int((time_cut - now).total_seconds() // 60)
             logger.info(
-                f"  [{self._code}] 현재:{cur:,}원  "
-                f"손익:{pnl_rate:+.2f}%  "
-                f"고점:{self._intraday_high:,}  손절가:{stop_price:,.0f}  "
-                f"남은시간:{int((time_cut-now).total_seconds()//60)}분"
+                f"  [{self._code}] 현재:{cur:,}  손익:{pnl_rate:+.2f}%  "
+                f"고점:{self._intraday_high:,}  손절:{stop_price:,.0f}  "
+                f"잔여:{remaining}분"
             )
 
             # ── 익절 ─────────────────────────────────────────
@@ -392,10 +413,8 @@ class MorningSurgeStrategy:
     def _sell_all(self, reason: str) -> None:
         if not self._code:
             return
-
         logger.info(f"[매도] {self._name} 전량 매도 — {reason}")
 
-        # 실제 보유 수량 재확인 (체결 수량 차이 대비)
         qty = self._quantity
         try:
             balance = self.account.get_balance()
@@ -413,9 +432,9 @@ class MorningSurgeStrategy:
         result = self.order.sell(self._code, qty, 0, OrderType.MARKET)
 
         if result.success:
-            # 현재가로 근사 손익 계산
             try:
-                cur      = self.market.get_quote(self._code).price
+                with self._throttler:
+                    cur = self.market.get_quote(self._code).price
                 pnl      = (cur - self._entry_price) * qty
                 pnl_rate = (cur - self._entry_price) / self._entry_price * 100
                 price_str = f"{cur:,}원"
@@ -425,7 +444,7 @@ class MorningSurgeStrategy:
             msg = (
                 f"[옥동자 매도] [{self._code}] {self._name}\n"
                 f"사유: {reason}\n"
-                f"매수가:{self._entry_price:,}  현재가:{price_str}\n"
+                f"매수가:{self._entry_price:,} → 현재:{price_str}\n"
                 f"손익: {pnl:+,}원 ({pnl_rate:+.2f}%)"
             )
             logger.info(msg)
@@ -441,7 +460,6 @@ class MorningSurgeStrategy:
     #  유틸
     # ═══════════════════════════════════════════════════════════════════
     def _wait_until(self, hour: int, minute: int, label: str = "") -> None:
-        """목표 시각까지 대기 (이미 지났으면 즉시 반환)"""
         target = _kst_time(hour, minute)
         while True:
             diff = (target - _now_kst()).total_seconds()
@@ -452,7 +470,7 @@ class MorningSurgeStrategy:
             time.sleep(wait)
 
 
-# ── 헬퍼 함수 ──────────────────────────────────────────────────────────
+# ── 헬퍼 ──────────────────────────────────────────────────────────────
 def _now_kst() -> datetime:
     return datetime.now(KST)
 
@@ -460,11 +478,3 @@ def _now_kst() -> datetime:
 def _kst_time(hour: int, minute: int, second: int = 0) -> datetime:
     now = datetime.now(KST)
     return now.replace(hour=hour, minute=minute, second=second, microsecond=0)
-
-
-def _safe_int(val) -> int:
-    """문자열/None/빈값을 안전하게 int 변환"""
-    try:
-        return int(str(val).replace(",", "").strip() or "0")
-    except (ValueError, TypeError):
-        return 0
