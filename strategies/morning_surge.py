@@ -2,9 +2,10 @@
 옥동자 전략 1호 — 실시간 프로그램 매매 기반 오전 단기 매매
 
 [수급 포착 방법]
-KIS FHKST01010100(현재가시세) output의 pgtr_ntby_tr_pbmn 필드:
-  → 장중 실시간 누적 프로그램 순매수 거래대금
-  → 외국인·기관의 차익/비차익 프로그램 매수를 메이저 수급 신호로 사용
+KIS FHKST01010100(현재가시세) output의 pgtr_ntby_qty 필드:
+  → 장중 실시간 누적 프로그램 순매수 수량 (실제 API 제공 필드)
+  → pgtr_ntby_tr_pbmn(금액)은 API output에 없으므로 qty × price 로 추정
+  → 종목 간 비교는 pgtr_est_amt(추정 금액) 기준으로 순위 결정
 
 [Phase 흐름]
 Phase 1  09:00~09:09  84종목 프로그램 매매 데이터 수집 (초당 9건 이하 throttle)
@@ -50,7 +51,8 @@ class ProgramSnapshot:
     code: str
     name: str
     sector: str
-    pgtr_net: int = 0      # 프로그램 순매수 거래대금 (원, 음수=순매도)
+    pgtr_net: int = 0      # 프로그램 순매수 추정금액 = qty × price (원, 음수=순매도)
+    pgtr_qty: int = 0      # 프로그램 순매수 수량 (API 실제 제공 필드)
     price: int = 0
     change_rate: float = 0.0
 
@@ -102,7 +104,7 @@ class MorningSurgeStrategy:
         mode  = "모의투자" if self.is_paper else "실전투자"
         logger.info("══════════════════════════════════════════")
         logger.info(f" 옥동자 전략 시작 [{mode}] {today}")
-        logger.info(f" 수급 기준: 실시간 프로그램 매매 순매수 (pgtr_ntby_tr_pbmn)")
+        logger.info(f" 수급 기준: 실시간 프로그램 매매 순매수 (pgtr_ntby_qty × 현재가 추정)")
         logger.info(f" TPS 제한: 초당 9건 이하 (Throttle 적용)")
         logger.info("══════════════════════════════════════════")
 
@@ -169,22 +171,24 @@ class MorningSurgeStrategy:
                 with self._throttler:   # 초당 9건 이하 보장
                     pt = self.market.get_program_trade(code)
 
-                pgtr_net = pt.get("pgtr_ntby_tr_pbmn", 0)
+                pgtr_qty = pt.get("pgtr_ntby_qty", 0)
+                pgtr_net = pt.get("pgtr_est_amt", 0)   # qty × price 추정금액
                 snap = ProgramSnapshot(
                     code=code, name=name, sector=sector,
                     pgtr_net=pgtr_net,
+                    pgtr_qty=pgtr_qty,
                     price=pt.get("price", 0),
                     change_rate=pt.get("change_rate", 0.0),
                 )
                 self._buffer[code].append(snap)
 
-                if pgtr_net == 0:
+                if pgtr_qty == 0:
                     zero += 1
                     logger.debug(f"  [{code}] {name:10s} 프로그램매매=0 (장초반 또는 미집계)")
                 else:
                     logger.debug(
                         f"  [{code}] {name:10s} "
-                        f"프로그램순매수:{pgtr_net:>13,}원  현재가:{snap.price:,}"
+                        f"순매수수량:{pgtr_qty:>10,}주  추정금액:{pgtr_net:>13,}원  현재가:{snap.price:,}"
                     )
                 ok += 1
 
@@ -244,7 +248,7 @@ class MorningSurgeStrategy:
             f"종목: [{target.code}] {target.name}\n"
             f"현재가: {current_price:,}원 × {quantity:,}주\n"
             f"투자금: {current_price * quantity:,}원\n"
-            f"프로그램순매수: {target.pgtr_net:,}원"
+            f"프로그램순매수: {target.pgtr_qty:,}주 (추정금액 {target.pgtr_net:,}원)"
         )
         logger.info(msg)
 
@@ -279,20 +283,22 @@ class MorningSurgeStrategy:
                 continue
             info     = CODE_MAP.get(code, {})
             avg_pgtr = int(sum(s.pgtr_net for s in snaps) / len(snaps))
+            avg_qty  = int(sum(s.pgtr_qty for s in snaps) / len(snaps))
             last     = snaps[-1]
             avg_list.append(ProgramSnapshot(
                 code=code, name=info.get("name", code),
                 sector=info.get("sector", "기타"),
                 pgtr_net=avg_pgtr,
+                pgtr_qty=avg_qty,
                 price=last.price, change_rate=last.change_rate,
             ))
 
-        # 프로그램 순매수 > 0인 종목이 하나도 없으면 신호 없음
-        positive = [s for s in avg_list if s.pgtr_net > 0]
+        # 프로그램 순매수 수량 > 0인 종목이 하나도 없으면 신호 없음
+        positive = [s for s in avg_list if s.pgtr_qty > 0]
         if not positive:
             logger.warning(
-                "전 종목 프로그램 순매수 ≤ 0 — 오늘 프로그램 매수 신호 없음\n"
-                "원인: 장 초반 미집계 / 프로그램 매도 우위 / 필드명 불일치"
+                "전 종목 프로그램 순매수 수량 ≤ 0 — 오늘 프로그램 매수 신호 없음\n"
+                "원인: 장 초반 미집계 / 프로그램 매도 우위"
             )
             return None
 
@@ -313,7 +319,7 @@ class MorningSurgeStrategy:
             marker = "★" if sec.sector == best_sec.sector else " "
             logger.info(
                 f" {marker}{rank}. {sec.sector:12s}  "
-                f"프로그램순매수:{sec.total_pgtr_net:>14,}원"
+                f"프로그램순매수(추정):{sec.total_pgtr_net:>14,}원"
             )
 
         # 최강 섹터 내 최강 종목
@@ -327,13 +333,13 @@ class MorningSurgeStrategy:
             marker = "★" if st.code == best_stock.code else " "
             logger.info(
                 f" {marker}{rank}. [{st.code}] {st.name:12s}  "
-                f"프로그램순매수:{st.pgtr_net:>12,}원  현재가:{st.price:,}"
+                f"수량:{st.pgtr_qty:>10,}주  추정금액:{st.pgtr_net:>12,}원  현재가:{st.price:,}"
             )
 
         logger.info(
             f"[분석 결과] 섹터={best_sec.sector}  "
             f"종목=[{best_stock.code}] {best_stock.name}  "
-            f"프로그램순매수={best_stock.pgtr_net:,}원"
+            f"프로그램순매수수량={best_stock.pgtr_qty:,}주 / 추정금액={best_stock.pgtr_net:,}원"
         )
         return best_sec.sector, best_stock
 

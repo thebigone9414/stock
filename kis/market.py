@@ -75,27 +75,31 @@ class KISMarket:
     def get_program_trade(self, code: str) -> dict:
         """실시간 프로그램 매매 데이터 조회
         FHKST01010100 (현재가시세) output 내 프로그램매매 필드 추출.
-        pgtr_ntby_tr_pbmn: 프로그램 순매수 거래대금 (장중 실시간 누적)
-        반환: {"pgtr_ntby_qty": int, "pgtr_ntby_tr_pbmn": int, "price": int, ...}
+
+        [필드 가용성 확인 결과]
+        pgtr_ntby_qty      — 존재 O, 실시간 순매수 수량 (음수=순매도)
+        pgtr_ntby_tr_pbmn  — 존재 X (API output에 없음) → 항상 0
+        pgtr_est_amt       — 내부 계산: pgtr_ntby_qty × 현재가 (원 단위 추정치)
+                             종목간 단순 수량 비교는 주가 차이로 왜곡되므로 금액 환산
         """
         data = self.client.get(
             "/uapi/domestic-stock/v1/quotations/inquire-price",
             tr_id="FHKST01010100",
             params={"fid_cond_mrkt_div_code": "J", "fid_input_iscd": code},
         )
-        o = data.get("output", {})
+        o     = data.get("output", {})
+        price = _safe_int(o.get("stck_prpr"))
+        qty   = _safe_int(o.get("pgtr_ntby_qty"))   # 순매수 수량 (실제 존재하는 필드)
         return {
-            "code":               code,
-            "price":              _safe_int(o.get("stck_prpr")),
-            "change_rate":        float(o.get("prdy_ctrt", 0) or 0),
-            "volume":             _safe_int(o.get("acml_vol")),
-            # 프로그램 매매 핵심 필드
-            "pgtr_ntby_qty":      _safe_int(o.get("pgtr_ntby_qty")),       # 순매수 수량
-            "pgtr_ntby_tr_pbmn":  _safe_int(o.get("pgtr_ntby_tr_pbmn")),   # 순매수 거래대금
-            # 참고: 매수/매도 분리
-            "pgtr_shnu_tr_pbmn":  _safe_int(o.get("pgtr_shnu_tr_pbmn")),   # 프로그램 매수대금
-            "pgtr_seln_tr_pbmn":  _safe_int(o.get("pgtr_seln_tr_pbmn")),   # 프로그램 매도대금
-            # 전체 output (디버그/향후 확장용)
+            "code":              code,
+            "price":             price,
+            "change_rate":       float(o.get("prdy_ctrt", 0) or 0),
+            "volume":            _safe_int(o.get("acml_vol")),
+            # 프로그램 매매 — 수량 (API 제공)
+            "pgtr_ntby_qty":     qty,
+            # 프로그램 매매 — 추정 금액 (수량 × 현재가, 종목 간 비교용)
+            "pgtr_est_amt":      qty * price,
+            # 전체 output (디버그용)
             "_raw": o,
         }
 

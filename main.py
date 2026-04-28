@@ -121,10 +121,11 @@ def run_check_watchlist(kis: KIS) -> None:
         try:
             with throttler:
                 pt = kis.market.get_program_trade(code)
-            pgtr = pt.get("pgtr_ntby_tr_pbmn", 0)
+            pgtr_qty = pt.get("pgtr_ntby_qty", 0)
+            pgtr_est = pt.get("pgtr_est_amt", 0)
             logger.info(
                 f"[{i:02d}/{n}] ✓ [{code}] {name:12s} ({sect:10s})  "
-                f"프로그램순매수:{pgtr:>14,}원  현재가:{pt.get('price',0):,}"
+                f"순매수수량:{pgtr_qty:>10,}주  추정금액:{pgtr_est:>14,}원  현재가:{pt.get('price',0):,}"
             )
             ok_list.append(code)
         except Exception as e:
