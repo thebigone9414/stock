@@ -153,6 +153,55 @@ class KISMarket:
             df = df.sort_values("date").reset_index(drop=True)
         return df
 
+    def get_ohlcv_long(
+        self,
+        code: str,
+        days: int = 800,
+        throttler=None,
+    ) -> pd.DataFrame:
+        """최근 N 영업일 일봉 조회 (페이지네이션 자동 처리)
+
+        744일 이평선 계산용. days=820 권장 (744 + 여유 76일).
+        KIS API 1회 약 100행 반환 → 최대 12청크 반복으로 충분.
+        """
+        from datetime import timedelta
+
+        chunks: list = []
+        end_dt = pd.Timestamp.now()
+
+        for _ in range(12):
+            start_dt = end_dt - timedelta(days=150)  # 150 달력일 ≈ 100 영업일
+            if throttler:
+                throttler.acquire()
+
+            df = self.get_ohlcv(
+                code,
+                period="D",
+                start_date=start_dt.strftime("%Y%m%d"),
+                end_date=end_dt.strftime("%Y%m%d"),
+            )
+            if df.empty:
+                break
+
+            chunks.append(df)
+            if sum(len(c) for c in chunks) >= days + 50:
+                break
+
+            oldest: pd.Timestamp = df["date"].min()
+            end_dt = oldest - timedelta(days=1)
+
+        if not chunks:
+            return pd.DataFrame()
+
+        return (
+            pd.concat(chunks)
+            .drop_duplicates("date")
+            .sort_values("date")
+            .reset_index(drop=True)
+            .tail(days)
+            .reset_index(drop=True)
+        )
+
     # ── 거래량 상위 종목 ─────────────────────────────────────────
     def get_volume_rank(self, market: str = "0000", top_n: int = 30) -> List[dict]:
         """거래량 순위 (국내주식-047)"""

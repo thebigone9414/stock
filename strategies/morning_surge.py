@@ -239,19 +239,22 @@ class MorningSurgeStrategy:
             logger.error(f"현재가 0 — 매수 취소 [{target.code}]")
             return
 
-        # 주문 가능 금액
+        # 주문 가능 금액 — 총자산의 20% 한도
         try:
-            balance = self.account.get_balance()
-            cash    = balance.cash
+            balance     = self.account.get_balance()
+            total_value = balance.total_eval + balance.cash
+            slot_budget = int(total_value * 0.20)   # 전략1 슬롯: 총자산의 20%
+            cash        = balance.cash
         except Exception as e:
             logger.error(f"잔고 조회 실패: {e}")
             return
 
-        if cash < current_price:
-            logger.warning(f"현금 부족: {cash:,}원 < {current_price:,}원")
+        budget = min(slot_budget, cash)
+        if budget < current_price:
+            logger.warning(f"예산 부족: {budget:,}원 < {current_price:,}원")
             return
 
-        quantity = int(cash * CASH_USE_RATIO / current_price)
+        quantity = int(budget * CASH_USE_RATIO / current_price)
         if quantity <= 0:
             return
 

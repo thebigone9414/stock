@@ -23,6 +23,25 @@ from data.watchlist import WATCHLIST as OKDONGJA_WATCHLIST
 from data.holidays import is_market_holiday, is_trading_day
 
 
+def run_ma_morning(kis: KIS, notifier: Notifier) -> None:
+    """MA 이평선 중장기 전략 (Strategy 2) 실행"""
+    from strategies.ma_cross import MACrossStrategy
+    strategy = MACrossStrategy(
+        market=kis.market,
+        order=kis.order,
+        account=kis.account,
+        notifier=notifier,
+        is_paper=kis.is_paper,
+    )
+    strategy.run()
+
+
+def run_ma_batch(kis: KIS) -> None:
+    """MA 이평선 배치 업데이트 실행"""
+    from batch.update_ma import run_batch
+    run_batch(kis.market)
+
+
 def run_morning_strategy(kis: KIS, notifier: Notifier) -> None:
     """옥동자 오전 수급 전략 실행"""
     from strategies.morning_surge import MorningSurgeStrategy
@@ -144,7 +163,8 @@ def main():
     parser = argparse.ArgumentParser(description="옥동자 KIS 자동매매 시스템")
     parser.add_argument(
         "--mode",
-        choices=["morning", "balance", "market", "check-watchlist", "debug-investor", "auto"],
+        choices=["morning", "ma-morning", "ma-batch", "balance", "market",
+                 "check-watchlist", "debug-investor", "auto"],
         default="morning",
         help="실행 모드 (기본: morning)"
     )
@@ -165,6 +185,12 @@ def main():
     # ── 모드 분기 ─────────────────────────────────────────────────
     if args.mode == "morning":
         run_morning_strategy(kis, notifier)
+
+    elif args.mode == "ma-morning":
+        run_ma_morning(kis, notifier)
+
+    elif args.mode == "ma-batch":
+        run_ma_batch(kis)
 
     elif args.mode == "balance":
         run_balance(kis)
