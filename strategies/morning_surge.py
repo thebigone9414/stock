@@ -116,12 +116,12 @@ class MorningSurgeStrategy:
             return
 
         # GitHub Actions 스케줄 지연 감지
-        # 수집 윈도우(09:00~09:09)가 이미 지났으면 오늘은 건너뜀
+        # 수집 윈도우(08:00~09:09)가 이미 지났으면 오늘은 건너뜀
         _now = _now_kst()
         if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 5):
             msg = (
                 f"[옥동자] 실행 지연 감지 — {_now.strftime('%H:%M')} KST 시작\n"
-                f"수집 윈도우(09:00~09:09) 이미 종료, 오늘 전략 건너뜀\n"
+                f"수집 윈도우(08:00~09:09) 이미 종료, 오늘 전략 건너뜀\n"
                 f"원인: GitHub Actions 스케줄러 지연"
             )
             logger.warning(msg)
@@ -130,8 +130,8 @@ class MorningSurgeStrategy:
 
         self.notifier.notify(f"[옥동자] 전략 시작 {today} [{mode}]")
 
-        # Phase 1: 09:00 ~ 09:09 프로그램 매매 수집
-        self._wait_until(9, 0, "장 시작")
+        # Phase 1: 08:00(NXT) ~ 09:09 프로그램 매매 수집
+        self._wait_until(8, 0, "NXT 시장 시작")
         self._collect_phase()
 
         # Phase 2: 09:09 분석, 09:10 매수
@@ -155,7 +155,7 @@ class MorningSurgeStrategy:
     #  PHASE 1: 프로그램 매매 데이터 수집
     # ═══════════════════════════════════════════════════════════════════
     def _collect_phase(self) -> None:
-        logger.info("[Phase 1] 프로그램 매매 수집 시작 (09:00~09:09, 1분 간격)")
+        logger.info("[Phase 1] 프로그램 매매 수집 시작 (08:00 NXT~09:09, 1분 간격)")
         end_dt = _kst_time(9, 9)
         pass_no = 0
 
