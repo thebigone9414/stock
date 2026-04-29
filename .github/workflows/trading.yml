@@ -2,9 +2,10 @@ name: 옥동자 자동매매
 
 on:
   schedule:
-    # 매일(월~금) 한국시간 08:50 실행
-    # KST 08:50 = UTC 23:50 (전날) → 일~목(UTC) = 월~금(KST)
-    - cron: '50 23 * * 0-4'
+    # 매일(월~금) 한국시간 08:20 실행 (GitHub Actions 지연 30~40분 여유 확보)
+    # KST 08:20 = UTC 23:20 (전날) → 일~목(UTC) = 월~금(KST)
+    # ※ GitHub Actions 스케줄은 트래픽 혼잡 시 30~60분 지연 가능
+    - cron: '20 23 * * 0-4'
 
   workflow_dispatch:
     inputs:
@@ -32,7 +33,7 @@ jobs:
   trade:
     name: 옥동자 매매
     runs-on: ubuntu-latest
-    timeout-minutes: 90       # 08:50 시작 → 09:55 종료 여유 포함
+    timeout-minutes: 100      # 08:20 시작 → 09:55 종료 (95분) + 여유 5분
 
     steps:
       - name: 소스 체크아웃
