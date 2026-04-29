@@ -25,9 +25,8 @@ from kis.account import KISAccount
 from utils.notifier import Notifier
 
 KST              = pytz.timezone("Asia/Seoul")
-MAX_POSITIONS    = 4
-SLOT_RATIO       = 0.20
-UPTREND_MIN_DAYS = 20
+MAX_POSITIONS = 4
+SLOT_RATIO    = 0.20
 
 
 class MACrossStrategy:
@@ -131,8 +130,8 @@ class MACrossStrategy:
 
                 logger.info(
                     f"[MA전략 매수] [{code}] {name} — "
-                    f"정배열첫날 / 62추세:{cand['ma62_trend_days']}일 "
-                    f"248추세:{cand['ma248_trend_days']}일 744추세:{cand['ma744_trend_days']}일"
+                    f"정배열첫날 / 62↑:{cand['ma62_uptrend']} "
+                    f"248↑:{cand['ma248_uptrend']} 744↑:{cand['ma744_uptrend']}"
                 )
                 result = self.order.buy(code, qty, 0, OrderType.MARKET)
                 if result.success:
@@ -142,9 +141,9 @@ class MACrossStrategy:
                     self.notifier.notify(
                         f"[MA전략 매수] [{code}] {name}\n"
                         f"수량:{qty:,}주  기준가:{price:,}원\n"
-                        f"62일추세:{cand['ma62_trend_days']}일  "
-                        f"248일추세:{cand['ma248_trend_days']}일  "
-                        f"744일추세:{cand['ma744_trend_days']}일"
+                        f"62일추세↑:{cand['ma62_uptrend']}  "
+                        f"248일추세↑:{cand['ma248_uptrend']}  "
+                        f"744일추세↑:{cand['ma744_uptrend']}"
                     )
                 else:
                     logger.error(f"[MA전략 매수 실패] {code}: {result.message}")
@@ -199,7 +198,6 @@ class MACrossStrategy:
                 continue
             if self._is_buy_signal(s):
                 result.append({"code": code, **s})
-        result.sort(key=lambda x: x.get("ma62_trend_days", 0), reverse=True)
         return result
 
     def _is_buy_signal(self, s: dict) -> bool:
@@ -207,12 +205,12 @@ class MACrossStrategy:
         # 조건 1: 완전 정배열이 전날 처음 달성
         if not (s.get("fully_aligned") and not s.get("prev_fully_aligned")):
             return False
-        # 조건 2: 62/248/744 이평선 20일 이상 연속 상승
-        if s.get("ma62_trend_days", 0)  < UPTREND_MIN_DAYS:
+        # 조건 2: 62/248/744 이평선 최근 20일 선형 회귀 기울기 > 0 (상승 추세)
+        if not s.get("ma62_uptrend"):
             return False
-        if s.get("ma248_trend_days", 0) < UPTREND_MIN_DAYS:
+        if not s.get("ma248_uptrend"):
             return False
-        if s.get("ma744_trend_days", 0) < UPTREND_MIN_DAYS:
+        if not s.get("ma744_uptrend"):
             return False
         return True
 
@@ -220,8 +218,7 @@ class MACrossStrategy:
         msg = (
             f"[MA전략] 슬롯 만석(4/4) — 신규 신호 {len(candidates)}종목\n"
             + "\n".join(
-                f"  [{c['code']}] {c.get('name', c['code'])} "
-                f"62추세:{c['ma62_trend_days']}일"
+                f"  [{c['code']}] {c.get('name', c['code'])}"
                 for c in candidates[:5]
             )
             + "\n※ 잔고 추가 후 신규 매수 가능"

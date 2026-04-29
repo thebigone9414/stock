@@ -15,6 +15,7 @@ import pytz
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import numpy as np
 import pandas as pd
 from loguru import logger
 
@@ -31,18 +32,15 @@ OHLCV_DAYS   = 820   # 800일 + 여유 20일
 UPTREND_COLS = [62, 248, 744]
 
 
-def _uptrend_days(ma_series: pd.Series) -> int:
-    """최근 연속 상승일 수 (MA값이 전날보다 높은 날 역순 카운트)"""
+def _is_uptrend(ma_series: pd.Series, window: int = 20) -> bool:
+    """최근 window일 MA에 선형 회귀선을 그어 기울기 > 0 이면 상승 추세"""
     vals = ma_series.dropna().values
-    if len(vals) < 2:
-        return 0
-    count = 0
-    for i in range(len(vals) - 1, 0, -1):
-        if vals[i] > vals[i - 1]:
-            count += 1
-        else:
-            break
-    return count
+    if len(vals) < window:
+        return False
+    y = vals[-window:]
+    x = np.arange(window, dtype=float)
+    slope = np.polyfit(x, y, 1)[0]
+    return bool(slope > 0)
 
 
 def compute_stock_entry(code: str, name: str, sector: str, df: pd.DataFrame) -> dict:
@@ -77,10 +75,10 @@ def compute_stock_entry(code: str, name: str, sector: str, df: pd.DataFrame) -> 
         "prev_fully_aligned": prev_fully_aligned,
         # 매도 신호: ma21이 ma62 아래
         "ma21_below_ma62":    curr[21] < curr[62],
-        # 연속 상승일
-        "ma62_trend_days":    _uptrend_days(ma[62]),
-        "ma248_trend_days":   _uptrend_days(ma[248]),
-        "ma744_trend_days":   _uptrend_days(ma[744]),
+        # 20일 선형 회귀 기울기 > 0 이면 상승 추세
+        "ma62_uptrend":       _is_uptrend(ma[62]),
+        "ma248_uptrend":      _is_uptrend(ma[248]),
+        "ma744_uptrend":      _is_uptrend(ma[744]),
     }
 
 
@@ -124,8 +122,9 @@ def run_batch(market) -> None:
             logger.info(
                 f"[{i:02d}/{len(WATCHLIST)}] [{code}] {name:10s} "
                 f"정배열:{str(entry['fully_aligned']):5s} "
-                f"62추세:{entry['ma62_trend_days']:3d}일 "
-                f"248추세:{entry['ma248_trend_days']:3d}일{signal}"
+                f"62↑:{entry['ma62_uptrend']} "
+                f"248↑:{entry['ma248_uptrend']} "
+                f"744↑:{entry['ma744_uptrend']}{signal}"
             )
             ok += 1
 
@@ -145,10 +144,10 @@ def run_batch(market) -> None:
 
     # 매수 후보 요약 출력
     buy_signals = [
-        f"  [{c}] {s['name']} 62추세:{s['ma62_trend_days']}일 248추세:{s['ma248_trend_days']}일"
+        f"  [{c}] {s['name']} 62↑:{s['ma62_uptrend']} 248↑:{s['ma248_uptrend']} 744↑:{s['ma744_uptrend']}"
         for c, s in stocks_out.items()
         if s["fully_aligned"] and not s["prev_fully_aligned"]
-        and s["ma62_trend_days"] >= 20 and s["ma248_trend_days"] >= 20 and s["ma744_trend_days"] >= 20
+        and s["ma62_uptrend"] and s["ma248_uptrend"] and s["ma744_uptrend"]
     ]
     sell_signals = [
         f"  [{c}] {s['name']}"
