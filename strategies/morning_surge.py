@@ -60,7 +60,7 @@ class ProgramSnapshot:
 @dataclass
 class SectorScore:
     sector: str
-    total_pgtr_net: int = 0
+    total_pgtr_qty: int = 0
 
 
 # ── 메인 전략 클래스 ───────────────────────────────────────────────────
@@ -242,8 +242,8 @@ class MorningSurgeStrategy:
         # 주문 가능 금액 — 총자산의 20% 한도
         try:
             balance     = self.account.get_balance()
-            total_value = balance.total_eval + balance.cash
-            slot_budget = int(total_value * 0.20)   # 전략1 슬롯: 총자산의 20%
+            # tot_evlu_amt(총평가금액)는 현금 포함 총자산이므로 total_eval만 사용
+            slot_budget = int(balance.total_eval * 0.20)
             cash        = balance.cash
         except Exception as e:
             logger.error(f"잔고 조회 실패: {e}")
@@ -318,44 +318,44 @@ class MorningSurgeStrategy:
             )
             return None
 
-        # 섹터별 합산
+        # 섹터별 순매수량 합산
         sector_map: Dict[str, SectorScore] = {}
         for s in avg_list:
             if s.sector not in sector_map:
                 sector_map[s.sector] = SectorScore(sector=s.sector)
-            sector_map[s.sector].total_pgtr_net += s.pgtr_net
+            sector_map[s.sector].total_pgtr_qty += s.pgtr_qty
 
-        best_sec = max(sector_map.values(), key=lambda x: x.total_pgtr_net)
+        best_sec = max(sector_map.values(), key=lambda x: x.total_pgtr_qty)
 
         # 섹터 순위 로그
-        logger.info("── 섹터 프로그램 매매 순위 ───────────────────")
+        logger.info("── 섹터 프로그램 매매 순위 (순매수량) ────────")
         for rank, sec in enumerate(
-            sorted(sector_map.values(), key=lambda x: x.total_pgtr_net, reverse=True)[:8], 1
+            sorted(sector_map.values(), key=lambda x: x.total_pgtr_qty, reverse=True)[:8], 1
         ):
             marker = "★" if sec.sector == best_sec.sector else " "
             logger.info(
                 f" {marker}{rank}. {sec.sector:12s}  "
-                f"프로그램순매수(추정):{sec.total_pgtr_net:>14,}원"
+                f"프로그램순매수량:{sec.total_pgtr_qty:>12,}주"
             )
 
-        # 최강 섹터 내 최강 종목
+        # 최강 섹터 내 순매수량 최강 종목
         sector_stocks = [s for s in avg_list if s.sector == best_sec.sector]
-        best_stock    = max(sector_stocks, key=lambda x: x.pgtr_net)
+        best_stock    = max(sector_stocks, key=lambda x: x.pgtr_qty)
 
         logger.info("── 종목 프로그램 매매 순위 (최강 섹터 내) ───")
         for rank, st in enumerate(
-            sorted(sector_stocks, key=lambda x: x.pgtr_net, reverse=True), 1
+            sorted(sector_stocks, key=lambda x: x.pgtr_qty, reverse=True), 1
         ):
             marker = "★" if st.code == best_stock.code else " "
             logger.info(
                 f" {marker}{rank}. [{st.code}] {st.name:12s}  "
-                f"수량:{st.pgtr_qty:>10,}주  추정금액:{st.pgtr_net:>12,}원  현재가:{st.price:,}"
+                f"순매수량:{st.pgtr_qty:>10,}주  추정금액:{st.pgtr_net:>12,}원  현재가:{st.price:,}"
             )
 
         logger.info(
             f"[분석 결과] 섹터={best_sec.sector}  "
             f"종목=[{best_stock.code}] {best_stock.name}  "
-            f"프로그램순매수수량={best_stock.pgtr_qty:,}주 / 추정금액={best_stock.pgtr_net:,}원"
+            f"프로그램순매수량={best_stock.pgtr_qty:,}주 / 추정금액={best_stock.pgtr_net:,}원"
         )
         return best_sec.sector, best_stock
 

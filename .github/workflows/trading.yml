@@ -62,7 +62,9 @@ jobs:
 
       # ── [자동] 전략2: MA 이평선 중장기 매매 (09:00 시장가) ─────────
       - name: MA 이평선 전략 (자동, Strategy 2)
-        if: github.event_name == 'schedule'
+        if: |
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning')
         env:
           KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
           KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}

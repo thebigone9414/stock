@@ -70,8 +70,8 @@ class MACrossStrategy:
         # 잔고 조회
         try:
             balance     = self.account.get_balance()
-            total_value = balance.total_eval + balance.cash
-            slot_budget = int(total_value * SLOT_RATIO)
+            # tot_evlu_amt(총평가금액)는 현금 포함 총자산이므로 total_eval만 사용
+            slot_budget = int(balance.total_eval * SLOT_RATIO)
         except Exception as e:
             logger.error(f"[MA전략] 잔고 조회 실패: {e}")
             return
@@ -81,7 +81,7 @@ class MACrossStrategy:
         positions = self._reconcile(positions, balance)
 
         logger.info(
-            f"[MA전략] 총자산:{total_value:,}원  슬롯예산(20%):{slot_budget:,}원  "
+            f"[MA전략] 총자산:{balance.total_eval:,}원  슬롯예산(20%):{slot_budget:,}원  "
             f"보유:{len(positions)}/{MAX_POSITIONS}"
         )
 
