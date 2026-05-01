@@ -19,6 +19,7 @@ import pytz
 from loguru import logger
 
 import data.ma_store as ma_store
+from data.holidays import is_market_holiday
 from kis.market import KISMarket
 from kis.order import KISOrder, OrderType
 from kis.account import KISAccount
@@ -53,6 +54,24 @@ class MACrossStrategy:
         mode  = "모의투자" if self.is_paper else "실전투자"
         today = datetime.now(KST).strftime("%Y-%m-%d (%a)")
         logger.info(f"[MA전략] 시작 [{mode}] {today}")
+
+        # 휴장일 체크
+        if is_market_holiday():
+            msg = f"[MA전략] {today} 증시 휴장일 — 전략 미실행"
+            logger.info(msg)
+            self.notifier.notify(msg)
+            return
+
+        # 지연 실행 감지: 09:10 이후면 시장가 주문 시간대 초과
+        _now = datetime.now(KST)
+        if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 10):
+            msg = (
+                f"[MA전략] 실행 지연 감지 — {_now.strftime('%H:%M')} KST 시작\n"
+                f"09:00 시장가 주문 불가, 오늘 건너뜀"
+            )
+            logger.warning(msg)
+            self.notifier.notify(msg)
+            return
 
         # MA 테이블 로드
         data    = ma_store.load()
