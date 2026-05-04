@@ -15,8 +15,8 @@ on:
         default: 'check-watchlist'
         type: choice
         options:
-          - morning          # 전략1: 옥동자 오전 수급 (실제 매매)
-          - ma-morning       # 전략2: MA 이평선 중장기 (실제 매매)
+          - morning          # 전략1+2 동시 실행 (cron-job.org 트리거용)
+          - ma-morning       # 전략2 단독 실행
           - ma-batch         # MA 이평선 데이터 배치 업데이트
           - balance          # 잔고 조회
           - check-watchlist  # 84종목 수급 API 테스트
@@ -32,18 +32,73 @@ concurrency:
   cancel-in-progress: false   # 실행 중인 매매 절대 중단 금지
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job 1: 아침 매매 (07:30 KST 트리거 또는 수동)
+# Job A: 전략2 — MA 이평선 중장기 (전략1과 병렬 실행)
+# 07:50 시작 → 09:00까지 내부 대기 → 시장가 매수/매도
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 jobs:
-  trade:
-    name: 옥동자 매매
+  trade-ma:
+    name: MA 이평선 전략 (S2)
     runs-on: ubuntu-latest
-    timeout-minutes: 150      # 07:30 시작 → 09:55 종료 (145분) + 여유
+    timeout-minutes: 100     # 07:50 시작 → 09:00 대기 → 09:01 완료 + 여유
 
-    # 아침 크론 또는 수동(ma-batch 제외)일 때만 실행
+    permissions:
+      contents: write        # 포지션 변경 시 ma_data.json git push 필요
+
     if: |
       (github.event_name == 'schedule' && github.event.schedule == '30 22 * * 0-4') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode != 'ma-batch')
+      (github.event_name == 'workflow_dispatch' && (
+        github.event.inputs.mode == 'morning' ||
+        github.event.inputs.mode == 'ma-morning'
+      ))
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: claude/stock-trading-system-z6xQh
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: MA 이평선 전략 실행
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOG_LEVEL:            INFO
+        run: python main.py --mode ma-morning
+
+      - name: 로그 저장
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ma-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 90
+          if-no-files-found: ignore
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Job B: 전략1 — 옥동자 오전 수급 (전략2와 병렬 실행)
+# 07:50 시작 → 08:00 NXT 수집 시작 → 09:10 매수 → 09:55 타임컷
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  trade-morning:
+    name: 옥동자 오전 전략 (S1)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150     # 07:50 시작 → 09:55 타임컷 (125분) + 여유
+
+    if: |
+      (github.event_name == 'schedule' && github.event.schedule == '30 22 * * 0-4') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning')
 
     steps:
       - name: 소스 체크아웃
@@ -60,24 +115,7 @@ jobs:
       - name: 패키지 설치
         run: pip install -r requirements.txt
 
-      # ── [자동] 전략2: MA 이평선 중장기 매매 (09:00 시장가) ─────────
-      - name: MA 이평선 전략 (자동, Strategy 2)
-        if: |
-          github.event_name == 'schedule' ||
-          (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning')
-        env:
-          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
-          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
-          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
-          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
-          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
-          LOG_LEVEL:            INFO
-        run: python main.py --mode ma-morning
-
-      # ── [자동] 전략1: 옥동자 오전 수급 전략 ────────────────────────
-      - name: 옥동자 오전 수급 전략 (자동, Strategy 1)
-        if: github.event_name == 'schedule'
+      - name: 옥동자 오전 수급 전략 실행
         env:
           KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
           KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
@@ -88,35 +126,46 @@ jobs:
           LOG_LEVEL:            INFO
         run: python main.py --mode morning
 
-      # ── [수동] 전략1: 옥동자 오전 전략 ─────────────────────────────
-      - name: 옥동자 오전 전략 (수동)
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning'
-        env:
-          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
-          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
-          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
-          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
-          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
-          LOG_LEVEL:            INFO
-        run: python main.py --mode morning
+      - name: 로그 저장
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 90
+          if-no-files-found: ignore
 
-      # ── [수동] 전략2: MA 이평선 전략 ────────────────────────────────
-      - name: MA 이평선 전략 (수동)
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'ma-morning'
-        env:
-          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
-          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
-          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
-          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
-          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
-          LOG_LEVEL:            INFO
-        run: python main.py --mode ma-morning
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Job C: 유틸리티 — 잔고조회 / API테스트 / 시세 등 수동 전용
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  trade-utils:
+    name: 유틸리티
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
-      # ── [수동] 잔고 조회 ─────────────────────────────────────────────
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.mode != 'morning' &&
+      github.event.inputs.mode != 'ma-morning' &&
+      github.event.inputs.mode != 'ma-batch'
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: claude/stock-trading-system-z6xQh
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
       - name: 잔고 조회
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'balance'
+        if: github.event.inputs.mode == 'balance'
         env:
           KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
           KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
@@ -124,9 +173,8 @@ jobs:
           KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
         run: python main.py --mode balance
 
-      # ── [수동] 84종목 API 테스트 ─────────────────────────────────────
       - name: 84종목 API 연결 테스트
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'check-watchlist'
+        if: github.event.inputs.mode == 'check-watchlist'
         env:
           KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
           KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
@@ -135,9 +183,8 @@ jobs:
           LOG_LEVEL:            INFO
         run: python main.py --mode check-watchlist
 
-      # ── [수동] 투자자 동향 raw 덤프 ──────────────────────────────────
       - name: 투자자 동향 raw 응답 덤프
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'debug-investor'
+        if: github.event.inputs.mode == 'debug-investor'
         env:
           KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
           KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
@@ -146,9 +193,8 @@ jobs:
           LOG_LEVEL:            DEBUG
         run: python main.py --mode debug-investor --code ${{ github.event.inputs.code || '005930' }}
 
-      # ── [수동] 단일 종목 시세 ────────────────────────────────────────
       - name: 종목 시세 조회
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'market'
+        if: github.event.inputs.mode == 'market'
         env:
           KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
           KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
@@ -156,18 +202,17 @@ jobs:
           KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
         run: python main.py --mode market --code ${{ github.event.inputs.code || '005930' }}
 
-      # ── 로그 아티팩트 저장 ───────────────────────────────────────────
       - name: 로그 저장
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: trade-log-${{ github.run_id }}
+          name: utils-log-${{ github.run_id }}
           path: logs/
-          retention-days: 90
+          retention-days: 30
           if-no-files-found: ignore
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job 2: MA 이평선 배치 업데이트 (16:30 KST 또는 수동 ma-batch)
+# Job D: MA 이평선 배치 업데이트 (16:30 KST 또는 수동 ma-batch)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   update-ma:
     name: MA 이평선 배치
@@ -177,7 +222,6 @@ jobs:
     permissions:
       contents: write           # git push 권한 필요
 
-    # 오후 크론 또는 수동 ma-batch 일 때만 실행
     if: |
       (github.event_name == 'schedule' && github.event.schedule == '30 7 * * 1-5') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'ma-batch')

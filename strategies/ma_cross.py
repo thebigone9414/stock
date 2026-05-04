@@ -13,6 +13,7 @@
   슬롯 만석 + 신규 신호 → 텔레그램 알림
 """
 from datetime import datetime
+import time
 from typing import Optional
 
 import pytz
@@ -103,6 +104,14 @@ class MACrossStrategy:
             f"[MA전략] 총자산:{balance.total_eval:,}원  슬롯예산(20%):{slot_budget:,}원  "
             f"보유:{len(positions)}/{MAX_POSITIONS}"
         )
+
+        # ── 09:00 장 개장까지 대기 (장 시작 전 주문 불가) ────────────
+        _now_dt  = datetime.now(KST)
+        _open_dt = _now_dt.replace(hour=9, minute=0, second=0, microsecond=0)
+        if _now_dt < _open_dt:
+            wait_sec = (_open_dt - _now_dt).total_seconds()
+            logger.info(f"[MA전략] 09:00 장 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
+            time.sleep(wait_sec)
 
         # ── 1. 매도 ─────────────────────────────────────────────────
         for code in list(positions):
