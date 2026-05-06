@@ -1840,6 +1840,12 @@
       "entry_date": "2026-05-06",
       "entry_price": 539000,
       "quantity": 3
+    },
+    "028260": {
+      "name": "삼성물산",
+      "entry_date": "2026-05-06",
+      "entry_price": 341500,
+      "quantity": 5
     }
   }
 }
