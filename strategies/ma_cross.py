@@ -159,7 +159,8 @@ class MACrossStrategy:
                 logger.info(
                     f"[MA전략 매수] [{code}] {name} — "
                     f"정배열첫날 / 62↑:{cand['ma62_uptrend']} "
-                    f"248↑:{cand['ma248_uptrend']} 744↑:{cand['ma744_uptrend']}"
+                    f"248↑:{cand['ma248_uptrend']} 744↑:{cand['ma744_uptrend']} "
+                    f"양봉몸통:{cand.get('candle_body_ratio', 0):.2%}"
                 )
                 result = self.order.buy(code, qty, 0, OrderType.MARKET)
                 if result.success:
@@ -219,17 +220,18 @@ class MACrossStrategy:
             self.notifier.notify(err)
 
     def _find_candidates(self, stocks: dict, positions: dict) -> list:
-        """매수 조건 모두 충족 종목 리스트 (62일 추세 내림차순)"""
+        """매수 조건 모두 충족 종목 리스트 — 전일 양봉 몸통 크기 내림차순"""
         result = []
         for code, s in stocks.items():
             if code in positions:
                 continue
             if self._is_buy_signal(s):
                 result.append({"code": code, **s})
+        result.sort(key=lambda x: x.get("candle_body_ratio", 0), reverse=True)
         return result
 
     def _is_buy_signal(self, s: dict) -> bool:
-        """매수 조건 1 + 조건 2 동시 충족 여부"""
+        """매수 조건 1 + 조건 2 + 조건 3 동시 충족 여부"""
         # 조건 1: 완전 정배열이 전날 처음 달성
         if not (s.get("fully_aligned") and not s.get("prev_fully_aligned")):
             return False
@@ -239,6 +241,9 @@ class MACrossStrategy:
         if not s.get("ma248_uptrend"):
             return False
         if not s.get("ma744_uptrend"):
+            return False
+        # 조건 3: 전일 양봉 (종가 > 시가)
+        if not s.get("prev_bullish_candle"):
             return False
         return True
 

@@ -59,6 +59,15 @@ def compute_stock_entry(code: str, name: str, sector: str, df: pd.DataFrame) -> 
     fully_aligned      = curr[5] > curr[21] > curr[62] > curr[248] > curr[744]
     prev_fully_aligned = prev[5] > prev[21] > prev[62] > prev[248] > prev[744]
 
+    # 전일 양봉 여부 및 몸통 비율
+    prev_open_val  = float(df["open"].iloc[-2]) if "open" in df.columns else 0.0
+    prev_close_val = float(close.iloc[-2])
+    prev_bullish   = bool(prev_close_val > prev_open_val and prev_open_val > 0)
+    candle_body    = (
+        abs(prev_close_val - prev_open_val) / prev_close_val
+        if prev_close_val > 0 else 0.0
+    )
+
     return {
         "name":               name,
         "sector":             sector,
@@ -79,6 +88,9 @@ def compute_stock_entry(code: str, name: str, sector: str, df: pd.DataFrame) -> 
         "ma62_uptrend":       _is_uptrend(ma[62]),
         "ma248_uptrend":      _is_uptrend(ma[248]),
         "ma744_uptrend":      _is_uptrend(ma[744]),
+        # 전일 캔들 (매수 우선순위용)
+        "prev_bullish_candle": prev_bullish,
+        "candle_body_ratio":   round(candle_body, 6),
     }
 
 
@@ -145,6 +157,7 @@ def run_batch(market) -> None:
     # 매수 후보 요약 출력
     buy_signals = [
         f"  [{c}] {s['name']} 62↑:{s['ma62_uptrend']} 248↑:{s['ma248_uptrend']} 744↑:{s['ma744_uptrend']}"
+        f" 양봉:{s['prev_bullish_candle']} 몸통:{s['candle_body_ratio']:.2%}"
         for c, s in stocks_out.items()
         if s["fully_aligned"] and not s["prev_fully_aligned"]
         and s["ma62_uptrend"] and s["ma248_uptrend"] and s["ma744_uptrend"]
