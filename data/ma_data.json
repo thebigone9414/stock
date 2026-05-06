@@ -1828,5 +1828,12 @@
       "ma744_uptrend": true
     }
   },
-  "positions": {}
+  "positions": {
+    "010960": {
+      "name": "금양",
+      "entry_date": "2026-05-06",
+      "entry_price": 3945,
+      "quantity": 505
+    }
+  }
 }
