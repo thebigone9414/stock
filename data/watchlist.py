@@ -1,9 +1,18 @@
 """
-옥동자 매매 대상 종목 (코스피200 기반 ~149종목)
+옥동자 매매 대상 종목 관리
+
+우선순위:
+  1. data/kospi200_cache.json  ← update_watchlist.py 가 매월 KIS API에서 갱신
+  2. _BUILTIN (코드 내 큐레이션 목록, 149종목) ← 캐시 없을 때 폴백
 """
+import json
+from pathlib import Path
 from typing import List, Dict
 
-WATCHLIST: List[Dict[str, str]] = [
+_CACHE_PATH = Path(__file__).parent / "kospi200_cache.json"
+
+# ── 빌트인 폴백 목록 (149종목, 캐시 없을 때 사용) ─────────────────────────────
+_BUILTIN: List[Dict[str, str]] = [
     # 반도체/IT
     {"code": "005930", "name": "삼성전자",      "sector": "반도체/IT"},
     {"code": "000660", "name": "SK하이닉스",    "sector": "반도체/IT"},
@@ -172,10 +181,24 @@ WATCHLIST: List[Dict[str, str]] = [
     {"code": "006125", "name": "DL이앤씨",      "sector": "건설/건자재"},
 ]
 
-# 종목코드 → 정보 빠른 조회용
+
+def get_active_watchlist() -> List[Dict[str, str]]:
+    """KOSPI200 캐시가 있으면 사용, 없으면 빌트인 폴백 반환"""
+    try:
+        data = json.loads(_CACHE_PATH.read_text(encoding="utf-8"))
+        stocks = data.get("stocks", [])
+        if len(stocks) >= 10:
+            return stocks
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return _BUILTIN
+
+
+# 모듈 로드 시 한 번 계산 — 기존 import 코드 변경 불필요
+WATCHLIST: List[Dict[str, str]] = get_active_watchlist()
+
 CODE_MAP: Dict[str, Dict[str, str]] = {s["code"]: s for s in WATCHLIST}
 
-# 섹터별 그룹
 SECTOR_MAP: Dict[str, List[Dict[str, str]]] = {}
 for _s in WATCHLIST:
     SECTOR_MAP.setdefault(_s["sector"], []).append(_s)

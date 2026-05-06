@@ -6,6 +6,8 @@ on:
     - cron: '30 22 * * 0-4'
     # [MA 배치] 월~금 16:30 KST = UTC 07:30 → 월~금(UTC)
     - cron: '30 7 * * 1-5'
+    # [종목 업데이트] 매월 1일 10:00 KST = UTC 01:00 (KOSPI200 분기 리밸런싱 자동 반영)
+    - cron: '0 1 1 * *'
 
   workflow_dispatch:
     inputs:
@@ -18,8 +20,9 @@ on:
           - morning          # 전략1+2 동시 실행 (cron-job.org 트리거용)
           - ma-morning       # 전략2 단독 실행
           - ma-batch         # MA 이평선 데이터 배치 업데이트
+          - update-watchlist # KOSPI200 구성 종목 갱신 (월 1회 자동 실행)
           - balance          # 잔고 조회
-          - check-watchlist  # 84종목 수급 API 테스트
+          - check-watchlist  # 종목 수급 API 테스트
           - debug-investor   # 단일 종목 raw JSON 덤프
           - market           # 단일 종목 시세
       code:
@@ -147,7 +150,8 @@ jobs:
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.mode != 'morning' &&
       github.event.inputs.mode != 'ma-morning' &&
-      github.event.inputs.mode != 'ma-batch'
+      github.event.inputs.mode != 'ma-batch' &&
+      github.event.inputs.mode != 'update-watchlist'
 
     steps:
       - name: 소스 체크아웃
@@ -258,6 +262,56 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ma-batch-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 30
+          if-no-files-found: ignore
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Job E: KOSPI200 구성 종목 갱신 (매월 1일 자동 / 수동 update-watchlist)
+# KOSPI200 분기 리밸런싱(6·12월) 후 자동 반영
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  update-watchlist:
+    name: KOSPI200 종목 갱신
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: write           # kospi200_cache.json git push 필요
+
+    if: |
+      (github.event_name == 'schedule' && github.event.schedule == '0 1 1 * *') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'update-watchlist')
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: claude/stock-trading-system-z6xQh
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: KOSPI200 구성 종목 업데이트
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          LOG_LEVEL:            INFO
+        run: python batch/update_watchlist.py
+
+      - name: 로그 저장
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watchlist-log-${{ github.run_id }}
           path: logs/
           retention-days: 30
           if-no-files-found: ignore

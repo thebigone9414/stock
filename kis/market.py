@@ -249,6 +249,55 @@ class KISMarket:
         )
         return data.get("output", [])[:top_n]
 
+    # ── 지수 구성 종목 조회 ─────────────────────────────────────
+    def get_index_components(self, index_code: str = "0028") -> list:
+        """지수 구성 종목 조회 (FHPUP02100000)
+
+        Args:
+            index_code: KIS 지수 코드 (KOSPI200 = "0028")
+        Returns:
+            [{"code", "name", "bstp_name"}, ...] 형태의 리스트
+        """
+        result = []
+        ctx_fk = ""
+        ctx_nk = ""
+
+        for _ in range(5):  # 200종목 기준 최대 3페이지면 충분, 5로 여유
+            data = self.client.get(
+                "/uapi/domestic-stock/v1/quotations/inquire-index-stockinfo",
+                tr_id="FHPUP02100000",
+                params={
+                    "fid_cond_mrkt_div_code": "U",
+                    "fid_input_iscd":         index_code,
+                    "CTX_AREA_FK100":         ctx_fk,
+                    "CTX_AREA_NK100":         ctx_nk,
+                },
+            )
+            rows = data.get("output2", [])
+            for r in rows:
+                # 응답 필드명이 버전마다 다를 수 있어 두 가지 모두 시도
+                code = (r.get("mksc_shrn_iscd") or r.get("stck_shrn_iscd", "")).strip()
+                name = r.get("hts_kor_isnm", "").strip()
+                bstp = r.get("bstp_kor_isnm", "").strip()
+                if code and name:
+                    result.append({"code": code, "name": name, "bstp_name": bstp})
+
+            ctx_fk = (data.get("ctx_area_fk100") or "").strip()
+            ctx_nk = (data.get("ctx_area_nk100") or "").strip()
+            if not ctx_fk:
+                break
+
+        # 중복 코드 제거
+        seen: set = set()
+        unique = []
+        for item in result:
+            if item["code"] not in seen:
+                seen.add(item["code"])
+                unique.append(item)
+
+        logger.info(f"[지수조회] {index_code} → {len(unique)}종목")
+        return unique
+
     # ── 호가 조회 ────────────────────────────────────────────────
     def get_orderbook(self, code: str) -> dict:
         """국내주식 호가 조회 (국내주식-011)"""
