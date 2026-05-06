@@ -113,7 +113,18 @@ class MACrossStrategy:
             logger.info(f"[MA전략] 09:00 장 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
             time.sleep(wait_sec)
 
-        # ── 1. 매도 ─────────────────────────────────────────────────
+        # ── 1. 손절 대기 포지션 우선 매도 (전일 16:30 배치에서 -3% 플래그) ────
+        for code in list(positions):
+            if positions[code].get("stop_loss_pending"):
+                logger.info(
+                    f"[MA전략 손절매도] [{code}] {positions[code]['name']} "
+                    f"— 전일 마감가 -3% 손절 플래그"
+                )
+                self._sell(code, positions[code], reason="손절 -3% 이하 (전일 마감가)")
+                del positions[code]
+                ma_store.remove_position(code)
+
+        # ── 2. 데드크로스 매도 ──────────────────────────────────────────────
         for code in list(positions):
             s = stocks.get(code, {})
             if s.get("ma21_below_ma62"):
@@ -125,7 +136,7 @@ class MACrossStrategy:
                 del positions[code]
                 ma_store.remove_position(code)
 
-        # ── 2. 매수 ─────────────────────────────────────────────────
+        # ── 3. 매수 ─────────────────────────────────────────────────
         available_slots = MAX_POSITIONS - len(positions)
         candidates      = self._find_candidates(stocks, positions)
 
@@ -191,7 +202,7 @@ class MACrossStrategy:
                 del json_positions[code]
         return json_positions
 
-    def _sell(self, code: str, pos: dict) -> None:
+    def _sell(self, code: str, pos: dict, reason: str = "ma21 < ma62 데드크로스") -> None:
         qty = pos.get("quantity", 0)
         try:
             b    = self.account.get_balance()
@@ -210,7 +221,7 @@ class MACrossStrategy:
             msg = (
                 f"[MA전략 매도] [{code}] {pos['name']}\n"
                 f"수량:{qty:,}주  매수가:{pos.get('entry_price',0):,}원\n"
-                f"사유: ma21 < ma62 데드크로스"
+                f"사유: {reason}"
             )
             logger.info(msg)
             self.notifier.notify(msg)

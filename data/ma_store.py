@@ -56,6 +56,17 @@ def remove_position(code: str) -> None:
     git_commit_push([str(MA_DATA_PATH)], f"chore: S2 포지션 제거 {code}")
 
 
+def set_stop_loss_pending(code: str, flag: bool = True) -> None:
+    """포지션에 손절 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
+    data = load()
+    pos = data.get("positions", {}).get(code)
+    if pos is None:
+        return
+    pos["stop_loss_pending"] = flag
+    save(data)
+    git_commit_push([str(MA_DATA_PATH)], f"chore: S2 손절플래그 {code}={'ON' if flag else 'OFF'}")
+
+
 def git_commit_push(files: list, message: str) -> None:
     """GitHub Actions 환경에서 변경된 파일을 커밋하고 푸시"""
     if not os.environ.get("GITHUB_ACTIONS"):

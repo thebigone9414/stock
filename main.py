@@ -36,10 +36,10 @@ def run_ma_morning(kis: KIS, notifier: Notifier) -> None:
     strategy.run()
 
 
-def run_ma_batch(kis: KIS) -> None:
-    """MA 이평선 배치 업데이트 실행"""
+def run_ma_batch(kis: KIS, notifier: Notifier) -> None:
+    """MA 이평선 배치 업데이트 + 손절 체크 + 잔고 현황 알림"""
     from batch.update_ma import run_batch
-    run_batch(kis.market)
+    run_batch(kis.market, account=kis.account, notifier=notifier)
 
 
 def run_morning_strategy(kis: KIS, notifier: Notifier) -> None:
@@ -190,7 +190,7 @@ def main():
         run_ma_morning(kis, notifier)
 
     elif args.mode == "ma-batch":
-        run_ma_batch(kis)
+        run_ma_batch(kis, notifier)
 
     elif args.mode == "balance":
         run_balance(kis)

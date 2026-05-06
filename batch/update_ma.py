@@ -2,7 +2,8 @@
 """
 MA 이평선 배치 업데이트
 장 마감 후(16:30 KST) GitHub Actions에서 실행.
-84종목 일봉 800일치 수집 → MA 계산 → data/ma_data.json 업데이트 → git push
+전 종목 일봉 800일치 수집 → MA 계산 → data/ma_data.json 업데이트 → git push
+손절 체크(S2 포지션 -3%) + 잔고 현황 텔레그램 알림 포함.
 
 Usage:
     python batch/update_ma.py
@@ -21,15 +22,17 @@ from loguru import logger
 
 from config.settings import get_settings
 from utils.logger import setup_logger
+from utils.notifier import Notifier
 from utils.throttler import RateThrottler
 from kis.factory import KIS
 from data.watchlist import WATCHLIST
 import data.ma_store as ma_store
 
-KST          = pytz.timezone("Asia/Seoul")
-MA_PERIODS   = [5, 21, 62, 248, 744]
-OHLCV_DAYS   = 820   # 800일 + 여유 20일
-UPTREND_COLS = [62, 248, 744]
+KST            = pytz.timezone("Asia/Seoul")
+MA_PERIODS     = [5, 21, 62, 248, 744]
+OHLCV_DAYS     = 820   # 800일 + 여유 20일
+UPTREND_COLS   = [62, 248, 744]
+S2_STOP_LOSS   = 0.03  # 전략2 손절 기준: 매수가 대비 -3%
 
 
 def _is_uptrend(ma_series: pd.Series, window: int = 20) -> bool:
@@ -94,7 +97,7 @@ def compute_stock_entry(code: str, name: str, sector: str, df: pd.DataFrame) -> 
     }
 
 
-def run_batch(market) -> None:
+def run_batch(market, account=None, notifier: Notifier = None) -> None:
     today = datetime.now(KST).strftime("%Y-%m-%d")
     logger.info(f"══════════════════════════════════════════")
     logger.info(f" MA 배치 업데이트 시작 [{today}]")
@@ -180,10 +183,111 @@ def run_batch(market) -> None:
             logger.info(s)
     logger.info(f"══════════════════════════════════════════")
 
+    # 전략2 포지션 손절 체크 (-3%) + 잔고 현황 텔레그램 알림
+    _check_s2_stop_loss(stocks_out, notifier)
+    _notify_portfolio_summary(stocks_out, account, notifier)
+
+
+def _check_s2_stop_loss(stocks_out: dict, notifier: Notifier = None) -> None:
+    """마감가 기준 전략2 포지션 -3% 손절 체크 → 플래그 설정 + 텔레그램 알림"""
+    positions = ma_store.get_positions()
+    if not positions:
+        return
+
+    newly_flagged = []
+    for code, pos in positions.items():
+        entry_price = pos.get("entry_price", 0)
+        name        = pos.get("name", code)
+        if not entry_price:
+            continue
+
+        stock       = stocks_out.get(code)
+        close_price = stock.get("close", 0) if stock else 0
+        if not close_price:
+            logger.warning(f"[S2 손절체크] [{code}] {name} — MA배치 데이터 없음, 건너뜀")
+            continue
+
+        pnl_rate = (close_price - entry_price) / entry_price
+
+        if pnl_rate <= -S2_STOP_LOSS:
+            if not pos.get("stop_loss_pending"):   # 신규 플래그만 알림
+                ma_store.set_stop_loss_pending(code, True)
+                newly_flagged.append((code, name, entry_price, close_price, pnl_rate))
+                logger.warning(
+                    f"[S2 손절플래그] [{code}] {name}  "
+                    f"매수가:{entry_price:,} → 마감가:{close_price:,}  "
+                    f"{pnl_rate*100:+.2f}% → 내일 09:00 시초가 매도"
+                )
+            else:
+                logger.info(
+                    f"[S2 손절대기중] [{code}] {name}  "
+                    f"마감가:{close_price:,}  {pnl_rate*100:+.2f}% (이미 플래그)"
+                )
+        else:
+            logger.info(
+                f"[S2 보유중] [{code}] {name}  "
+                f"매수가:{entry_price:,} → 마감가:{close_price:,}  {pnl_rate*100:+.2f}%"
+            )
+
+    if newly_flagged and notifier:
+        lines = [f"[MA전략] 손절 대상 {len(newly_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
+        for code, name, ep, cp, rate in newly_flagged:
+            lines.append(
+                f"  [{code}] {name}  매수:{ep:,} → 마감:{cp:,}  {rate*100:+.2f}%"
+            )
+        notifier.notify("\n".join(lines))
+
+
+def _notify_portfolio_summary(stocks_out: dict, account, notifier: Notifier = None) -> None:
+    """잔고 총액 + 전략2 보유 종목 손익 현황 텔레그램 알림"""
+    if not notifier:
+        return
+    if not account:
+        logger.info("[잔고현황] account 없음 — 알림 생략")
+        return
+
+    try:
+        balance = account.get_balance()
+    except Exception as e:
+        logger.error(f"[잔고현황] 잔고 조회 실패: {e}")
+        notifier.notify(f"[MA배치] 잔고 조회 실패: {e}")
+        return
+
+    now_str   = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
+    positions = ma_store.get_positions()
+
+    lines = [
+        f"[일일 잔고 현황] {now_str}",
+        f"총자산: {balance.total_eval:,}원  현금: {balance.cash:,}원",
+        f"평가손익: {balance.total_profit_loss:+,}원  ({balance.total_profit_loss_rate:+.2f}%)",
+    ]
+
+    if positions:
+        lines.append(f"\nMA전략 보유 ({len(positions)}종목)")
+        for code, pos in positions.items():
+            ep      = pos.get("entry_price", 0)
+            qty     = pos.get("quantity", 0)
+            name    = pos.get("name", code)
+            stock   = stocks_out.get(code, {})
+            cp      = stock.get("close", ep) or ep
+            if ep > 0:
+                rate    = (cp - ep) / ep * 100
+                amt     = (cp - ep) * qty
+                sl_flag = "  ※내일매도" if pos.get("stop_loss_pending") else ""
+                lines.append(
+                    f"  [{code}] {name}  "
+                    f"매수:{ep:,} → 마감:{cp:,}  {rate:+.2f}% ({amt:+,}원){sl_flag}"
+                )
+    else:
+        lines.append("\nMA전략 보유 종목 없음")
+
+    notifier.notify("\n".join(lines))
+
 
 if __name__ == "__main__":
     settings = get_settings()
     setup_logger(settings.log_level)
     logger.info(f"=== MA 배치 [{'모의' if settings.kis_is_paper_trading else '실전'}투자] ===")
-    kis = KIS(settings)
-    run_batch(kis.market)
+    kis      = KIS(settings)
+    notifier = Notifier.from_settings(settings)
+    run_batch(kis.market, account=kis.account, notifier=notifier)

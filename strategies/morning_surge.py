@@ -8,12 +8,12 @@ KIS FHKST01010100(현재가시세) output의 pgtr_ntby_qty 필드:
   → 종목 간 비교는 pgtr_est_amt(추정 금액) 기준으로 순위 결정
 
 [Phase 흐름]
-Phase 1  09:00~09:09  84종목 프로그램 매매 데이터 수집 (초당 9건 이하 throttle)
+Phase 1  09:00~09:09  종목 프로그램 매매 데이터 수집 (초당 9건 이하 throttle)
 Phase 2  09:09~09:10  최강 섹터 → 섹터 내 최강 종목 선정
 Phase 3  09:10        전량 시장가 매수
 Phase 4  09:10~09:55  포지션 모니터링
-  · 익절: 매수가 대비 +5% 즉시 매도
-  · 손절: 장중 고점 대비 -2.36%(피보나치) 즉시 매도
+  · 익절: 매수가 대비 +7% 즉시 매도
+  · 손절: 장중 고점 대비 -3% 즉시 매도
   · 타임컷: 09:55 무조건 전량 매도
 """
 
@@ -37,8 +37,8 @@ from utils.throttler import RateThrottler
 KST = pytz.timezone("Asia/Seoul")
 
 # ── 전략 상수 ──────────────────────────────────────────────────────────
-STOP_LOSS_RATIO   = 0.0236   # 고점 대비 손절 (피보나치 2.36%)
-TAKE_PROFIT_RATIO = 0.05     # 매수가 대비 익절 5%
+STOP_LOSS_RATIO   = 0.03     # 고점 대비 손절 3%
+TAKE_PROFIT_RATIO = 0.07     # 매수가 대비 익절 7%
 FOREIGN_WEIGHT    = 1.0      # 프로그램매매 단일 지표이므로 가중치 1.0
 MONITOR_INTERVAL  = 20       # 포지션 모니터링 주기(초)
 COLLECT_INTERVAL  = 60       # 수급 수집 반복 주기(초)
@@ -371,8 +371,8 @@ class MorningSurgeStrategy:
             f"[Phase 3] 모니터링 시작\n"
             f"  종목: [{self._code}] {self._name}\n"
             f"  매수가:  {self._entry_price:,}원\n"
-            f"  익절가:  {tp_price:,.0f}원 (+{TAKE_PROFIT_RATIO*100:.1f}%)\n"
-            f"  손절가:  {stop_price:,.0f}원 (고점대비 -{STOP_LOSS_RATIO*100}%)\n"
+            f"  익절가:  {tp_price:,.0f}원 (+{TAKE_PROFIT_RATIO*100:.0f}%)\n"
+            f"  손절가:  {stop_price:,.0f}원 (고점대비 -{STOP_LOSS_RATIO*100:.0f}%)\n"
             f"  타임컷:  09:55"
         )
 
