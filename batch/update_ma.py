@@ -102,17 +102,22 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
 
     today = datetime.now(KST).strftime("%Y-%m-%d")
 
-    # 중복 실행 방지: 장 마감 후(16:00~) 이미 오늘 배치가 완료됐으면 건너뜀
+    # 중복 실행 방지: 오늘 16:00 이후에 이미 실행됐으면 건너뜀 (18:05 재시도 대비)
     # 장중 수동 실행(11시 등)은 차단하지 않음 → 16:30 정규 배치가 정확한 마감가로 재실행
-    existing   = ma_store.load()
-    now_kst    = datetime.now(KST)
-    last_run   = existing.get("updated_at_kst", "")          # "2026-05-07 16:35" 형식
-    if last_run.startswith(today) and now_kst.hour >= 16:
-        msg = f"[MA배치] {today} 장 마감 후 이미 완료됨 — 중복 실행 건너뜀"
-        logger.info(msg)
-        if notifier:
-            notifier.notify(msg)
-        return
+    existing = ma_store.load()
+    last_run = existing.get("updated_at_kst", "")   # "2026-05-07 16:35" 형식
+    if last_run.startswith(today):
+        try:
+            last_run_hour = int(last_run.split(" ")[1].split(":")[0])
+        except (IndexError, ValueError):
+            last_run_hour = 0
+        if last_run_hour >= 16:   # 마지막 실행이 16시 이후 = 장 마감 후 정규 배치 완료
+            msg = f"[MA배치] {today} 장 마감 후 이미 완료됨 — 중복 실행 건너뜀"
+            logger.info(msg)
+            if notifier:
+                notifier.notify(msg)
+            return
+        logger.info(f"[MA배치] {today} 장중 실행이었음({last_run}) → 재실행")
 
     # 휴장일 체크: 증시 휴장일엔 이평선 갱신 불필요
     if is_market_holiday():
