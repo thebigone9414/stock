@@ -177,35 +177,48 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
         f"data: MA 이평선 업데이트 {today} ({ok}/{len(WATCHLIST)}종목)",
     )
 
-    # 매수 후보 요약 출력
-    buy_signals = [
-        f"  [{c}] {s['name']} 62↑:{s['ma62_uptrend']} 248↑:{s['ma248_uptrend']} 744↑:{s['ma744_uptrend']}"
-        f" 양봉:{s['prev_bullish_candle']} 몸통:{s['candle_body_ratio']:.2%}"
-        for c, s in stocks_out.items()
-        if s["fully_aligned"] and not s["prev_fully_aligned"]
-        and s["ma62_uptrend"] and s["ma248_uptrend"] and s["ma744_uptrend"]
-    ]
+    # 매수 후보 요약 출력 (실제 매수 조건과 동일: prev_bullish_candle 포함)
+    positions_now = ma_store.get_positions()
+    buy_signals = sorted(
+        [
+            (c, s) for c, s in stocks_out.items()
+            if c not in positions_now
+            and s["fully_aligned"] and not s["prev_fully_aligned"]
+            and s["ma62_uptrend"] and s["ma248_uptrend"] and s["ma744_uptrend"]
+            and s["prev_bullish_candle"]
+        ],
+        key=lambda x: x[1].get("candle_body_ratio", 0),
+        reverse=True,
+    )
     sell_signals = [
-        f"  [{c}] {s['name']}"
+        (c, s["name"])
         for c, s in stocks_out.items()
-        if s["ma21_below_ma62"]
+        if c in positions_now and s["ma21_below_ma62"]
     ]
 
     logger.info(f"══════════════════════════════════════════")
     logger.info(f" MA 배치 완료: 성공:{ok} / 실패:{fail} / 부족:{skip}")
     if buy_signals:
-        logger.info(f" 내일 매수 후보 ({len(buy_signals)}종목):")
-        for s in buy_signals:
-            logger.info(s)
+        logger.info(f" 내일 매수 후보 ({len(buy_signals)}종목, 상위 표시):")
+        for c, s in buy_signals[:5]:
+            logger.info(
+                f"  [{c}] {s['name']}  몸통:{s['candle_body_ratio']:.2%}  "
+                f"62↑:{s['ma62_uptrend']} 248↑:{s['ma248_uptrend']} 744↑:{s['ma744_uptrend']}"
+            )
+    else:
+        logger.info(" 내일 매수 후보 없음")
     if sell_signals:
         logger.info(f" 내일 매도 대상 ({len(sell_signals)}종목):")
-        for s in sell_signals:
-            logger.info(s)
+        for c, name in sell_signals:
+            logger.info(f"  [{c}] {name}")
+    else:
+        logger.info(" 내일 매도 예정 없음")
     logger.info(f"══════════════════════════════════════════")
 
-    # 전략2 포지션 손절 체크 (-3%) + 잔고 현황 텔레그램 알림
+    # 전략2 포지션 손절 체크 (-3%) → 신규 손절만 긴급 알림
     _check_s2_stop_loss(stocks_out, notifier)
-    _notify_portfolio_summary(stocks_out, account, notifier)
+    # 잔고 현황 + 내일 선정 결과 → 통합 텔레그램 알림
+    _notify_daily_summary(stocks_out, buy_signals, sell_signals, account, notifier)
 
 
 def _check_s2_stop_loss(stocks_out: dict, notifier: Notifier = None) -> None:
@@ -258,32 +271,39 @@ def _check_s2_stop_loss(stocks_out: dict, notifier: Notifier = None) -> None:
         notifier.notify("\n".join(lines))
 
 
-def _notify_portfolio_summary(stocks_out: dict, account, notifier: Notifier = None) -> None:
-    """잔고 총액 + 전략2 보유 종목 손익 현황 텔레그램 알림"""
+def _notify_daily_summary(
+    stocks_out: dict,
+    buy_signals: list,
+    sell_signals: list,
+    account,
+    notifier: Notifier = None,
+) -> None:
+    """잔고 현황 + 내일 매수/매도 선정 결과 통합 텔레그램 알림"""
     if not notifier:
-        return
-    if not account:
-        logger.info("[잔고현황] account 없음 — 알림 생략")
-        return
-
-    try:
-        balance = account.get_balance()
-    except Exception as e:
-        logger.error(f"[잔고현황] 잔고 조회 실패: {e}")
-        notifier.notify(f"[MA배치] 잔고 조회 실패: {e}")
         return
 
     now_str   = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     positions = ma_store.get_positions()
 
-    lines = [
-        f"[일일 잔고 현황] {now_str}",
-        f"총자산: {balance.total_eval:,}원  현금: {balance.cash:,}원",
-        f"평가손익: {balance.total_profit_loss:+,}원  ({balance.total_profit_loss_rate:+.2f}%)",
-    ]
+    lines = [f"[MA전략 일일 현황] {now_str}"]
 
+    # ── 잔고 현황 ────────────────────────────────────────
+    if account:
+        try:
+            balance = account.get_balance()
+            lines += [
+                f"총자산: {balance.total_eval:,}원  현금: {balance.cash:,}원",
+                f"평가손익: {balance.total_profit_loss:+,}원  ({balance.total_profit_loss_rate:+.2f}%)",
+            ]
+        except Exception as e:
+            logger.error(f"[잔고현황] 잔고 조회 실패: {e}")
+            lines.append(f"잔고 조회 실패: {e}")
+    else:
+        logger.info("[잔고현황] account 없음 — 잔고 생략")
+
+    # ── 보유 종목 손익 ────────────────────────────────────
     if positions:
-        lines.append(f"\nMA전략 보유 ({len(positions)}종목)")
+        lines.append(f"\n보유 종목 ({len(positions)}종목):")
         for code, pos in positions.items():
             ep      = pos.get("entry_price", 0)
             qty     = pos.get("quantity", 0)
@@ -296,10 +316,32 @@ def _notify_portfolio_summary(stocks_out: dict, account, notifier: Notifier = No
                 sl_flag = "  ※내일매도" if pos.get("stop_loss_pending") else ""
                 lines.append(
                     f"  [{code}] {name}  "
-                    f"매수:{ep:,} → 마감:{cp:,}  {rate:+.2f}% ({amt:+,}원){sl_flag}"
+                    f"매수:{ep:,}→마감:{cp:,}  {rate:+.2f}% ({amt:+,}원){sl_flag}"
                 )
     else:
-        lines.append("\nMA전략 보유 종목 없음")
+        lines.append("\n보유 종목 없음")
+
+    # ── 내일 매수 선정 ────────────────────────────────────
+    if buy_signals:
+        top_code, top_s = buy_signals[0]
+        note = f"  (후보 {len(buy_signals)}종목 중 1위)" if len(buy_signals) > 1 else ""
+        lines.append(f"\n내일 매수 예정 (1종목):")
+        lines.append(
+            f"  [{top_code}] {top_s['name']}  "
+            f"양봉몸통:{top_s.get('candle_body_ratio', 0):.2%}"
+        )
+        if note:
+            lines.append(note)
+    else:
+        lines.append("\n내일 매수 후보 없음")
+
+    # ── 내일 매도 선정 ────────────────────────────────────
+    if sell_signals:
+        lines.append(f"\n내일 매도 예정 ({len(sell_signals)}종목):")
+        for code, name in sell_signals:
+            lines.append(f"  [{code}] {name}  ma21<ma62 데드크로스")
+    else:
+        lines.append("내일 매도 예정 없음")
 
     notifier.notify("\n".join(lines))
 
