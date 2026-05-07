@@ -34,6 +34,8 @@ concurrency:
   group: okdongja-trading
   cancel-in-progress: false   # 실행 중인 매매 절대 중단 금지
 
+# 배치 작업(ma-batch, update-watchlist)은 별도 concurrency 그룹 사용 (Job D·E에 override)
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Job A: 전략2 — MA 이평선 중장기 (전략1과 병렬 실행)
 # 07:50 시작 → 09:00까지 내부 대기 → 시장가 매수/매도
@@ -177,7 +179,7 @@ jobs:
           KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
         run: python main.py --mode balance
 
-      - name: 84종목 API 연결 테스트
+      - name: 종목 API 연결 테스트
         if: github.event.inputs.mode == 'check-watchlist'
         env:
           KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
@@ -216,12 +218,20 @@ jobs:
           if-no-files-found: ignore
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job D: MA 이평선 배치 업데이트 (16:30 KST 또는 수동 ma-batch)
+# Job D: MA 이평선 배치 업데이트 (16:35 KST 수동/cron-job.org 트리거 권장)
+# GitHub Actions schedule은 수십분~수시간 지연 가능 → cron-job.org 외부 트리거 사용:
+#   URL  : https://api.github.com/repos/thebigone9414/stock/actions/workflows/trading.yml/dispatches
+#   Body : {"ref":"claude/stock-trading-system-z6xQh","inputs":{"mode":"ma-batch"}}
+#   Time : 16:35 KST (07:35 UTC)  Mon-Fri
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   update-ma:
     name: MA 이평선 배치
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45        # 149종목 × ~9청크 × throttle 여유
+
+    concurrency:
+      group: okdongja-batch    # 아침 매매와 concurrency 충돌 방지
+      cancel-in-progress: false
 
     permissions:
       contents: write           # git push 권한 필요
@@ -274,6 +284,10 @@ jobs:
     name: KOSPI200 종목 갱신
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    concurrency:
+      group: okdongja-batch    # 아침 매매와 concurrency 충돌 방지
+      cancel-in-progress: false
 
     permissions:
       contents: write           # kospi200_cache.json git push 필요
