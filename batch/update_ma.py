@@ -132,8 +132,18 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     logger.info(f" 대상: {len(WATCHLIST)}종목 / 조회기간: 최근 {OHLCV_DAYS}영업일")
     logger.info(f"══════════════════════════════════════════")
 
+    # base_capital 초기화: 최초 1회 총평가금액 기록 (슬롯 확장 기준)
+    if account and not existing.get("base_capital"):
+        try:
+            _bal = account.get_balance()
+            existing["base_capital"] = _bal.total_eval
+            ma_store.save(existing)   # 즉시 저장 — 아래 재로드 전에 반영
+            logger.info(f"[MA배치] 기준 자산 초기화: {_bal.total_eval:,}원")
+        except Exception as _e:
+            logger.warning(f"[MA배치] 기준 자산 조회 실패: {_e}")
+
     throttler  = RateThrottler(max_per_second=9)
-    existing   = ma_store.load()
+    existing   = ma_store.load()   # base_capital 포함된 최신 데이터 재로드
     stocks_out = {}
     ok, fail, skip = 0, 0, 0
 
@@ -294,12 +304,15 @@ def _notify_daily_summary(
     now_str   = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     positions = ma_store.get_positions()
 
-    lines = [f"[MA전략 일일 현황] {now_str}"]
+    lines = [f"[일일 잔고 현황] {now_str}"]
 
-    # ── 잔고 현황 ────────────────────────────────────────
+    # ── 잔고 현황 (KIS 실잔고 기준) ──────────────────────
+    balance = None
+    kis_pos_map: dict = {}   # code → Position (실제 KIS 종목명/수량/현재가)
     if account:
         try:
             balance = account.get_balance()
+            kis_pos_map = {p.code: p for p in balance.positions}
             lines += [
                 f"총자산: {balance.total_eval:,}원  현금: {balance.cash:,}원",
                 f"평가손익: {balance.total_profit_loss:+,}원  ({balance.total_profit_loss_rate:+.2f}%)",
@@ -310,25 +323,53 @@ def _notify_daily_summary(
     else:
         logger.info("[잔고현황] account 없음 — 잔고 생략")
 
-    # ── 보유 종목 손익 ────────────────────────────────────
+    # ── 보유 종목 손익 (KIS 실잔고 이름·가격 우선) ──────────
     if positions:
-        lines.append(f"\n보유 종목 ({len(positions)}종목):")
+        lines.append(f"\nMA전략 보유 ({len(positions)}종목):")
         for code, pos in positions.items():
-            ep      = pos.get("entry_price", 0)
-            qty     = pos.get("quantity", 0)
-            name    = pos.get("name", code)
-            stock   = stocks_out.get(code, {})
-            cp      = stock.get("close", ep) or ep
+            ep       = pos.get("entry_price", 0)
+            sl_flag  = "  ※내일매도" if pos.get("stop_loss_pending") else ""
+            kis_p    = kis_pos_map.get(code)
+            if kis_p:
+                # KIS 실잔고에서 실제 종목명·현재가·수량 사용 (가장 정확)
+                name = kis_p.name
+                cp   = kis_p.current_price or ep
+                qty  = kis_p.quantity
+                # KIS 종목명과 저장된 이름 불일치면 JSON도 갱신
+                if pos.get("name") != name:
+                    logger.info(f"[잔고현황] [{code}] 종목명 수정: {pos.get('name')} → {name}")
+                    import data.ma_store as _ms
+                    _data = _ms.load()
+                    if code in _data.get("positions", {}):
+                        _data["positions"][code]["name"] = name
+                        _ms.save(_data)
+            else:
+                # KIS 잔고에 없는 경우 (이미 매도 or 거래정지) — MA 테이블 또는 저장값 사용
+                name  = stocks_out.get(code, {}).get("name") or pos.get("name", code)
+                stock = stocks_out.get(code, {})
+                cp    = stock.get("close", ep) or ep
+                qty   = pos.get("quantity", 0)
             if ep > 0:
-                rate    = (cp - ep) / ep * 100
-                amt     = (cp - ep) * qty
-                sl_flag = "  ※내일매도" if pos.get("stop_loss_pending") else ""
+                rate = (cp - ep) / ep * 100
+                amt  = (cp - ep) * qty
                 lines.append(
                     f"  [{code}] {name}  "
-                    f"매수:{ep:,}→마감:{cp:,}  {rate:+.2f}% ({amt:+,}원){sl_flag}"
+                    f"매수:{ep:,} → 마감:{cp:,}  {rate:+.2f}% ({amt:+,}원){sl_flag}"
                 )
     else:
         lines.append("\n보유 종목 없음")
+
+    # ── 슬롯 현황 ────────────────────────────────────────
+    if balance:
+        base_cap  = ma_store.get_base_capital()
+        extra     = ma_store.extra_slots(base_cap, balance.total_eval) if base_cap else 0
+        s2_max    = 4 + extra
+        s1_slots  = 1 + extra
+        slot_line = f"\n슬롯: S1={s1_slots}개  S2={len(positions)}/{s2_max}개"
+        if base_cap:
+            profit_r = (balance.total_eval - base_cap) / base_cap * 100
+            slot_line += f"  (수익률 {profit_r:+.1f}% / 기준 {base_cap:,}원)"
+        lines.append(slot_line)
 
     # ── 내일 매수 선정 ────────────────────────────────────
     if buy_signals:

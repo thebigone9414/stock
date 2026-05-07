@@ -14,7 +14,7 @@ Phase 3  09:10        전량 시장가 매수
 Phase 4  09:10~09:55  포지션 모니터링
   · 익절: 매수가 대비 +7% 즉시 매도
   · 손절: 장중 고점 대비 -3% 즉시 매도
-  · 타임컷: 09:55 무조건 전량 매도
+  · 타임컷: 11:00 무조건 전량 매도
 """
 
 import time
@@ -28,6 +28,7 @@ from loguru import logger
 
 from data.watchlist import WATCHLIST, CODE_MAP
 from data.holidays import is_market_holiday
+import data.ma_store as ma_store
 from kis.market import KISMarket
 from kis.order import KISOrder, OrderType
 from kis.account import KISAccount
@@ -239,12 +240,15 @@ class MorningSurgeStrategy:
             logger.error(f"현재가 0 — 매수 취소 [{target.code}]")
             return
 
-        # 주문 가능 금액 — 총자산의 20% 한도
+        # 주문 가능 금액 — 슬롯 확장 반영 (수익률 20%마다 슬롯 1개 추가)
         try:
-            balance     = self.account.get_balance()
-            # tot_evlu_amt(총평가금액)는 현금 포함 총자산이므로 total_eval만 사용
-            slot_budget = int(balance.total_eval * 0.20)
-            cash        = balance.cash
+            balance  = self.account.get_balance()
+            cash     = balance.cash
+            base_cap = ma_store.get_base_capital()
+            extra    = ma_store.extra_slots(base_cap, balance.total_eval) if base_cap else 0
+            s1_slots = 1 + extra
+            # 슬롯 수만큼 투자 비중 확대 (1슬롯=20%, 2슬롯=40%, ...)
+            slot_budget = int(balance.total_eval * 0.20 * s1_slots)
         except Exception as e:
             logger.error(f"잔고 조회 실패: {e}")
             return
@@ -258,12 +262,13 @@ class MorningSurgeStrategy:
         if quantity <= 0:
             return
 
+        slot_info = f"  (S1 슬롯 {s1_slots}개 × 20%)" if extra > 0 else ""
         msg = (
             f"[옥동자 매수]\n"
             f"섹터: {best_sector}\n"
             f"종목: [{target.code}] {target.name}\n"
             f"현재가: {current_price:,}원 × {quantity:,}주\n"
-            f"투자금: {current_price * quantity:,}원\n"
+            f"투자금: {current_price * quantity:,}원{slot_info}\n"
             f"프로그램순매수: {target.pgtr_qty:,}주 (추정금액 {target.pgtr_net:,}원)"
         )
         logger.info(msg)
@@ -363,7 +368,7 @@ class MorningSurgeStrategy:
     #  PHASE 3: 포지션 모니터링
     # ═══════════════════════════════════════════════════════════════════
     def _monitor_phase(self) -> None:
-        time_cut   = _kst_time(9, 55)
+        time_cut   = _kst_time(11, 0)
         stop_price = self._entry_price * (1 - STOP_LOSS_RATIO)
         tp_price   = self._entry_price * (1 + TAKE_PROFIT_RATIO)
 
@@ -373,7 +378,7 @@ class MorningSurgeStrategy:
             f"  매수가:  {self._entry_price:,}원\n"
             f"  익절가:  {tp_price:,.0f}원 (+{TAKE_PROFIT_RATIO*100:.0f}%)\n"
             f"  손절가:  {stop_price:,.0f}원 (고점대비 -{STOP_LOSS_RATIO*100:.0f}%)\n"
-            f"  타임컷:  09:55"
+            f"  타임컷:  11:00"
         )
 
         while True:
@@ -381,8 +386,8 @@ class MorningSurgeStrategy:
 
             # ── 타임컷 ───────────────────────────────────────
             if now >= time_cut:
-                logger.info("[타임컷] 09:55 — 전량 시장가 매도")
-                self._sell_all("타임컷 09:55")
+                logger.info("[타임컷] 11:00 — 전량 시장가 매도")
+                self._sell_all("타임컷 11:00")
                 return
 
             # ── 현재가 조회 (throttle 적용) ───────────────────

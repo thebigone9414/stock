@@ -175,7 +175,7 @@ _BUILTIN: List[Dict[str, str]] = [
     {"code": "000720", "name": "현대건설",      "sector": "건설/건자재"},
     {"code": "006360", "name": "GS건설",        "sector": "건설/건자재"},
     {"code": "047040", "name": "대우건설",      "sector": "건설/건자재"},
-    {"code": "010960", "name": "삼호개발",      "sector": "건설/건자재"},
+    {"code": "010960", "name": "금양",           "sector": "건설/건자재"},
     {"code": "002380", "name": "KCC",           "sector": "건설/건자재"},
     {"code": "012630", "name": "HDC현대산업개발", "sector": "건설/건자재"},
     {"code": "006125", "name": "DL이앤씨",      "sector": "건설/건자재"},

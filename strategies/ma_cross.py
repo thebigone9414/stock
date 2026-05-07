@@ -89,20 +89,28 @@ class MACrossStrategy:
 
         # 잔고 조회
         try:
-            balance     = self.account.get_balance()
-            # tot_evlu_amt(총평가금액)는 현금 포함 총자산이므로 total_eval만 사용
-            slot_budget = int(balance.total_eval * SLOT_RATIO)
+            balance = self.account.get_balance()
         except Exception as e:
             logger.error(f"[MA전략] 잔고 조회 실패: {e}")
             return
+
+        # 슬롯 확장: 수익률이 20% 증가할 때마다 S2 슬롯 1개 추가
+        base_cap      = ma_store.get_base_capital()
+        extra         = ma_store.extra_slots(base_cap, balance.total_eval) if base_cap else 0
+        max_positions = MAX_POSITIONS + extra
+        slot_budget   = int(balance.total_eval * SLOT_RATIO)
 
         # 포지션 로드 + KIS 실잔고 대조
         positions = ma_store.get_positions()
         positions = self._reconcile(positions, balance)
 
+        profit_info = ""
+        if base_cap and extra > 0:
+            profit_r    = (balance.total_eval - base_cap) / base_cap * 100
+            profit_info = f"  수익률:{profit_r:+.1f}% → 슬롯 +{extra}개 확장"
         logger.info(
             f"[MA전략] 총자산:{balance.total_eval:,}원  슬롯예산(20%):{slot_budget:,}원  "
-            f"보유:{len(positions)}/{MAX_POSITIONS}"
+            f"보유:{len(positions)}/{max_positions}{profit_info}"
         )
 
         # ── 09:00 장 개장까지 대기 (장 시작 전 주문 불가) ────────────
@@ -137,13 +145,13 @@ class MACrossStrategy:
                 ma_store.remove_position(code)
 
         # ── 3. 매수 ─────────────────────────────────────────────────
-        available_slots = MAX_POSITIONS - len(positions)
+        available_slots = max_positions - len(positions)
         candidates      = self._find_candidates(stocks, positions)
 
         if not candidates:
             logger.info("[MA전략] 매수 신호 없음")
         elif available_slots == 0:
-            self._notify_full(candidates)
+            self._notify_full(candidates, max_positions)
         else:
             avail_cash = balance.cash
             for cand in candidates[:1]:   # 하루 최대 1종목 신규 매수
@@ -193,13 +201,29 @@ class MACrossStrategy:
 
     # ═══════════════════════════════════════════════════════════════════
     def _reconcile(self, json_positions: dict, balance) -> dict:
-        """JSON 포지션과 KIS 실잔고 대조 — KIS에 없는 포지션은 제거"""
-        kis_codes = {p.code for p in balance.positions}
+        """JSON 포지션과 KIS 실잔고 대조 — KIS에 없는 포지션 제거, 종목명 동기화"""
+        kis_map = {p.code: p for p in balance.positions}
+        name_changed = False
         for code in list(json_positions):
-            if code not in kis_codes:
+            if code not in kis_map:
                 logger.warning(f"[MA전략] [{code}] KIS 잔고에 없음 → JSON 포지션 제거")
                 ma_store.remove_position(code)
                 del json_positions[code]
+            else:
+                real_name = kis_map[code].name
+                if json_positions[code].get("name") != real_name:
+                    logger.info(
+                        f"[MA전략] [{code}] 종목명 수정: "
+                        f"{json_positions[code].get('name')} → {real_name}"
+                    )
+                    json_positions[code]["name"] = real_name
+                    name_changed = True
+        if name_changed:
+            raw = ma_store.load()
+            for code, pos in json_positions.items():
+                if code in raw.get("positions", {}):
+                    raw["positions"][code]["name"] = pos["name"]
+            ma_store.save(raw)
         return json_positions
 
     def _sell(self, code: str, pos: dict, reason: str = "ma21 < ma62 데드크로스") -> None:
@@ -258,14 +282,14 @@ class MACrossStrategy:
             return False
         return True
 
-    def _notify_full(self, candidates: list) -> None:
+    def _notify_full(self, candidates: list, max_pos: int = MAX_POSITIONS) -> None:
         msg = (
-            f"[MA전략] 슬롯 만석(4/4) — 신규 신호 {len(candidates)}종목\n"
+            f"[MA전략] 슬롯 만석({max_pos}/{max_pos}) — 신규 신호 {len(candidates)}종목\n"
             + "\n".join(
                 f"  [{c['code']}] {c.get('name', c['code'])}"
                 for c in candidates[:5]
             )
-            + "\n※ 잔고 추가 후 신규 매수 가능"
+            + "\n※ 수익률 20% 달성 시 슬롯 자동 확장"
         )
         logger.warning(msg)
         self.notifier.notify(msg)

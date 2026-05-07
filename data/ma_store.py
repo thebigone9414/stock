@@ -56,6 +56,31 @@ def remove_position(code: str) -> None:
     git_commit_push([str(MA_DATA_PATH)], f"chore: S2 포지션 제거 {code}")
 
 
+def get_base_capital() -> int:
+    """슬롯 확장 기준 자산 (최초 기록 시점의 총평가금액)"""
+    return load().get("base_capital", 0)
+
+
+def set_base_capital(amount: int) -> None:
+    """기준 자산 저장 (최초 1회 설정 후 변경 없음)"""
+    data = load()
+    data["base_capital"] = amount
+    save(data)
+
+
+def extra_slots(base_capital: int, total_eval: int, slot_ratio: float = 0.20) -> int:
+    """수익률 기반 추가 슬롯 수 계산
+    - 수익금이 기준 자산의 20%씩 증가할 때마다 슬롯 1개 추가
+    - 예) 기준 1000만 → 현재 1200만(+20%): +1슬롯
+    """
+    if base_capital <= 0:
+        return 0
+    profit = total_eval - base_capital
+    if profit <= 0:
+        return 0
+    return int(profit / (base_capital * slot_ratio))
+
+
 def set_stop_loss_pending(code: str, flag: bool = True) -> None:
     """포지션에 손절 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
     data = load()
