@@ -400,6 +400,11 @@ if __name__ == "__main__":
     settings = get_settings()
     setup_logger(settings.log_level)
     logger.info(f"=== MA 배치 [{'모의' if settings.kis_is_paper_trading else '실전'}투자] ===")
-    kis      = KIS(settings)
     notifier = Notifier.from_settings(settings)
-    run_batch(kis.market, account=kis.account, notifier=notifier)
+    try:
+        kis = KIS(settings)
+        run_batch(kis.market, account=kis.account, notifier=notifier)
+    except Exception as _e:
+        logger.exception(f"[MA배치] 예외 발생: {_e}")
+        notifier.notify(f"[MA배치] 배치 비정상 종료\n오류: {_e}")
+        sys.exit(1)

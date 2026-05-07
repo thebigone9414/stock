@@ -91,7 +91,9 @@ class MACrossStrategy:
         try:
             balance = self.account.get_balance()
         except Exception as e:
-            logger.error(f"[MA전략] 잔고 조회 실패: {e}")
+            msg = f"[MA전략] 잔고 조회 실패 — 전략 미실행\n오류: {e}"
+            logger.error(msg)
+            self.notifier.notify(msg)
             return
 
         # 슬롯 확장: 수익률이 20% 증가할 때마다 S2 슬롯 1개 추가
@@ -113,6 +115,19 @@ class MACrossStrategy:
             f"보유:{len(positions)}/{max_positions}{profit_info}"
         )
 
+        # 시작 알림 (MA 데이터 신선도 포함)
+        try:
+            updated_date = datetime.strptime(updated, "%Y-%m-%d").date()
+            days_old = (datetime.now(KST).date() - updated_date).days
+            stale_note = f"\n⚠ MA 데이터 {days_old}일 경과 — 손절/매도 신호 부정확할 수 있음" if days_old > 1 else ""
+        except Exception:
+            stale_note = ""
+        self.notifier.notify(
+            f"[MA전략] 시작 [{mode}] {today}\n"
+            f"MA 기준일: {updated} ({len(stocks)}종목){stale_note}\n"
+            f"총자산: {balance.total_eval:,}원  보유: {len(positions)}/{max_positions}슬롯"
+        )
+
         # ── 09:00 장 개장까지 대기 (장 시작 전 주문 불가) ────────────
         _now_dt  = datetime.now(KST)
         _open_dt = _now_dt.replace(hour=9, minute=0, second=0, microsecond=0)
@@ -121,6 +136,7 @@ class MACrossStrategy:
             logger.info(f"[MA전략] 09:00 장 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
             time.sleep(wait_sec)
 
+        _sold = 0
         # ── 1. 손절 대기 포지션 우선 매도 (전일 16:30 배치에서 -3% 플래그) ────
         for code in list(positions):
             if positions[code].get("stop_loss_pending"):
@@ -131,6 +147,7 @@ class MACrossStrategy:
                 self._sell(code, positions[code], reason="손절 -3% 이하 (전일 마감가)")
                 del positions[code]
                 ma_store.remove_position(code)
+                _sold += 1
 
         # ── 2. 데드크로스 매도 ──────────────────────────────────────────────
         for code in list(positions):
@@ -143,7 +160,9 @@ class MACrossStrategy:
                 self._sell(code, positions[code])
                 del positions[code]
                 ma_store.remove_position(code)
+                _sold += 1
 
+        _bought = 0
         # ── 3. 매수 ─────────────────────────────────────────────────
         available_slots = max_positions - len(positions)
         candidates      = self._find_candidates(stocks, positions)
@@ -183,6 +202,7 @@ class MACrossStrategy:
                 )
                 result = self.order.buy(code, qty, 0, OrderType.MARKET)
                 if result.success:
+                    _bought += 1
                     entry_date = datetime.now(KST).strftime("%Y-%m-%d")
                     ma_store.add_position(code, name, entry_date, price, qty)
                     avail_cash -= price * qty
@@ -198,6 +218,7 @@ class MACrossStrategy:
                     self.notifier.notify(f"[MA전략 매수 실패] [{code}] {name}: {result.message}")
 
         logger.info(f"[MA전략] 완료")
+        self.notifier.notify(f"[MA전략] 완료 — 매도:{_sold}건  매수:{_bought}건")
 
     # ═══════════════════════════════════════════════════════════════════
     def _reconcile(self, json_positions: dict, balance) -> dict:

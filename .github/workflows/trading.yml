@@ -46,7 +46,7 @@ jobs:
   trade-ma:
     name: MA 이평선 전략 (S2)
     runs-on: ubuntu-latest
-    timeout-minutes: 100     # 07:50 시작 → 09:00 대기 → 09:01 완료 + 여유
+    timeout-minutes: 130     # 07:30 시작 → 09:00 대기 → 09:10 주문 완료 + 여유
 
     permissions:
       contents: write        # 포지션 변경 시 ma_data.json git push 필요
@@ -96,12 +96,12 @@ jobs:
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Job B: 전략1 — 옥동자 오전 수급 (전략2와 병렬 실행)
-# 07:50 시작 → 08:00 NXT 수집 시작 → 09:10 매수 → 09:55 타임컷
+# 07:30 시작 → 08:00 NXT 수집 시작 → 09:10 매수 → 11:00 타임컷
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trade-morning:
     name: 옥동자 오전 전략 (S1)
     runs-on: ubuntu-latest
-    timeout-minutes: 150     # 07:50 시작 → 09:55 타임컷 (125분) + 여유
+    timeout-minutes: 230     # 07:30 시작 → 11:00 타임컷 (210분) + 여유
 
     if: |
       (github.event_name == 'schedule' && github.event.schedule == '30 22 * * 0-4') ||

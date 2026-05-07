@@ -236,7 +236,9 @@ class MorningSurgeStrategy:
             s1_slots    = 1 + extra
             slot_budget = int(balance.total_eval * 0.20 * s1_slots)
         except Exception as e:
-            logger.error(f"잔고 조회 실패: {e}")
+            msg = f"[옥동자] 잔고 조회 실패 — 매수 포기\n오류: {e}"
+            logger.error(msg)
+            self.notifier.notify(msg)
             return
 
         # 5% 이상 급등 종목 건너뛰고 다음 우선순위 종목 시도
