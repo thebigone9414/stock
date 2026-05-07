@@ -102,10 +102,13 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
 
     today = datetime.now(KST).strftime("%Y-%m-%d")
 
-    # 중복 실행 방지: 이미 오늘 배치가 완료됐으면 건너뜀 (18:00 재시도 대비)
-    existing = ma_store.load()
-    if existing.get("updated_at") == today:
-        msg = f"[MA배치] {today} 이미 완료됨 — 중복 실행 건너뜀"
+    # 중복 실행 방지: 장 마감 후(16:00~) 이미 오늘 배치가 완료됐으면 건너뜀
+    # 장중 수동 실행(11시 등)은 차단하지 않음 → 16:30 정규 배치가 정확한 마감가로 재실행
+    existing   = ma_store.load()
+    now_kst    = datetime.now(KST)
+    last_run   = existing.get("updated_at_kst", "")          # "2026-05-07 16:35" 형식
+    if last_run.startswith(today) and now_kst.hour >= 16:
+        msg = f"[MA배치] {today} 장 마감 후 이미 완료됨 — 중복 실행 건너뜀"
         logger.info(msg)
         if notifier:
             notifier.notify(msg)
@@ -168,8 +171,9 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
             fail += 1
 
     # 기존 포지션은 유지하고 MA 테이블만 교체
-    existing["updated_at"] = today
-    existing["stocks"]     = stocks_out
+    existing["updated_at"]     = today
+    existing["updated_at_kst"] = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
+    existing["stocks"]         = stocks_out
     ma_store.save(existing)
 
     ma_store.git_commit_push(
