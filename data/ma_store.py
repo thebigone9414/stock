@@ -117,12 +117,17 @@ def git_commit_push(files: list, message: str) -> None:
         return
 
     for attempt in range(4):
+        # push 전 원격 변경 사항 rebase — 동시 커밋으로 인한 non-fast-forward 방지
+        rc_pull, out_pull = run(["git", "pull", "--rebase", "--autostash"])
+        if rc_pull != 0:
+            logger.warning(f"git pull --rebase 실패 (무시 후 push 시도): {out_pull}")
+
         rc, out = run(["git", "push"])
         if rc == 0:
             logger.info(f"git push 완료: {message}")
             return
         wait = 2 ** attempt
-        logger.warning(f"git push 실패 (시도 {attempt+1}/4) {wait}초 후 재시도")
+        logger.warning(f"git push 실패 (시도 {attempt+1}/4) {wait}초 후 재시도: {out.strip()}")
         time.sleep(wait)
 
     logger.error("git push 최종 실패")
