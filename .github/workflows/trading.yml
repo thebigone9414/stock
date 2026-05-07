@@ -6,6 +6,8 @@ on:
     - cron: '30 22 * * 0-4'
     # [MA 배치] 월~금 16:30 KST = UTC 07:30 → 월~금(UTC)
     - cron: '30 7 * * 1-5'
+    # [MA 배치 재시도] 월~금 18:00 KST = UTC 09:00 (16:30 실패 시 자동 재시도, idempotency로 중복 실행 방지)
+    - cron: '0 9 * * 1-5'
     # [종목 업데이트] 매월 1일 10:00 KST = UTC 01:00 (KOSPI200 분기 리밸런싱 자동 반영)
     - cron: '0 1 1 * *'
 
@@ -218,11 +220,12 @@ jobs:
           if-no-files-found: ignore
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job D: MA 이평선 배치 업데이트 (16:35 KST 수동/cron-job.org 트리거 권장)
-# GitHub Actions schedule은 수십분~수시간 지연 가능 → cron-job.org 외부 트리거 사용:
+# Job D: MA 이평선 배치 업데이트
+# cron-job.org 외부 트리거 권장 (GitHub Actions schedule은 지연/누락 가능):
 #   URL  : https://api.github.com/repos/thebigone9414/stock/actions/workflows/trading.yml/dispatches
 #   Body : {"ref":"claude/stock-trading-system-z6xQh","inputs":{"mode":"ma-batch"}}
-#   Time : 16:35 KST (07:35 UTC)  Mon-Fri
+#   [1차] 16:35 KST (07:35 UTC)  Mon-Fri
+#   [2차] 18:05 KST (09:05 UTC)  Mon-Fri  ← 1차 실패 시 재시도 (중복 실행 자동 방지)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   update-ma:
     name: MA 이평선 배치
@@ -237,7 +240,10 @@ jobs:
       contents: write           # git push 권한 필요
 
     if: |
-      (github.event_name == 'schedule' && github.event.schedule == '30 7 * * 1-5') ||
+      (github.event_name == 'schedule' && (
+        github.event.schedule == '30 7 * * 1-5' ||
+        github.event.schedule == '0 9 * * 1-5'
+      )) ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'ma-batch')
 
     steps:

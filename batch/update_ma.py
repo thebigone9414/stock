@@ -98,7 +98,27 @@ def compute_stock_entry(code: str, name: str, sector: str, df: pd.DataFrame) -> 
 
 
 def run_batch(market, account=None, notifier: Notifier = None) -> None:
+    from data.holidays import is_market_holiday
+
     today = datetime.now(KST).strftime("%Y-%m-%d")
+
+    # 중복 실행 방지: 이미 오늘 배치가 완료됐으면 건너뜀 (18:00 재시도 대비)
+    existing = ma_store.load()
+    if existing.get("updated_at") == today:
+        msg = f"[MA배치] {today} 이미 완료됨 — 중복 실행 건너뜀"
+        logger.info(msg)
+        if notifier:
+            notifier.notify(msg)
+        return
+
+    # 휴장일 체크: 증시 휴장일엔 이평선 갱신 불필요
+    if is_market_holiday():
+        msg = f"[MA배치] {today} 증시 휴장일 — 배치 미실행"
+        logger.info(msg)
+        if notifier:
+            notifier.notify(msg)
+        return
+
     logger.info(f"══════════════════════════════════════════")
     logger.info(f" MA 배치 업데이트 시작 [{today}]")
     logger.info(f" 대상: {len(WATCHLIST)}종목 / 조회기간: 최근 {OHLCV_DAYS}영업일")

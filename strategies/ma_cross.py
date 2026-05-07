@@ -146,7 +146,7 @@ class MACrossStrategy:
             self._notify_full(candidates)
         else:
             avail_cash = balance.cash
-            for cand in candidates[:available_slots]:
+            for cand in candidates[:1]:   # 하루 최대 1종목 신규 매수
                 code  = cand["code"]
                 name  = cand["name"]
                 price = cand.get("close", 0)
