@@ -225,40 +225,60 @@ class MorningSurgeStrategy:
             logger.warning("[Phase 2] 유효한 프로그램 매매 신호 없음 — 매수 포기")
             return
 
-        best_sector, target = result
+        best_sector, candidates = result   # candidates: 섹터 내 순매수량 내림차순
 
-        # 현재가 재조회 (최신값)
+        # 주문 가능 금액 (슬롯 확장 반영)
         try:
-            with self._throttler:
-                pt = self.market.get_program_trade(target.code)
-            current_price = pt.get("price", 0) or target.price
-        except Exception as e:
-            logger.error(f"현재가 조회 실패 [{target.code}]: {e}")
-            return
-
-        if current_price <= 0:
-            logger.error(f"현재가 0 — 매수 취소 [{target.code}]")
-            return
-
-        # 주문 가능 금액 — 슬롯 확장 반영 (수익률 20%마다 슬롯 1개 추가)
-        try:
-            balance  = self.account.get_balance()
-            cash     = balance.cash
-            base_cap = ma_store.get_base_capital()
-            extra    = ma_store.extra_slots(base_cap, balance.total_eval) if base_cap else 0
-            s1_slots = 1 + extra
-            # 슬롯 수만큼 투자 비중 확대 (1슬롯=20%, 2슬롯=40%, ...)
+            balance     = self.account.get_balance()
+            cash        = balance.cash
+            base_cap    = ma_store.get_base_capital()
+            extra       = ma_store.extra_slots(base_cap, balance.total_eval) if base_cap else 0
+            s1_slots    = 1 + extra
             slot_budget = int(balance.total_eval * 0.20 * s1_slots)
         except Exception as e:
             logger.error(f"잔고 조회 실패: {e}")
             return
 
-        budget = min(slot_budget, cash)
-        if budget < current_price:
-            logger.warning(f"예산 부족: {budget:,}원 < {current_price:,}원")
+        # 5% 이상 급등 종목 건너뛰고 다음 우선순위 종목 시도
+        SURGE_SKIP = 5.0
+        target = None
+        for cand in candidates:
+            try:
+                with self._throttler:
+                    pt = self.market.get_program_trade(cand.code)
+                current_price  = pt.get("price", 0) or cand.price
+                current_change = pt.get("change_rate", cand.change_rate)
+            except Exception as e:
+                logger.warning(f"현재가 조회 실패 [{cand.code}]: {e}")
+                continue
+
+            if current_price <= 0:
+                continue
+
+            if current_change >= SURGE_SKIP:
+                logger.info(
+                    f"[매수 제외] [{cand.code}] {cand.name}  "
+                    f"등락률:{current_change:+.2f}% ≥ +{SURGE_SKIP:.0f}% — 다음 종목으로"
+                )
+                continue
+
+            target        = cand
+            target.price  = current_price
+            target.change_rate = current_change
+            break
+
+        if not target:
+            msg = f"[옥동자] 섹터 내 전 종목 +{SURGE_SKIP:.0f}% 이상 급등 — 오늘 매수 포기"
+            logger.warning(msg)
+            self.notifier.notify(msg)
             return
 
-        quantity = int(budget * CASH_USE_RATIO / current_price)
+        budget = min(slot_budget, cash)
+        if budget < target.price:
+            logger.warning(f"예산 부족: {budget:,}원 < {target.price:,}원")
+            return
+
+        quantity = int(budget * CASH_USE_RATIO / target.price)
         if quantity <= 0:
             return
 
@@ -266,9 +286,9 @@ class MorningSurgeStrategy:
         msg = (
             f"[옥동자 매수]\n"
             f"섹터: {best_sector}\n"
-            f"종목: [{target.code}] {target.name}\n"
-            f"현재가: {current_price:,}원 × {quantity:,}주\n"
-            f"투자금: {current_price * quantity:,}원{slot_info}\n"
+            f"종목: [{target.code}] {target.name}  등락률:{target.change_rate:+.2f}%\n"
+            f"현재가: {target.price:,}원 × {quantity:,}주\n"
+            f"투자금: {target.price * quantity:,}원{slot_info}\n"
             f"프로그램순매수: {target.pgtr_qty:,}주 (추정금액 {target.pgtr_net:,}원)"
         )
         logger.info(msg)
@@ -278,9 +298,9 @@ class MorningSurgeStrategy:
         if result_order.success:
             self._code          = target.code
             self._name          = target.name
-            self._entry_price   = current_price
+            self._entry_price   = target.price
             self._quantity      = quantity
-            self._intraday_high = current_price
+            self._intraday_high = target.price
             self.notifier.notify(msg)
             logger.info(f"매수 완료 — 주문번호: {result_order.order_no}")
         else:
@@ -289,8 +309,8 @@ class MorningSurgeStrategy:
                 f"[옥동자 매수 실패] {target.code} {result_order.message}"
             )
 
-    def _analyze(self) -> Optional[Tuple[str, ProgramSnapshot]]:
-        """수집 버퍼 → (최강 섹터, 최강 종목) 반환
+    def _analyze(self) -> Optional[Tuple[str, List[ProgramSnapshot]]]:
+        """수집 버퍼 → (최강 섹터, 섹터 내 종목 순위 리스트) 반환
         프로그램 순매수가 모두 0이면 None 반환 (신호 없음)
         """
         if not self._buffer:
@@ -343,26 +363,27 @@ class MorningSurgeStrategy:
                 f"프로그램순매수량:{sec.total_pgtr_qty:>12,}주"
             )
 
-        # 최강 섹터 내 순매수량 최강 종목
-        sector_stocks = [s for s in avg_list if s.sector == best_sec.sector]
-        best_stock    = max(sector_stocks, key=lambda x: x.pgtr_qty)
+        # 최강 섹터 내 종목 순매수량 내림차순 정렬
+        sector_stocks = sorted(
+            [s for s in avg_list if s.sector == best_sec.sector],
+            key=lambda x: x.pgtr_qty,
+            reverse=True,
+        )
 
         logger.info("── 종목 프로그램 매매 순위 (최강 섹터 내) ───")
-        for rank, st in enumerate(
-            sorted(sector_stocks, key=lambda x: x.pgtr_qty, reverse=True), 1
-        ):
-            marker = "★" if st.code == best_stock.code else " "
+        for rank, st in enumerate(sector_stocks, 1):
+            marker = "★" if rank == 1 else " "
             logger.info(
                 f" {marker}{rank}. [{st.code}] {st.name:12s}  "
-                f"순매수량:{st.pgtr_qty:>10,}주  추정금액:{st.pgtr_net:>12,}원  현재가:{st.price:,}"
+                f"순매수량:{st.pgtr_qty:>10,}주  추정금액:{st.pgtr_net:>12,}원  "
+                f"현재가:{st.price:,}  등락:{st.change_rate:+.2f}%"
             )
 
         logger.info(
-            f"[분석 결과] 섹터={best_sec.sector}  "
-            f"종목=[{best_stock.code}] {best_stock.name}  "
-            f"프로그램순매수량={best_stock.pgtr_qty:,}주 / 추정금액={best_stock.pgtr_net:,}원"
+            f"[분석 결과] 섹터={best_sec.sector}  1순위=[{sector_stocks[0].code}] {sector_stocks[0].name}  "
+            f"(+5% 급등 시 순차 건너뜀, 후보 {len(sector_stocks)}종목)"
         )
-        return best_sec.sector, best_stock
+        return best_sec.sector, sector_stocks
 
     # ═══════════════════════════════════════════════════════════════════
     #  PHASE 3: 포지션 모니터링
