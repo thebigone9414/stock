@@ -1,9 +1,15 @@
 """
 옥동자 전략 2호 — 이동평균선 정배열 중장기 전략
 
-[매수 조건]
+[매수 조건 - 완전 정배열]
   조건 1: 5 > 21 > 62 > 248 > 744 완전 정배열이 전날 처음 달성된 종목
   조건 2: 62, 248, 744 이평선 모두 20일 이상 연속 상승 추세
+  조건 3: 전일 양봉 (종가 > 시가)
+
+[매수 조건 - 부분 정배열 (데이터 250~749일 종목, 신생 ETF 등)]
+  조건 1: 5 > 21 > 62 > 248 부분 정배열이 전날 처음 달성된 종목
+  조건 2: 62, 248 이평선 모두 20일 이상 연속 상승 추세
+  조건 3: 전일 양봉 (종가 > 시가)
 
 [매도 조건]
   ma21이 ma62 아래로 이동한 다음날 아침 시장가 매도
@@ -203,11 +209,13 @@ class MACrossStrategy:
                     continue
 
                 action_label = "추가매수" if is_rebuy else "매수"
+                tag = "(전체정배열)" if cand.get("has_ma744") else "(MA248정배열)"
                 logger.info(
                     f"[MA전략 {action_label}] [{code}] {name} — "
-                    f"정배열첫날 / 62↑:{cand['ma62_uptrend']} "
-                    f"248↑:{cand['ma248_uptrend']} 744↑:{cand['ma744_uptrend']} "
-                    f"양봉몸통:{cand.get('candle_body_ratio', 0):.2%}"
+                    f"{tag} 정배열첫날 / 62↑:{cand['ma62_uptrend']} "
+                    f"248↑:{cand['ma248_uptrend']}"
+                    + (f" 744↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
+                    + f" 양봉몸통:{cand.get('candle_body_ratio', 0):.2%}"
                 )
                 result = self.order.buy(code, qty, 0, OrderType.MARKET)
                 if result.success:
@@ -223,23 +231,25 @@ class MACrossStrategy:
                         new_avg    = int(round((prev_price * prev_qty + price * qty) / new_qty)) if new_qty > 0 else price
                         ma_store.add_position(code, name, entry_date, price, qty)
                         avail_cash -= price * qty
+                        tag = "(전체정배열)" if cand.get("has_ma744") else "(MA248정배열)"
                         self.notifier.notify(
-                            f"[MA전략 추가매수] [{code}] {name}\n"
+                            f"[MA전략 추가매수] [{code}] {name} {tag}\n"
                             f"추가: {qty:,}주 @ {price:,}원\n"
                             f"통합: {new_qty:,}주  평단 {prev_price:,}→{new_avg:,}원\n"
                             f"62일추세↑:{cand['ma62_uptrend']}  "
-                            f"248일추세↑:{cand['ma248_uptrend']}  "
-                            f"744일추세↑:{cand['ma744_uptrend']}"
+                            f"248일추세↑:{cand['ma248_uptrend']}"
+                            + (f"  744일추세↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
                         )
                     else:
                         ma_store.add_position(code, name, entry_date, price, qty)
                         avail_cash -= price * qty
+                        tag = "(전체정배열)" if cand.get("has_ma744") else "(MA248정배열)"
                         self.notifier.notify(
-                            f"[MA전략 매수] [{code}] {name}\n"
+                            f"[MA전략 매수] [{code}] {name} {tag}\n"
                             f"수량:{qty:,}주  기준가:{price:,}원\n"
                             f"62일추세↑:{cand['ma62_uptrend']}  "
-                            f"248일추세↑:{cand['ma248_uptrend']}  "
-                            f"744일추세↑:{cand['ma744_uptrend']}"
+                            f"248일추세↑:{cand['ma248_uptrend']}"
+                            + (f"  744일추세↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
                         )
                 else:
                     logger.error(f"[MA전략 {action_label} 실패] {code}: {result.message}")
@@ -315,21 +325,21 @@ class MACrossStrategy:
         return result
 
     def _is_buy_signal(self, s: dict) -> bool:
-        """매수 조건 1 + 조건 2 + 조건 3 동시 충족 여부"""
-        # 조건 1: 완전 정배열이 전날 처음 달성
-        if not (s.get("fully_aligned") and not s.get("prev_fully_aligned")):
-            return False
-        # 조건 2: 62/248/744 이평선 최근 20일 선형 회귀 기울기 > 0 (상승 추세)
-        if not s.get("ma62_uptrend"):
-            return False
-        if not s.get("ma248_uptrend"):
-            return False
-        if not s.get("ma744_uptrend"):
-            return False
-        # 조건 3: 전일 양봉 (종가 > 시가)
+        """매수 조건 동시 충족 여부 (완전 정배열 or 부분 정배열)"""
         if not s.get("prev_bullish_candle"):
             return False
-        return True
+        if not s.get("ma62_uptrend") or not s.get("ma248_uptrend"):
+            return False
+        if s.get("has_ma744"):
+            # 완전 정배열: MA5>MA21>MA62>MA248>MA744 처음 달성 + 744 상승추세
+            return (
+                s.get("fully_aligned")
+                and not s.get("prev_fully_aligned")
+                and s.get("ma744_uptrend")
+            )
+        else:
+            # 부분 정배열: MA5>MA21>MA62>MA248 처음 달성 (신생 ETF 등)
+            return bool(s.get("partial_aligned") and not s.get("prev_partial_aligned"))
 
     def _notify_full(self, candidates: list, max_pos: int = MAX_POSITIONS) -> None:
         msg = (
