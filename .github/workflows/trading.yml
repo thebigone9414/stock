@@ -33,10 +33,12 @@ on:
         default: '005930'
 
 concurrency:
-  group: okdongja-trading
+  # 배치(ma-batch·update-watchlist)는 okdongja-batch 그룹, 나머지는 okdongja-trading
+  # → 아침 매매 run이 살아있어도 배치 run이 대기열에 갇히지 않음
+  group: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.mode == 'ma-batch' || github.event.inputs.mode == 'update-watchlist')) && 'okdongja-batch' || 'okdongja-trading' }}
   cancel-in-progress: false   # 실행 중인 매매 절대 중단 금지
 
-# 배치 작업(ma-batch, update-watchlist)은 별도 concurrency 그룹 사용 (Job D·E에 override)
+# Job D·E의 job-level concurrency(okdongja-batch)는 동일 배치 간 중복 방지용
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Job A: 전략2 — MA 이평선 중장기 (전략1과 병렬 실행)
