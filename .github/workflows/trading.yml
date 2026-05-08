@@ -235,10 +235,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75        # 209종목(KOSPI200+ETF) × ~9청크 × throttle 여유
 
-    concurrency:
-      group: okdongja-batch    # 아침 매매와 concurrency 충돌 방지
-      cancel-in-progress: false
-
     permissions:
       contents: write           # git push 권한 필요
 
@@ -293,10 +289,6 @@ jobs:
     name: KOSPI200 종목 갱신
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
-    concurrency:
-      group: okdongja-batch    # 아침 매매와 concurrency 충돌 방지
-      cancel-in-progress: false
 
     permissions:
       contents: write           # kospi200_cache.json git push 필요
