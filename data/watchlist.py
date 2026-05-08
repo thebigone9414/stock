@@ -4,10 +4,15 @@
 우선순위:
   1. data/kospi200_cache.json  ← update_watchlist.py 가 매월 KIS API에서 갱신
   2. _BUILTIN (코드 내 큐레이션 목록, 149종목) ← 캐시 없을 때 폴백
+
+여기에 data/etf_watchlist.py 의 ETF 목록이 항상 추가 병합됨.
+S1·S2 전략 모두 KOSPI200 + ETF 통합 watchlist 대상.
 """
 import json
 from pathlib import Path
 from typing import List, Dict
+
+from data.etf_watchlist import ETF_LIST
 
 _CACHE_PATH = Path(__file__).parent / "kospi200_cache.json"
 
@@ -182,7 +187,7 @@ _BUILTIN: List[Dict[str, str]] = [
 ]
 
 
-def get_active_watchlist() -> List[Dict[str, str]]:
+def _load_kospi200() -> List[Dict[str, str]]:
     """KOSPI200 캐시가 있으면 사용, 없으면 빌트인 폴백 반환"""
     try:
         data = json.loads(_CACHE_PATH.read_text(encoding="utf-8"))
@@ -192,6 +197,17 @@ def get_active_watchlist() -> List[Dict[str, str]]:
     except (FileNotFoundError, json.JSONDecodeError):
         pass
     return _BUILTIN
+
+
+def get_active_watchlist() -> List[Dict[str, str]]:
+    """KOSPI200 + ETF 통합 watchlist 반환 (code 중복 제거)"""
+    seen: set = set()
+    merged: List[Dict[str, str]] = []
+    for item in _load_kospi200() + ETF_LIST:
+        if item["code"] not in seen:
+            seen.add(item["code"])
+            merged.append(item)
+    return merged
 
 
 # 모듈 로드 시 한 번 계산 — 기존 import 코드 변경 불필요

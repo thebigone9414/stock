@@ -10,6 +10,7 @@
 
 [포지션 관리]
   총계좌의 20%씩, 최대 4포지션 동시 보유
+  보유 종목이 다시 매수 신호 발생 시 → 평단가 통합 추가매수 (슬롯 소비 없음)
   슬롯 만석 + 신규 신호 → 텔레그램 알림
 """
 from datetime import datetime
@@ -164,19 +165,26 @@ class MACrossStrategy:
 
         _bought = 0
         # ── 3. 매수 ─────────────────────────────────────────────────
-        available_slots = max_positions - len(positions)
-        candidates      = self._find_candidates(stocks, positions)
+        # 보유 종목 재매수는 슬롯 소비 없음, 신규 종목만 슬롯 제약 적용
+        candidates = self._find_candidates(stocks, positions)
+        slots_full = len(positions) >= max_positions
+
+        # 슬롯 만석 시 신규 후보 제외 (재매수만 허용)
+        if slots_full:
+            new_candidates = [c for c in candidates if c["code"] not in positions]
+            if new_candidates:
+                self._notify_full(new_candidates, max_positions)
+            candidates = [c for c in candidates if c["code"] in positions]
 
         if not candidates:
             logger.info("[MA전략] 매수 신호 없음")
-        elif available_slots == 0:
-            self._notify_full(candidates, max_positions)
         else:
             avail_cash = balance.cash
-            for cand in candidates[:1]:   # 하루 최대 1종목 신규 매수
-                code  = cand["code"]
-                name  = cand["name"]
-                price = cand.get("close", 0)
+            for cand in candidates[:1]:   # 하루 최대 1종목 매수
+                code     = cand["code"]
+                name     = cand["name"]
+                price    = cand.get("close", 0)
+                is_rebuy = code in positions
 
                 # 현재가 재확인
                 try:
@@ -194,8 +202,9 @@ class MACrossStrategy:
                     logger.warning(f"[MA전략] [{code}] 예산 부족 ({budget:,}원/{price:,}원)")
                     continue
 
+                action_label = "추가매수" if is_rebuy else "매수"
                 logger.info(
-                    f"[MA전략 매수] [{code}] {name} — "
+                    f"[MA전략 {action_label}] [{code}] {name} — "
                     f"정배열첫날 / 62↑:{cand['ma62_uptrend']} "
                     f"248↑:{cand['ma248_uptrend']} 744↑:{cand['ma744_uptrend']} "
                     f"양봉몸통:{cand.get('candle_body_ratio', 0):.2%}"
@@ -204,18 +213,37 @@ class MACrossStrategy:
                 if result.success:
                     _bought += 1
                     entry_date = datetime.now(KST).strftime("%Y-%m-%d")
-                    ma_store.add_position(code, name, entry_date, price, qty)
-                    avail_cash -= price * qty
-                    self.notifier.notify(
-                        f"[MA전략 매수] [{code}] {name}\n"
-                        f"수량:{qty:,}주  기준가:{price:,}원\n"
-                        f"62일추세↑:{cand['ma62_uptrend']}  "
-                        f"248일추세↑:{cand['ma248_uptrend']}  "
-                        f"744일추세↑:{cand['ma744_uptrend']}"
-                    )
+
+                    # 재매수: 통합 후 평단가 안내 / 신규: 단순 매수
+                    if is_rebuy:
+                        prev = positions[code]
+                        prev_qty   = prev.get("quantity", 0)
+                        prev_price = prev.get("entry_price", 0)
+                        new_qty    = prev_qty + qty
+                        new_avg    = int(round((prev_price * prev_qty + price * qty) / new_qty)) if new_qty > 0 else price
+                        ma_store.add_position(code, name, entry_date, price, qty)
+                        avail_cash -= price * qty
+                        self.notifier.notify(
+                            f"[MA전략 추가매수] [{code}] {name}\n"
+                            f"추가: {qty:,}주 @ {price:,}원\n"
+                            f"통합: {new_qty:,}주  평단 {prev_price:,}→{new_avg:,}원\n"
+                            f"62일추세↑:{cand['ma62_uptrend']}  "
+                            f"248일추세↑:{cand['ma248_uptrend']}  "
+                            f"744일추세↑:{cand['ma744_uptrend']}"
+                        )
+                    else:
+                        ma_store.add_position(code, name, entry_date, price, qty)
+                        avail_cash -= price * qty
+                        self.notifier.notify(
+                            f"[MA전략 매수] [{code}] {name}\n"
+                            f"수량:{qty:,}주  기준가:{price:,}원\n"
+                            f"62일추세↑:{cand['ma62_uptrend']}  "
+                            f"248일추세↑:{cand['ma248_uptrend']}  "
+                            f"744일추세↑:{cand['ma744_uptrend']}"
+                        )
                 else:
-                    logger.error(f"[MA전략 매수 실패] {code}: {result.message}")
-                    self.notifier.notify(f"[MA전략 매수 실패] [{code}] {name}: {result.message}")
+                    logger.error(f"[MA전략 {action_label} 실패] {code}: {result.message}")
+                    self.notifier.notify(f"[MA전략 {action_label} 실패] [{code}] {name}: {result.message}")
 
         logger.info(f"[MA전략] 완료")
         self.notifier.notify(f"[MA전략] 완료 — 매도:{_sold}건  매수:{_bought}건")
@@ -276,11 +304,11 @@ class MACrossStrategy:
             self.notifier.notify(err)
 
     def _find_candidates(self, stocks: dict, positions: dict) -> list:
-        """매수 조건 모두 충족 종목 리스트 — 전일 양봉 몸통 크기 내림차순"""
+        """매수 조건 모두 충족 종목 리스트 — 전일 양봉 몸통 크기 내림차순.
+        보유 종목도 후보에 포함됨 (재매수 시 평단가 통합 처리).
+        """
         result = []
         for code, s in stocks.items():
-            if code in positions:
-                continue
             if self._is_buy_signal(s):
                 result.append({"code": code, **s})
         result.sort(key=lambda x: x.get("candle_body_ratio", 0), reverse=True)

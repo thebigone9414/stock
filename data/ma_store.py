@@ -38,15 +38,35 @@ def get_positions() -> dict:
 
 
 def add_position(code: str, name: str, entry_date: str, entry_price: int, quantity: int) -> None:
+    """포지션 추가 — 동일 code가 이미 있으면 가중평균 평단가로 통합"""
     data = load()
-    data.setdefault("positions", {})[code] = {
-        "name":        name,
-        "entry_date":  entry_date,
-        "entry_price": entry_price,
-        "quantity":    quantity,
-    }
+    positions = data.setdefault("positions", {})
+    existing = positions.get(code)
+
+    if existing and existing.get("quantity", 0) > 0 and existing.get("entry_price", 0) > 0:
+        old_qty   = existing["quantity"]
+        old_price = existing["entry_price"]
+        new_qty   = old_qty + quantity
+        new_avg   = (old_price * old_qty + entry_price * quantity) / new_qty
+        positions[code] = {
+            "name":            name,
+            "entry_date":      existing.get("entry_date", entry_date),  # 최초 진입일 유지
+            "last_entry_date": entry_date,
+            "entry_price":     int(round(new_avg)),
+            "quantity":        new_qty,
+        }
+        msg = f"chore: S2 포지션 추가매수 {code} (수량 {old_qty}→{new_qty}, 평단 {old_price:,}→{int(round(new_avg)):,})"
+    else:
+        positions[code] = {
+            "name":        name,
+            "entry_date":  entry_date,
+            "entry_price": entry_price,
+            "quantity":    quantity,
+        }
+        msg = f"chore: S2 포지션 추가 {code}"
+
     save(data)
-    git_commit_push([str(MA_DATA_PATH)], f"chore: S2 포지션 추가 {code}")
+    git_commit_push([str(MA_DATA_PATH)], msg)
 
 
 def remove_position(code: str) -> None:
