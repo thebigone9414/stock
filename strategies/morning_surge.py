@@ -29,6 +29,9 @@ from loguru import logger
 from data.watchlist import WATCHLIST, CODE_MAP
 from data.holidays import is_market_holiday
 import data.ma_store as ma_store
+
+# S1은 KOSPI200 종목만 대상 (ETF 배제) — ETF는 S2 전용
+S1_WATCHLIST = [s for s in WATCHLIST if not s["sector"].startswith("ETF/")]
 from kis.market import KISMarket
 from kis.order import KISOrder, OrderType
 from kis.account import KISAccount
@@ -156,14 +159,14 @@ class MorningSurgeStrategy:
     #  PHASE 1: 프로그램 매매 데이터 수집
     # ═══════════════════════════════════════════════════════════════════
     def _collect_phase(self) -> None:
-        logger.info("[Phase 1] 프로그램 매매 수집 시작 (08:00 NXT~09:09, 1분 간격)")
+        logger.info(f"[Phase 1] 프로그램 매매 수집 시작 (08:00 NXT~09:09, 1분 간격) — KOSPI200 {len(S1_WATCHLIST)}종목 (ETF 제외)")
         end_dt = _kst_time(9, 9)
         pass_no = 0
 
         while _now_kst() < end_dt:
             pass_no += 1
             remaining = (end_dt - _now_kst()).total_seconds()
-            logger.info(f"[수집] {pass_no}차 — 잔여 {remaining:.0f}초 / 대상 {len(WATCHLIST)}종목")
+            logger.info(f"[수집] {pass_no}차 — 잔여 {remaining:.0f}초 / 대상 {len(S1_WATCHLIST)}종목")
             self._fetch_all_stocks()
 
             remaining = (end_dt - _now_kst()).total_seconds()
@@ -174,10 +177,10 @@ class MorningSurgeStrategy:
         logger.info(f"[Phase 1] 수집 완료 ({pass_no}회, {len(self._buffer)}종목)")
 
     def _fetch_all_stocks(self) -> None:
-        """Throttle 적용하여 전 종목 프로그램 매매 1회 수집"""
+        """Throttle 적용하여 전 종목 프로그램 매매 1회 수집 (ETF 제외)"""
         ok, fail, zero = 0, 0, 0
 
-        for stock in WATCHLIST:
+        for stock in S1_WATCHLIST:
             code   = stock["code"]
             name   = stock["name"]
             sector = stock["sector"]
