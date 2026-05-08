@@ -233,7 +233,7 @@ jobs:
   update-ma:
     name: MA 이평선 배치
     runs-on: ubuntu-latest
-    timeout-minutes: 45        # 149종목 × ~9청크 × throttle 여유
+    timeout-minutes: 75        # 209종목(KOSPI200+ETF) × ~9청크 × throttle 여유
 
     concurrency:
       group: okdongja-batch    # 아침 매매와 concurrency 충돌 방지
