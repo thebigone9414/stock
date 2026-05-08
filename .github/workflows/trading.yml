@@ -35,10 +35,11 @@ on:
 concurrency:
   # 배치(ma-batch·update-watchlist)는 okdongja-batch 그룹, 나머지는 okdongja-trading
   # → 아침 매매 run이 살아있어도 배치 run이 대기열에 갇히지 않음
-  group: ${{ (github.event_name == 'workflow_dispatch' && (github.event.inputs.mode == 'ma-batch' || github.event.inputs.mode == 'update-watchlist')) && 'okdongja-batch' || 'okdongja-trading' }}
+  # → schedule cron + cron-job.org workflow_dispatch 둘 다 같은 그룹에 묶여 idempotency로 중복 실행 방지
+  group: ${{ ((github.event_name == 'workflow_dispatch' && (github.event.inputs.mode == 'ma-batch' || github.event.inputs.mode == 'update-watchlist')) || (github.event_name == 'schedule' && (github.event.schedule == '30 7 * * 1-5' || github.event.schedule == '0 9 * * 1-5' || github.event.schedule == '0 1 1 * *'))) && 'okdongja-batch' || 'okdongja-trading' }}
   cancel-in-progress: false   # 실행 중인 매매 절대 중단 금지
 
-# Job D·E의 job-level concurrency(okdongja-batch)는 동일 배치 간 중복 방지용
+# Job D·E의 job-level concurrency(okdongja-batch)는 workflow-level과 동일하므로 사실상 중복이지만 안전장치로 유지
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Job A: 전략2 — MA 이평선 중장기 (전략1과 병렬 실행)
