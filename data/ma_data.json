@@ -5564,32 +5564,7 @@
       "candle_body_ratio": 0.010101
     }
   },
-  "positions": {
-    "010960": {
-      "name": "삼호개발",
-      "entry_date": "2026-05-06",
-      "entry_price": 3945,
-      "quantity": 505
-    },
-    "005380": {
-      "name": "현대차",
-      "entry_date": "2026-05-06",
-      "entry_price": 539000,
-      "quantity": 3
-    },
-    "028260": {
-      "name": "삼성물산",
-      "entry_date": "2026-05-06",
-      "entry_price": 341500,
-      "quantity": 5
-    },
-    "003490": {
-      "name": "대한항공",
-      "entry_date": "2026-05-11",
-      "entry_price": 26000,
-      "quantity": 83
-    }
-  },
-  "base_capital": 10700916,
+  "positions": {},
+  "base_capital": 0,
   "updated_at_kst": "2026-05-08 21:11"
 }
