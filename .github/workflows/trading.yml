@@ -284,13 +284,11 @@ jobs:
           else
             REASON="오류 발생 (Python 예외)"
           fi
+          MSG="[MA배치] 배치 미완료 — ${NOW}"$'\n'"원인: ${REASON}"$'\n'"→ ma-batch 수동 재실행 필요 (workflow_dispatch)"
           curl -s -X POST \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=[MA배치] 배치 미완료 — ${NOW}
-원인: ${REASON}
-→ GitHub Actions에서 ma-batch 수동 재실행 필요
-  (workflow_dispatch → mode: ma-batch)"
+            --data-urlencode "text=${MSG}"
 
       - name: 로그 저장
         if: always()
