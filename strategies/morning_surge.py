@@ -46,7 +46,7 @@ TAKE_PROFIT_RATIO = 0.05     # 매수가 대비 익절 5%
 FOREIGN_WEIGHT    = 1.0      # 프로그램매매 단일 지표이므로 가중치 1.0
 MONITOR_INTERVAL  = 20       # 포지션 모니터링 주기(초)
 COLLECT_INTERVAL  = 60       # 수급 수집 반복 주기(초)
-CASH_USE_RATIO    = 0.99     # 주문 가능 금액 사용 비율
+CASH_USE_RATIO    = 0.95     # 주문 가능 금액 사용 비율 (수수료·세금 예비 5% 확보)
 S2_MAX_POSITIONS  = 4        # S2(MA전략) 기본 슬롯 수 — ma_cross.MAX_POSITIONS와 동기화
 
 
