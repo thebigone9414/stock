@@ -298,6 +298,30 @@ class KISMarket:
         logger.info(f"[지수조회] {index_code} → {len(unique)}종목")
         return unique
 
+    # ── 지수 현재가 / 등락률 조회 ───────────────────────────────────
+    def get_index_change_rate(self, index_code: str = "0001") -> float:
+        """KOSPI/KOSDAQ 지수 전일대비 등락률 조회 (FHKUP03500100)
+
+        Args:
+            index_code: "0001"=KOSPI, "1001"=KOSDAQ
+        Returns:
+            등락률(%) — 예: -2.35, +1.10. 조회 실패 시 0.0
+        """
+        data = self.client.get(
+            "/uapi/domestic-stock/v1/quotations/inquire-index-price",
+            tr_id="FHKUP03500100",
+            params={
+                "fid_cond_mrkt_div_code": "U",
+                "fid_input_iscd": index_code,
+            },
+        )
+        o = data.get("output", {})
+        raw = o.get("bstp_nmix_prdy_ctrt", "0") or "0"
+        try:
+            return float(str(raw).replace(",", "").strip())
+        except (ValueError, TypeError):
+            return 0.0
+
     # ── 호가 조회 ────────────────────────────────────────────────
     def get_orderbook(self, code: str) -> dict:
         """국내주식 호가 조회 (국내주식-011)"""
