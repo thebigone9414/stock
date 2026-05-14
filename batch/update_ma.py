@@ -108,9 +108,9 @@ def compute_stock_entry(
     else:
         partial_aligned = prev_partial_aligned = False
 
-    # 전일 캔들
-    prev_o     = opens[-2]  if len(opens)  >= 2 else 0
-    prev_c     = closes[-2] if n >= 2 else 0
+    # 당일 캔들 (배치 실행일 = 내일 매수 기준 "전일")
+    prev_o     = opens[-1]  if len(opens)  >= 1 else 0
+    prev_c     = closes[-1] if n >= 1 else 0
     prev_bull  = bool(prev_c > prev_o > 0)
     body_ratio = abs(prev_c - prev_o) / prev_c if prev_c > 0 else 0.0
 
