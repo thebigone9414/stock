@@ -5537,7 +5537,14 @@
       "candle_body_ratio": 0.017978
     }
   },
-  "positions": {},
+  "positions": {
+    "017670": {
+      "name": "SK텔레콤",
+      "entry_date": "2026-05-14",
+      "entry_price": 105800,
+      "quantity": 18
+    }
+  },
   "base_capital": 10000000,
   "updated_at_kst": "2026-05-13 16:31"
 }
