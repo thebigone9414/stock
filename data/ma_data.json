@@ -5542,7 +5542,8 @@
       "name": "SK텔레콤",
       "entry_date": "2026-05-14",
       "entry_price": 105800,
-      "quantity": 18
+      "quantity": 18,
+      "stop_loss_pending": true
     },
     "088350": {
       "name": "한화생명",
