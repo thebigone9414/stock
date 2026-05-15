@@ -5543,6 +5543,12 @@
       "entry_date": "2026-05-14",
       "entry_price": 105800,
       "quantity": 18
+    },
+    "088350": {
+      "name": "한화생명",
+      "entry_date": "2026-05-15",
+      "entry_price": 5490,
+      "quantity": 357
     }
   },
   "base_capital": 10000000,
