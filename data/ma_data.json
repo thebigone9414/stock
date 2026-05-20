@@ -5537,15 +5537,7 @@
       "candle_body_ratio": 0.004448
     }
   },
-  "positions": {
-    "088350": {
-      "name": "한화생명",
-      "entry_date": "2026-05-15",
-      "entry_price": 5490,
-      "quantity": 357,
-      "stop_loss_pending": true
-    }
-  },
+  "positions": {},
   "base_capital": 10000000,
   "updated_at_kst": "2026-05-20 16:31"
 }
