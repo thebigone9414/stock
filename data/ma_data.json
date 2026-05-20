@@ -5542,7 +5542,8 @@
       "name": "한화생명",
       "entry_date": "2026-05-15",
       "entry_price": 5490,
-      "quantity": 357
+      "quantity": 357,
+      "stop_loss_pending": true
     }
   },
   "base_capital": 10000000,
