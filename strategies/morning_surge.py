@@ -28,6 +28,7 @@ from loguru import logger
 
 from data.watchlist import WATCHLIST, CODE_MAP
 from data.holidays import is_market_holiday
+import data.ma_store as ma_store
 
 # S1은 KOSPI200 종목만 대상 (ETF 배제) — ETF는 S2 전용
 S1_WATCHLIST = [s for s in WATCHLIST if not s["sector"].startswith("ETF/")]
@@ -92,6 +93,9 @@ class MorningSurgeStrategy:
         # 초당 9건 제한 (KIS TPS 10건 이하 안전 마진)
         self._throttler = RateThrottler(max_per_second=9)
 
+        # MA 정배열 필터 적용 후 실제 수집 대상 (run()에서 갱신)
+        self._watchlist: list = S1_WATCHLIST
+
         # 수집 버퍼: code → 스냅샷 리스트
         self._buffer: Dict[str, List[ProgramSnapshot]] = defaultdict(list)
 
@@ -136,6 +140,24 @@ class MorningSurgeStrategy:
 
         self.notifier.notify(f"[옥동자] 전략 시작 {today} [{mode}]")
 
+        # MA 정배열 종목 필터링 (전날 배치 결과 기준)
+        ma_data   = ma_store.load()
+        ma_stocks = ma_data.get("stocks", {})
+        aligned_codes = {
+            code for code, s in ma_stocks.items()
+            if s.get("fully_aligned") or s.get("partial_aligned")
+        }
+        self._watchlist = [s for s in S1_WATCHLIST if s["code"] in aligned_codes]
+        logger.info(
+            f"[옥동자] MA 정배열 필터: 전체 {len(S1_WATCHLIST)}종목 → "
+            f"정배열 {len(self._watchlist)}종목 (기준일: {ma_data.get('updated_at', '?')})"
+        )
+        if not self._watchlist:
+            msg = "[옥동자] MA 정배열 종목 없음 — 오늘 전략 종료"
+            logger.warning(msg)
+            self.notifier.notify(msg)
+            return
+
         # Phase 1: 08:00(NXT) ~ 09:09 프로그램 매매 수집
         self._wait_until(8, 0, "NXT 시장 시작")
         self._collect_phase()
@@ -161,14 +183,14 @@ class MorningSurgeStrategy:
     #  PHASE 1: 프로그램 매매 데이터 수집
     # ═══════════════════════════════════════════════════════════════════
     def _collect_phase(self) -> None:
-        logger.info(f"[Phase 1] 프로그램 매매 수집 시작 (08:00 NXT~09:09, 1분 간격) — KOSPI200 {len(S1_WATCHLIST)}종목 (ETF 제외)")
+        logger.info(f"[Phase 1] 프로그램 매매 수집 시작 (08:00 NXT~09:09, 1분 간격) — MA정배열 {len(self._watchlist)}종목")
         end_dt = _kst_time(9, 9)
         pass_no = 0
 
         while _now_kst() < end_dt:
             pass_no += 1
             remaining = (end_dt - _now_kst()).total_seconds()
-            logger.info(f"[수집] {pass_no}차 — 잔여 {remaining:.0f}초 / 대상 {len(S1_WATCHLIST)}종목")
+            logger.info(f"[수집] {pass_no}차 — 잔여 {remaining:.0f}초 / 대상 {len(self._watchlist)}종목")
             self._fetch_all_stocks()
 
             remaining = (end_dt - _now_kst()).total_seconds()
@@ -182,7 +204,7 @@ class MorningSurgeStrategy:
         """Throttle 적용하여 전 종목 프로그램 매매 1회 수집 (ETF 제외)"""
         ok, fail, zero = 0, 0, 0
 
-        for stock in S1_WATCHLIST:
+        for stock in self._watchlist:
             code   = stock["code"]
             name   = stock["name"]
             sector = stock["sector"]
