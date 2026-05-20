@@ -21,7 +21,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import pytz
 from loguru import logger
@@ -63,11 +63,6 @@ class ProgramSnapshot:
     price: int = 0
     change_rate: float = 0.0
 
-
-@dataclass
-class SectorScore:
-    sector: str
-    total_pgtr_qty: int = 0
 
 
 # ── 메인 전략 클래스 ───────────────────────────────────────────────────
@@ -252,7 +247,7 @@ class MorningSurgeStrategy:
             logger.warning("[Phase 2] 유효한 프로그램 매매 신호 없음 — 매수 포기")
             return
 
-        best_sector, candidates = result   # candidates: 섹터 내 순매수량 내림차순
+        candidates = result   # 전체 정배열 종목 순매수량 내림차순
 
         # 주문 가능 금액: S1 1슬롯 고정 (총자산의 20%)
         try:
@@ -294,7 +289,7 @@ class MorningSurgeStrategy:
             break
 
         if not target:
-            msg = f"[옥동자] 섹터 내 전 종목 +{SURGE_SKIP:.0f}% 이상 급등 — 오늘 매수 포기"
+            msg = f"[옥동자] 전 종목 +{SURGE_SKIP:.0f}% 이상 급등 — 오늘 매수 포기"
             logger.warning(msg)
             self.notifier.notify(msg)
             return
@@ -327,8 +322,7 @@ class MorningSurgeStrategy:
 
         msg = (
             f"[옥동자 매수]\n"
-            f"섹터: {best_sector}\n"
-            f"종목: [{target.code}] {target.name}  등락률:{target.change_rate:+.2f}%\n"
+            f"종목: [{target.code}] {target.name}  섹터:{target.sector}  등락률:{target.change_rate:+.2f}%\n"
             f"현재가: {target.price:,}원 × {quantity:,}주\n"
             f"투자금: {target.price * quantity:,}원\n"
             f"프로그램순매수: {target.pgtr_qty:,}주 (추정금액 {target.pgtr_net:,}원)"
@@ -351,8 +345,8 @@ class MorningSurgeStrategy:
                 f"[옥동자 매수 실패] {target.code} {result_order.message}"
             )
 
-    def _analyze(self) -> Optional[Tuple[str, List[ProgramSnapshot]]]:
-        """수집 버퍼 → (최강 섹터, 섹터 내 종목 순위 리스트) 반환
+    def _analyze(self) -> Optional[List[ProgramSnapshot]]:
+        """수집 버퍼 → 전체 정배열 종목 순매수량 내림차순 리스트 반환
         프로그램 순매수가 모두 0이면 None 반환 (신호 없음)
         """
         if not self._buffer:
@@ -385,47 +379,23 @@ class MorningSurgeStrategy:
             )
             return None
 
-        # 섹터별 순매수량 합산
-        sector_map: Dict[str, SectorScore] = {}
-        for s in avg_list:
-            if s.sector not in sector_map:
-                sector_map[s.sector] = SectorScore(sector=s.sector)
-            sector_map[s.sector].total_pgtr_qty += s.pgtr_qty
+        # 순매수량 내림차순 정렬
+        ranked = sorted(avg_list, key=lambda x: x.pgtr_qty, reverse=True)
 
-        best_sec = max(sector_map.values(), key=lambda x: x.total_pgtr_qty)
-
-        # 섹터 순위 로그
-        logger.info("── 섹터 프로그램 매매 순위 (순매수량) ────────")
-        for rank, sec in enumerate(
-            sorted(sector_map.values(), key=lambda x: x.total_pgtr_qty, reverse=True)[:8], 1
-        ):
-            marker = "★" if sec.sector == best_sec.sector else " "
-            logger.info(
-                f" {marker}{rank}. {sec.sector:12s}  "
-                f"프로그램순매수량:{sec.total_pgtr_qty:>12,}주"
-            )
-
-        # 최강 섹터 내 종목 순매수량 내림차순 정렬
-        sector_stocks = sorted(
-            [s for s in avg_list if s.sector == best_sec.sector],
-            key=lambda x: x.pgtr_qty,
-            reverse=True,
-        )
-
-        logger.info("── 종목 프로그램 매매 순위 (최강 섹터 내) ───")
-        for rank, st in enumerate(sector_stocks, 1):
+        logger.info("── 프로그램 순매수 상위 종목 ────────────────")
+        for rank, st in enumerate(ranked[:10], 1):
             marker = "★" if rank == 1 else " "
             logger.info(
-                f" {marker}{rank}. [{st.code}] {st.name:12s}  "
+                f" {marker}{rank}. [{st.code}] {st.name:12s}  섹터:{st.sector}  "
                 f"순매수량:{st.pgtr_qty:>10,}주  추정금액:{st.pgtr_net:>12,}원  "
                 f"현재가:{st.price:,}  등락:{st.change_rate:+.2f}%"
             )
 
         logger.info(
-            f"[분석 결과] 섹터={best_sec.sector}  1순위=[{sector_stocks[0].code}] {sector_stocks[0].name}  "
-            f"(+5% 급등 시 순차 건너뜀, 후보 {len(sector_stocks)}종목)"
+            f"[분석 결과] 1순위=[{ranked[0].code}] {ranked[0].name}  "
+            f"(+5% 급등 시 순차 건너뜀, 후보 {len(ranked)}종목)"
         )
-        return best_sec.sector, sector_stocks
+        return ranked
 
     # ═══════════════════════════════════════════════════════════════════
     #  PHASE 3: 포지션 모니터링
