@@ -132,7 +132,8 @@ def compute_stock_entry(
         "partial_aligned":     partial_aligned,
         "prev_partial_aligned": prev_partial_aligned,
         # 매도 신호
-        "ma21_below_ma62": (curr(21) < curr(62)) if 21 in ma and 62 in ma else False,
+        "ma21_below_ma62":  (curr(21) < curr(62)) if 21 in ma and 62 in ma else False,
+        "ma62_declining_5d": (not _is_uptrend(ma[62], window=5)) if 62 in ma else False,
         # 추세 방향
         "ma62_uptrend":  _is_uptrend(ma[62])  if 62  in ma else False,
         "ma248_uptrend": _is_uptrend(ma[248]) if 248 in ma else False,
@@ -334,7 +335,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     sell_signals = [
         (c, s["name"])
         for c, s in stocks_out.items()
-        if c in positions_now and s["ma21_below_ma62"]
+        if c in positions_now and s["ma21_below_ma62"] and s.get("ma62_declining_5d")
     ]
 
     logger.info("══════════════════════════════════════════")
@@ -512,7 +513,7 @@ def _notify_daily_summary(
     if sell_signals:
         lines.append(f"\n내일 매도 예정 ({len(sell_signals)}종목):")
         for code, sname in sell_signals:
-            lines.append(f"  [{code}] {sname}  ma21<ma62 데드크로스")
+            lines.append(f"  [{code}] {sname}  ma21<ma62 & ma62하락추세")
     else:
         lines.append("내일 매도 예정 없음")
 

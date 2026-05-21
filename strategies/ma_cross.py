@@ -156,15 +156,16 @@ class MACrossStrategy:
                 ma_store.remove_position(code)
                 _sold += 1
 
-        # ── 2. 데드크로스 매도 ──────────────────────────────────────────────
+        # ── 2. 데드크로스 + ma62 하락추세 매도 ─────────────────────────────
         for code in list(positions):
             s = stocks.get(code, {})
-            if s.get("ma21_below_ma62"):
+            if s.get("ma21_below_ma62") and s.get("ma62_declining_5d"):
                 logger.info(
                     f"[MA전략 매도신호] [{code}] {positions[code]['name']} "
-                    f"— ma21({s.get('ma21',0):,.0f}) < ma62({s.get('ma62',0):,.0f})"
+                    f"— ma21({s.get('ma21',0):,.0f}) < ma62({s.get('ma62',0):,.0f})  "
+                    f"& ma62 5일 하락추세"
                 )
-                self._sell(code, positions[code])
+                self._sell(code, positions[code], reason="ma21<ma62 & ma62 5일 하락추세")
                 del positions[code]
                 ma_store.remove_position(code)
                 _sold += 1
