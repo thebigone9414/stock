@@ -149,9 +149,9 @@ class MACrossStrategy:
             if positions[code].get("stop_loss_pending"):
                 logger.info(
                     f"[MA전략 손절매도] [{code}] {positions[code]['name']} "
-                    f"— 전일 마감가 -3% 손절 플래그"
+                    f"— 매수가 대비 -3% 이하 손절 플래그"
                 )
-                self._sell(code, positions[code], reason="손절 -3% 이하 (전일 마감가)")
+                self._sell(code, positions[code], reason="손절 매수가대비 -3% 이하")
                 del positions[code]
                 ma_store.remove_position(code)
                 _sold += 1
