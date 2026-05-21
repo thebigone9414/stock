@@ -9,11 +9,11 @@ KIS FHKST01010100(현재가시세) output의 pgtr_ntby_qty 필드:
 
 [Phase 흐름]
 Phase 1  09:00~09:09  종목 프로그램 매매 데이터 수집 (초당 9건 이하 throttle)
-Phase 2  09:09~09:10  최강 섹터 → 섹터 내 최강 종목 선정
+Phase 2  09:09~09:10  전체 정배열 종목 중 순매수량 1위 종목 선정
 Phase 3  09:10        전량 시장가 매수
 Phase 4  09:10~09:55  포지션 모니터링
   · 익절: 매수가 대비 +5% 즉시 매도
-  · 손절: 장중 고점 대비 -3% 즉시 매도
+  · 손절: 매수가 대비 -3% 즉시 매도
   · 타임컷: 10:00 무조건 전량 매도
 """
 
@@ -95,11 +95,10 @@ class MorningSurgeStrategy:
         self._buffer: Dict[str, List[ProgramSnapshot]] = defaultdict(list)
 
         # 포지션 정보
-        self._code:          Optional[str] = None
-        self._name:          Optional[str] = None
-        self._entry_price:   int = 0
-        self._quantity:      int = 0
-        self._intraday_high: int = 0
+        self._code:        Optional[str] = None
+        self._name:        Optional[str] = None
+        self._entry_price: int = 0
+        self._quantity:    int = 0
 
     # ═══════════════════════════════════════════════════════════════════
     #  PUBLIC: 전략 실행 진입점
@@ -332,11 +331,10 @@ class MorningSurgeStrategy:
         result_order = self.order.buy(target.code, quantity, 0, OrderType.MARKET)
 
         if result_order.success:
-            self._code          = target.code
-            self._name          = target.name
-            self._entry_price   = target.price
-            self._quantity      = quantity
-            self._intraday_high = target.price
+            self._code        = target.code
+            self._name        = target.name
+            self._entry_price = target.price
+            self._quantity    = quantity
             self.notifier.notify(msg)
             logger.info(f"매수 완료 — 주문번호: {result_order.order_no}")
         else:
@@ -409,8 +407,8 @@ class MorningSurgeStrategy:
             f"[Phase 3] 모니터링 시작\n"
             f"  종목: [{self._code}] {self._name}\n"
             f"  매수가:  {self._entry_price:,}원\n"
-            f"  익절가:  {tp_price:,.0f}원 (+{TAKE_PROFIT_RATIO*100:.0f}%)\n"
-            f"  손절가:  {stop_price:,.0f}원 (고점대비 -{STOP_LOSS_RATIO*100:.0f}%)\n"
+            f"  익절가:  {tp_price:,.0f}원 (매수가+{TAKE_PROFIT_RATIO*100:.0f}%)\n"
+            f"  손절가:  {stop_price:,.0f}원 (매수가-{STOP_LOSS_RATIO*100:.0f}%)\n"
             f"  타임컷:  10:00"
         )
 
@@ -437,32 +435,21 @@ class MorningSurgeStrategy:
                 time.sleep(MONITOR_INTERVAL)
                 continue
 
-            # ── 고점 갱신 → 트레일링 손절가 ─────────────────
-            if cur > self._intraday_high:
-                self._intraday_high = cur
-                stop_price = self._intraday_high * (1 - STOP_LOSS_RATIO)
-                logger.info(
-                    f"  고점 갱신: {self._intraday_high:,}원  "
-                    f"손절가 → {stop_price:,.0f}원"
-                )
-
             pnl_rate  = (cur - self._entry_price) / self._entry_price * 100
             remaining = int((time_cut - now).total_seconds() // 60)
             logger.info(
                 f"  [{self._code}] 현재:{cur:,}  손익:{pnl_rate:+.2f}%  "
-                f"고점:{self._intraday_high:,}  손절:{stop_price:,.0f}  "
-                f"잔여:{remaining}분"
+                f"손절:{stop_price:,.0f}  익절:{tp_price:,.0f}  잔여:{remaining}분"
             )
 
             # ── 익절 ─────────────────────────────────────────
             if cur >= tp_price:
-                self._sell_all(f"익절 +{pnl_rate:.2f}%")
+                self._sell_all(f"익절 매수가대비 +{pnl_rate:.2f}%")
                 return
 
             # ── 손절 ─────────────────────────────────────────
             if cur <= stop_price:
-                drop = (cur / self._intraday_high - 1) * 100
-                self._sell_all(f"손절 고점대비 {drop:.2f}%")
+                self._sell_all(f"손절 매수가대비 {pnl_rate:.2f}%")
                 return
 
             time.sleep(MONITOR_INTERVAL)
