@@ -8,10 +8,10 @@ KIS FHKST01010100(현재가시세) output의 pgtr_ntby_qty 필드:
   → 종목 간 비교는 pgtr_est_amt(추정 금액) 기준으로 순위 결정
 
 [Phase 흐름]
-Phase 1  09:00~09:09  종목 프로그램 매매 데이터 수집 (초당 9건 이하 throttle)
-Phase 2  09:09~09:10  전체 정배열 종목 중 순매수량 1위 종목 선정
-Phase 3  09:10        전량 시장가 매수
-Phase 4  09:10~09:55  포지션 모니터링
+Phase 1  08:00~08:40  종목 프로그램 매매 데이터 수집 (초당 9건 이하 throttle)
+Phase 2  08:40~08:45  전체 정배열 종목 중 순매수량 1위 종목 선정
+Phase 3  08:45        NXT 전량 시장가 매수
+Phase 4  08:45~10:00  포지션 모니터링
   · 익절: 매수가 대비 +5% 즉시 매도
   · 손절: 매수가 대비 -3% 즉시 매도
   · 타임컷: 10:00 무조건 전량 매도
@@ -122,10 +122,10 @@ class MorningSurgeStrategy:
         # GitHub Actions 스케줄 지연 감지
         # 수집 윈도우(08:00~09:09)가 이미 지났으면 오늘은 건너뜀
         _now = _now_kst()
-        if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 5):
+        if _now.hour > 8 or (_now.hour == 8 and _now.minute >= 40):
             msg = (
                 f"[옥동자] 실행 지연 감지 — {_now.strftime('%H:%M')} KST 시작\n"
-                f"수집 윈도우(08:00~09:09) 이미 종료, 오늘 전략 건너뜀\n"
+                f"수집 윈도우(08:00~08:40) 이미 종료, 오늘 전략 건너뜀\n"
                 f"원인: GitHub Actions 스케줄러 지연"
             )
             logger.warning(msg)
@@ -152,12 +152,12 @@ class MorningSurgeStrategy:
             self.notifier.notify(msg)
             return
 
-        # Phase 1: 08:00(NXT) ~ 09:09 프로그램 매매 수집
+        # Phase 1: 08:00(NXT) ~ 08:40 프로그램 매매 수집
         self._wait_until(8, 0, "NXT 시장 시작")
         self._collect_phase()
 
-        # Phase 2: 09:09 분석, 09:10 매수
-        self._wait_until(9, 10, "매수 실행")
+        # Phase 2: 08:40 분석, 08:45 NXT 매수
+        self._wait_until(8, 45, "NXT 매수 실행")
         self._buy_phase()
 
         if not self._code:
@@ -166,7 +166,7 @@ class MorningSurgeStrategy:
             self.notifier.notify(msg)
             return
 
-        # Phase 3: 09:10 ~ 09:55 모니터링
+        # Phase 3: 08:45 ~ 10:00 NXT 포지션 모니터링
         self._monitor_phase()
 
         logger.info("══════════════════════════════════════════")
@@ -177,8 +177,8 @@ class MorningSurgeStrategy:
     #  PHASE 1: 프로그램 매매 데이터 수집
     # ═══════════════════════════════════════════════════════════════════
     def _collect_phase(self) -> None:
-        logger.info(f"[Phase 1] 프로그램 매매 수집 시작 (08:00 NXT~09:09, 1분 간격) — MA정배열 {len(self._watchlist)}종목")
-        end_dt = _kst_time(9, 9)
+        logger.info(f"[Phase 1] 프로그램 매매 수집 시작 (08:00 NXT~08:40, 1분 간격) — MA정배열 {len(self._watchlist)}종목")
+        end_dt = _kst_time(8, 40)
         pass_no = 0
 
         while _now_kst() < end_dt:
@@ -319,12 +319,17 @@ class MorningSurgeStrategy:
         if quantity <= 0:
             return
 
+        top5_lines = "\n".join(
+            f"  {i+1}. [{c.code}] {c.name}  순매수:{c.pgtr_qty:,}주  {c.change_rate:+.2f}%"
+            for i, c in enumerate(candidates[:5])
+        )
         msg = (
             f"[옥동자 매수]\n"
             f"종목: [{target.code}] {target.name}  섹터:{target.sector}  등락률:{target.change_rate:+.2f}%\n"
             f"현재가: {target.price:,}원 × {quantity:,}주\n"
             f"투자금: {target.price * quantity:,}원\n"
-            f"프로그램순매수: {target.pgtr_qty:,}주 (추정금액 {target.pgtr_net:,}원)"
+            f"프로그램순매수: {target.pgtr_qty:,}주 (추정금액 {target.pgtr_net:,}원)\n"
+            f"── 프로그램 순매수량 Top5 ──\n{top5_lines}"
         )
         logger.info(msg)
 

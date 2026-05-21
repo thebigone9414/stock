@@ -28,6 +28,7 @@ from loguru import logger
 
 import data.ma_store as ma_store
 from data.holidays import is_market_holiday
+from data.watchlist import CODE_MAP
 from kis.market import KISMarket
 from kis.order import KISOrder, OrderType
 from kis.account import KISAccount
@@ -70,12 +71,12 @@ class MACrossStrategy:
             self.notifier.notify(msg)
             return
 
-        # 지연 실행 감지: 09:10 이후면 시장가 주문 시간대 초과
+        # 지연 실행 감지: 09:10 이후면 NXT·정규장 모두 마감
         _now = datetime.now(KST)
         if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 10):
             msg = (
                 f"[MA전략] 실행 지연 감지 — {_now.strftime('%H:%M')} KST 시작\n"
-                f"09:00 시장가 주문 불가, 오늘 건너뜀"
+                f"NXT(08:00)·정규장(09:00) 주문 시간대 경과, 오늘 건너뜀"
             )
             logger.warning(msg)
             self.notifier.notify(msg)
@@ -135,17 +136,90 @@ class MACrossStrategy:
             f"총자산: {balance.total_eval:,}원  보유: {len(positions)}/{max_positions}슬롯"
         )
 
-        # ── 09:00 장 개장까지 대기 (장 시작 전 주문 불가) ────────────
+        _sold   = 0
+        _bought = 0
+        avail_cash = balance.cash
+
+        # 매수 후보 선정 (NXT/정규장 공통, 슬롯 체크 포함)
+        all_candidates = self._find_candidates(stocks, positions)
+        slots_full     = len(positions) >= max_positions
+        if slots_full:
+            new_cands = [c for c in all_candidates if c["code"] not in positions]
+            if new_cands:
+                self._notify_full(new_cands, max_positions)
+            candidates = [c for c in all_candidates if c["code"] in positions]
+        else:
+            candidates = all_candidates
+
+        # ── NXT 08:00 블록 (비ETF 종목 — NXT 거래 가능) ─────────────────
+        _now_dt  = datetime.now(KST)
+        _nxt_dt  = _now_dt.replace(hour=8, minute=0, second=0, microsecond=0)
+        _reg_dt  = _now_dt.replace(hour=9, minute=0, second=0, microsecond=0)
+
+        if _now_dt < _reg_dt:   # 9시 이전이면 NXT 블록 실행
+            if _now_dt < _nxt_dt:
+                wait_sec = (_nxt_dt - _now_dt).total_seconds()
+                logger.info(f"[MA전략] 08:00 NXT 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
+                time.sleep(wait_sec)
+
+            # NXT 손절 매도
+            for code in list(positions):
+                if not self._is_nxt_tradeable(code):
+                    continue
+                if positions[code].get("stop_loss_pending"):
+                    logger.info(
+                        f"[MA전략 손절매도 NXT] [{code}] {positions[code]['name']} "
+                        f"— 매수가 대비 -3% 이하 손절 플래그"
+                    )
+                    self._sell(code, positions[code], reason="손절 매수가대비 -3% 이하")
+                    del positions[code]
+                    ma_store.remove_position(code)
+                    _sold += 1
+
+            # NXT 데드크로스 매도
+            for code in list(positions):
+                if not self._is_nxt_tradeable(code):
+                    continue
+                s = stocks.get(code, {})
+                if s.get("ma21_below_ma62") and s.get("ma62_declining_5d"):
+                    logger.info(
+                        f"[MA전략 매도신호 NXT] [{code}] {positions[code]['name']} "
+                        f"— ma21({s.get('ma21',0):,.0f}) < ma62({s.get('ma62',0):,.0f})  "
+                        f"& ma62 5일 하락추세"
+                    )
+                    self._sell(code, positions[code], reason="ma21<ma62 & ma62 5일 하락추세")
+                    del positions[code]
+                    ma_store.remove_position(code)
+                    _sold += 1
+
+            # NXT 매수 (비ETF 후보 중 최대 1종목)
+            nxt_cands = [c for c in candidates if self._is_nxt_tradeable(c["code"])]
+            if not nxt_cands:
+                logger.info("[MA전략 NXT] 매수 신호 없음 (비ETF)")
+            else:
+                avail_cash, _bought = self._do_buy(
+                    nxt_cands, positions, avail_cash, slot_budget, _bought
+                )
+
+            # NXT 거래 후 잔고 재조회
+            try:
+                balance    = self.account.get_balance()
+                avail_cash = balance.cash
+            except Exception:
+                pass
+
+        # ── 09:00 정규장 블록 (ETF 등 NXT 불가 종목) ─────────────────────
         _now_dt  = datetime.now(KST)
         _open_dt = _now_dt.replace(hour=9, minute=0, second=0, microsecond=0)
         if _now_dt < _open_dt:
             wait_sec = (_open_dt - _now_dt).total_seconds()
-            logger.info(f"[MA전략] 09:00 장 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
+            logger.info(f"[MA전략] 09:00 정규장 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
             time.sleep(wait_sec)
 
-        _sold = 0
-        # ── 1. 손절 대기 포지션 우선 매도 (전일 16:30 배치에서 -3% 플래그) ────
+        # 정규장 손절 매도
         for code in list(positions):
+            if self._is_nxt_tradeable(code):
+                continue
             if positions[code].get("stop_loss_pending"):
                 logger.info(
                     f"[MA전략 손절매도] [{code}] {positions[code]['name']} "
@@ -156,8 +230,10 @@ class MACrossStrategy:
                 ma_store.remove_position(code)
                 _sold += 1
 
-        # ── 2. 데드크로스 + ma62 하락추세 매도 ─────────────────────────────
+        # 정규장 데드크로스 매도
         for code in list(positions):
+            if self._is_nxt_tradeable(code):
+                continue
             s = stocks.get(code, {})
             if s.get("ma21_below_ma62") and s.get("ma62_declining_5d"):
                 logger.info(
@@ -170,94 +246,99 @@ class MACrossStrategy:
                 ma_store.remove_position(code)
                 _sold += 1
 
-        _bought = 0
-        # ── 3. 매수 ─────────────────────────────────────────────────
-        # 보유 종목 재매수는 슬롯 소비 없음, 신규 종목만 슬롯 제약 적용
-        candidates = self._find_candidates(stocks, positions)
-        slots_full = len(positions) >= max_positions
-
-        # 슬롯 만석 시 신규 후보 제외 (재매수만 허용)
-        if slots_full:
-            new_candidates = [c for c in candidates if c["code"] not in positions]
-            if new_candidates:
-                self._notify_full(new_candidates, max_positions)
-            candidates = [c for c in candidates if c["code"] in positions]
-
-        if not candidates:
-            logger.info("[MA전략] 매수 신호 없음")
+        # 정규장 매수 (ETF 후보 중 최대 1종목)
+        reg_cands = [c for c in candidates if not self._is_nxt_tradeable(c["code"])]
+        if not reg_cands:
+            logger.info("[MA전략 정규장] 매수 신호 없음 (ETF)")
         else:
-            avail_cash = balance.cash
-            for cand in candidates[:1]:   # 하루 최대 1종목 매수
-                code     = cand["code"]
-                name     = cand["name"]
-                price    = cand.get("close", 0)
-                is_rebuy = code in positions
-
-                # 현재가 재확인
-                try:
-                    q     = self.market.get_quote(code)
-                    price = q.price or price
-                except Exception:
-                    pass
-
-                if price <= 0:
-                    continue
-
-                budget = min(slot_budget, avail_cash)
-                qty    = int(budget * 0.99 / price)
-                if qty <= 0:
-                    logger.warning(f"[MA전략] [{code}] 예산 부족 ({budget:,}원/{price:,}원)")
-                    continue
-
-                action_label = "추가매수" if is_rebuy else "매수"
-                tag = "(전체정배열)" if cand.get("has_ma744") else "(MA248정배열)"
-                logger.info(
-                    f"[MA전략 {action_label}] [{code}] {name} — "
-                    f"{tag} 정배열첫날 / 62↑:{cand['ma62_uptrend']} "
-                    f"248↑:{cand['ma248_uptrend']}"
-                    + (f" 744↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
-                    + f" 양봉몸통:{cand.get('candle_body_ratio', 0):.2%}"
-                )
-                result = self.order.buy(code, qty, 0, OrderType.MARKET)
-                if result.success:
-                    _bought += 1
-                    entry_date = datetime.now(KST).strftime("%Y-%m-%d")
-
-                    # 재매수: 통합 후 평단가 안내 / 신규: 단순 매수
-                    if is_rebuy:
-                        prev = positions[code]
-                        prev_qty   = prev.get("quantity", 0)
-                        prev_price = prev.get("entry_price", 0)
-                        new_qty    = prev_qty + qty
-                        new_avg    = int(round((prev_price * prev_qty + price * qty) / new_qty)) if new_qty > 0 else price
-                        ma_store.add_position(code, name, entry_date, price, qty)
-                        avail_cash -= price * qty
-                        tag = "(전체정배열)" if cand.get("has_ma744") else "(MA248정배열)"
-                        self.notifier.notify(
-                            f"[MA전략 추가매수] [{code}] {name} {tag}\n"
-                            f"추가: {qty:,}주 @ {price:,}원\n"
-                            f"통합: {new_qty:,}주  평단 {prev_price:,}→{new_avg:,}원\n"
-                            f"62일추세↑:{cand['ma62_uptrend']}  "
-                            f"248일추세↑:{cand['ma248_uptrend']}"
-                            + (f"  744일추세↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
-                        )
-                    else:
-                        ma_store.add_position(code, name, entry_date, price, qty)
-                        avail_cash -= price * qty
-                        tag = "(전체정배열)" if cand.get("has_ma744") else "(MA248정배열)"
-                        self.notifier.notify(
-                            f"[MA전략 매수] [{code}] {name} {tag}\n"
-                            f"수량:{qty:,}주  기준가:{price:,}원\n"
-                            f"62일추세↑:{cand['ma62_uptrend']}  "
-                            f"248일추세↑:{cand['ma248_uptrend']}"
-                            + (f"  744일추세↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
-                        )
-                else:
-                    logger.error(f"[MA전략 {action_label} 실패] {code}: {result.message}")
-                    self.notifier.notify(f"[MA전략 {action_label} 실패] [{code}] {name}: {result.message}")
+            avail_cash, _bought = self._do_buy(
+                reg_cands, positions, avail_cash, slot_budget, _bought
+            )
 
         logger.info(f"[MA전략] 완료")
         self.notifier.notify(f"[MA전략] 완료 — 매도:{_sold}건  매수:{_bought}건")
+
+    def _do_buy(
+        self,
+        cands: list,
+        positions: dict,
+        avail_cash: int,
+        slot_budget: int,
+        bought: int,
+    ):
+        """후보 리스트에서 최대 1종목 시장가 매수. (avail_cash, bought) 반환."""
+        for cand in cands[:1]:
+            code     = cand["code"]
+            name     = cand["name"]
+            price    = cand.get("close", 0)
+            is_rebuy = code in positions
+
+            try:
+                q     = self.market.get_quote(code)
+                price = q.price or price
+            except Exception:
+                pass
+
+            if price <= 0:
+                continue
+
+            budget = min(slot_budget, avail_cash)
+            qty    = int(budget * 0.99 / price)
+            if qty <= 0:
+                logger.warning(f"[MA전략] [{code}] 예산 부족 ({budget:,}원/{price:,}원)")
+                continue
+
+            action_label = "추가매수" if is_rebuy else "매수"
+            tag = "(전체정배열)" if cand.get("has_ma744") else "(MA248정배열)"
+            logger.info(
+                f"[MA전략 {action_label}] [{code}] {name} — "
+                f"{tag} 정배열첫날 / 62↑:{cand['ma62_uptrend']} "
+                f"248↑:{cand['ma248_uptrend']}"
+                + (f" 744↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
+                + f" 양봉몸통:{cand.get('candle_body_ratio', 0):.2%}"
+            )
+            result = self.order.buy(code, qty, 0, OrderType.MARKET)
+            if result.success:
+                bought += 1
+                entry_date = datetime.now(KST).strftime("%Y-%m-%d")
+                if is_rebuy:
+                    prev       = positions[code]
+                    prev_qty   = prev.get("quantity", 0)
+                    prev_price = prev.get("entry_price", 0)
+                    new_qty    = prev_qty + qty
+                    new_avg    = int(round((prev_price * prev_qty + price * qty) / new_qty)) if new_qty > 0 else price
+                    ma_store.add_position(code, name, entry_date, price, qty)
+                    avail_cash -= price * qty
+                    self.notifier.notify(
+                        f"[MA전략 추가매수] [{code}] {name} {tag}\n"
+                        f"추가: {qty:,}주 @ {price:,}원\n"
+                        f"통합: {new_qty:,}주  평단 {prev_price:,}→{new_avg:,}원\n"
+                        f"62일추세↑:{cand['ma62_uptrend']}  "
+                        f"248일추세↑:{cand['ma248_uptrend']}"
+                        + (f"  744일추세↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
+                    )
+                else:
+                    ma_store.add_position(code, name, entry_date, price, qty)
+                    avail_cash -= price * qty
+                    self.notifier.notify(
+                        f"[MA전략 매수] [{code}] {name} {tag}\n"
+                        f"수량:{qty:,}주  기준가:{price:,}원\n"
+                        f"62일추세↑:{cand['ma62_uptrend']}  "
+                        f"248일추세↑:{cand['ma248_uptrend']}"
+                        + (f"  744일추세↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
+                    )
+            else:
+                logger.error(f"[MA전략 {action_label} 실패] {code}: {result.message}")
+                self.notifier.notify(f"[MA전략 {action_label} 실패] [{code}] {name}: {result.message}")
+
+        return avail_cash, bought
+
+    # ═══════════════════════════════════════════════════════════════════
+    @staticmethod
+    def _is_nxt_tradeable(code: str) -> bool:
+        """ETF가 아닌 일반 주식은 NXT(08:00) 거래 가능; ETF는 정규장(09:00)만 가능."""
+        sector = CODE_MAP.get(code, {}).get("sector", "")
+        return not sector.startswith("ETF/")
 
     # ═══════════════════════════════════════════════════════════════════
     def _reconcile(self, json_positions: dict, balance) -> dict:
