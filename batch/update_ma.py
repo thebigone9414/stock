@@ -108,7 +108,7 @@ def compute_stock_entry(
     else:
         partial_aligned = prev_partial_aligned = False
 
-    # 5일선 눌림 정배열: MA21>MA62>MA248>MA744 유지, MA5<MA21 (완전 정배열 미달 눌림 구간)
+    # 5일선 눌림 정배열: 중장기 배열 유지 + MA5<MA21 (단기 눌림)
     if has_ma744 and all(p in ma for p in [5, 21, 62, 248, 744]):
         near_full_aligned = (
             curr(21) > curr(62) > curr(248) > curr(744)
@@ -116,6 +116,14 @@ def compute_stock_entry(
         )
     else:
         near_full_aligned = False
+
+    if not has_ma744 and all(p in ma for p in [5, 21, 62, 248]):
+        near_partial_aligned = (
+            curr(21) > curr(62) > curr(248)
+            and curr(5) < curr(21)
+        )
+    else:
+        near_partial_aligned = False
 
     # 당일 캔들 (배치 실행일 = 내일 매수 기준 "전일")
     prev_o     = opens[-1]  if len(opens)  >= 1 else 0
@@ -140,7 +148,8 @@ def compute_stock_entry(
         "prev_fully_aligned":  prev_fully_aligned,
         "partial_aligned":     partial_aligned,
         "prev_partial_aligned": prev_partial_aligned,
-        "near_full_aligned":   near_full_aligned,   # MA21>MA62>MA248>MA744 but MA5<MA21
+        "near_full_aligned":    near_full_aligned,    # MA21>MA62>MA248>MA744 but MA5<MA21
+        "near_partial_aligned": near_partial_aligned, # MA21>MA62>MA248 but MA5<MA21
         # 매도 신호
         "ma21_below_ma62":  (curr(21) < curr(62)) if 21 in ma and 62 in ma else False,
         "ma62_declining_5d": (not _is_uptrend(ma[62], window=5)) if 62 in ma else False,
