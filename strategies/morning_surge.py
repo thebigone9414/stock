@@ -139,12 +139,18 @@ class MorningSurgeStrategy:
         ma_stocks = ma_data.get("stocks", {})
         aligned_codes = {
             code for code, s in ma_stocks.items()
-            if s.get("fully_aligned") or s.get("partial_aligned")
+            if s.get("fully_aligned")
+            or s.get("partial_aligned")
+            or s.get("near_full_aligned")   # MA21>MA62>MA248>MA744, MA5<MA21 (눌림)
         }
+        n_full    = sum(1 for s in ma_stocks.values() if s.get("fully_aligned"))
+        n_partial = sum(1 for s in ma_stocks.values() if s.get("partial_aligned"))
+        n_near    = sum(1 for s in ma_stocks.values() if s.get("near_full_aligned"))
         self._watchlist = [s for s in S1_WATCHLIST if s["code"] in aligned_codes]
         logger.info(
-            f"[옥동자] MA 정배열 필터: 전체 {len(S1_WATCHLIST)}종목 → "
-            f"정배열 {len(self._watchlist)}종목 (기준일: {ma_data.get('updated_at', '?')})"
+            f"[옥동자] MA 필터: 전체 {len(S1_WATCHLIST)}종목 → "
+            f"대상 {len(self._watchlist)}종목 "
+            f"(완전:{n_full} 부분:{n_partial} 눌림:{n_near} / 기준일: {ma_data.get('updated_at', '?')})"
         )
         if not self._watchlist:
             msg = "[옥동자] MA 정배열 종목 없음 — 오늘 전략 종료"
