@@ -71,12 +71,12 @@ class MACrossStrategy:
             self.notifier.notify(msg)
             return
 
-        # 지연 실행 감지: 09:10 이후면 NXT·정규장 모두 마감
+        # 지연 실행 감지: 09:10 이후면 시장가 주문 시간대 초과
         _now = datetime.now(KST)
         if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 10):
             msg = (
                 f"[MA전략] 실행 지연 감지 — {_now.strftime('%H:%M')} KST 시작\n"
-                f"NXT(08:00)·정규장(09:00) 주문 시간대 경과, 오늘 건너뜀"
+                f"09:00 시장가 주문 불가, 오늘 건너뜀"
             )
             logger.warning(msg)
             self.notifier.notify(msg)
@@ -151,18 +151,29 @@ class MACrossStrategy:
         else:
             candidates = all_candidates
 
+        # ── 오늘 할 일 없으면 조기 종료 (Actions 분 절약) ────────────────
+        any_stop_loss  = any(p.get("stop_loss_pending") for p in positions.values())
+        any_sell_sig   = any(
+            stocks.get(c, {}).get("ma21_below_ma62") and stocks.get(c, {}).get("ma62_declining_5d")
+            for c in positions
+        )
+        if not any_stop_loss and not any_sell_sig and not candidates:
+            msg = "[MA전략] 오늘 매수·매도 신호 없음 — 조기 종료"
+            logger.info(msg)
+            self.notifier.notify(msg)
+            return
+
         # ── NXT 08:00 블록 (비ETF 종목 — NXT 거래 가능) ─────────────────
         _now_dt  = datetime.now(KST)
         _nxt_dt  = _now_dt.replace(hour=8, minute=0, second=0, microsecond=0)
         _reg_dt  = _now_dt.replace(hour=9, minute=0, second=0, microsecond=0)
 
-        if _now_dt < _reg_dt:   # 9시 이전이면 NXT 블록 실행
+        if _now_dt < _reg_dt:
             if _now_dt < _nxt_dt:
                 wait_sec = (_nxt_dt - _now_dt).total_seconds()
                 logger.info(f"[MA전략] 08:00 NXT 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
                 time.sleep(wait_sec)
 
-            # NXT 손절 매도
             for code in list(positions):
                 if not self._is_nxt_tradeable(code):
                     continue

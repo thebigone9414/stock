@@ -148,15 +148,16 @@ def compute_stock_entry(
         "prev_fully_aligned":  prev_fully_aligned,
         "partial_aligned":     partial_aligned,
         "prev_partial_aligned": prev_partial_aligned,
-        "near_full_aligned":    near_full_aligned,    # MA21>MA62>MA248>MA744 but MA5<MA21
-        "near_partial_aligned": near_partial_aligned, # MA21>MA62>MA248 but MA5<MA21
         # 매도 신호
-        "ma21_below_ma62":  (curr(21) < curr(62)) if 21 in ma and 62 in ma else False,
+        "ma21_below_ma62":   (curr(21) < curr(62)) if 21 in ma and 62 in ma else False,
         "ma62_declining_5d": (not _is_uptrend(ma[62], window=5)) if 62 in ma else False,
         # 추세 방향
         "ma62_uptrend":  _is_uptrend(ma[62])  if 62  in ma else False,
         "ma248_uptrend": _is_uptrend(ma[248]) if 248 in ma else False,
         "ma744_uptrend": _is_uptrend(ma[744]) if has_ma744 else False,
+        # 정배열 확장
+        "near_full_aligned":    near_full_aligned,
+        "near_partial_aligned": near_partial_aligned,
         # 전일 캔들
         "prev_bullish_candle": prev_bull,
         "candle_body_ratio":   round(body_ratio, 6),
@@ -373,7 +374,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     if sell_signals:
         logger.info(f" 내일 매도 대상 ({len(sell_signals)}종목):")
         for c, sname in sell_signals:
-            logger.info(f"  [{c}] {sname}")
+            logger.info(f"  [{c}] {sname}  ma21<ma62 & ma62하락추세")
     else:
         logger.info(" 내일 매도 예정 없음")
     logger.info("══════════════════════════════════════════")

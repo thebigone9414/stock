@@ -19,7 +19,7 @@ Phase 4  08:45~10:00  포지션 모니터링
 
 import time
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -41,7 +41,7 @@ from utils.throttler import RateThrottler
 KST = pytz.timezone("Asia/Seoul")
 
 # ── 전략 상수 ──────────────────────────────────────────────────────────
-STOP_LOSS_RATIO   = 0.03     # 고점 대비 손절 3%
+STOP_LOSS_RATIO   = 0.03     # 매수가 대비 손절 3%
 TAKE_PROFIT_RATIO = 0.05     # 매수가 대비 익절 5%
 FOREIGN_WEIGHT    = 1.0      # 프로그램매매 단일 지표이므로 가중치 1.0
 MONITOR_INTERVAL  = 20       # 포지션 모니터링 주기(초)
