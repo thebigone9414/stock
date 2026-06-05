@@ -32,23 +32,22 @@ concurrency:
   cancel-in-progress: false   # 실행 중인 매매 절대 중단 금지
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job A: 전략2 — MA 이평선 중장기 (전략1과 병렬 실행)
-# 07:50 시작 → 09:00까지 내부 대기 → 시장가 매수/매도
+# Job A: 전략2 — MA 이평선 중장기
+# 08:55 시작 (ma-morning 트리거) → 09:00 정규장 개장 대기 → 시장가 매수/매도
+# cron-job.org: 08:55 KST (23:55 UTC 전날) → ma-morning 트리거
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 jobs:
   trade-ma:
     name: MA 이평선 전략 (S2)
     runs-on: ubuntu-latest
-    timeout-minutes: 130     # 07:30 시작 → 09:00 대기 → 09:10 주문 완료 + 여유
+    timeout-minutes: 30      # 08:55 시작 → 09:00 대기(5분) → 09:10 주문 완료 + 여유
 
     permissions:
       contents: write        # 포지션 변경 시 ma_data.json git push 필요
 
     if: |
-      github.event_name == 'workflow_dispatch' && (
-        github.event.inputs.mode == 'morning' ||
-        github.event.inputs.mode == 'ma-morning'
-      )
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.mode == 'ma-morning'
 
     steps:
       - name: 소스 체크아웃
@@ -87,8 +86,9 @@ jobs:
           if-no-files-found: ignore
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job B: 전략1 — 옥동자 오전 수급 (전략2와 병렬 실행)
-# 07:30 시작 → 08:00 NXT 수집 시작 → 09:10 매수 → 10:00 타임컷
+# Job B: 전략1 — 옥동자 오전 수급
+# 07:50 시작 → 08:00~08:40 NXT 수집 → 08:45 NXT 매수 → 10:00 타임컷
+# cron-job.org: 07:50 KST (22:50 UTC 전날) → morning 트리거
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trade-morning:
     name: 옥동자 오전 전략 (S1)

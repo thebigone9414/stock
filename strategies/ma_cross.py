@@ -18,6 +18,9 @@
   총계좌의 20%씩, 최대 4포지션 동시 보유
   보유 종목이 다시 매수 신호 발생 시 → 평단가 통합 추가매수 (슬롯 소비 없음)
   슬롯 만석 + 신규 신호 → 텔레그램 알림
+
+[실행 타이밍]
+  08:55 시작 → 09:00 정규장 개장 대기 → 개별종목·ETF 모두 시장가 주문
 """
 from datetime import datetime
 import time
@@ -28,7 +31,6 @@ from loguru import logger
 
 import data.ma_store as ma_store
 from data.holidays import is_market_holiday
-from data.watchlist import CODE_MAP
 from kis.market import KISMarket
 from kis.order import KISOrder, OrderType
 from kis.account import KISAccount
@@ -71,9 +73,9 @@ class MACrossStrategy:
             self.notifier.notify(msg)
             return
 
-        # 지연 실행 감지: 09:10 이후면 시장가 주문 시간대 초과
+        # 지연 실행 감지: 09:20 이후면 시장가 주문 시간대 초과
         _now = datetime.now(KST)
-        if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 10):
+        if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 20):
             msg = (
                 f"[MA전략] 실행 지연 감지 — {_now.strftime('%H:%M')} KST 시작\n"
                 f"09:00 시장가 주문 불가, 오늘 건너뜀"
@@ -140,7 +142,7 @@ class MACrossStrategy:
         _bought = 0
         avail_cash = balance.cash
 
-        # 매수 후보 선정 (NXT/정규장 공통, 슬롯 체크 포함)
+        # 매수 후보 선정 (슬롯 체크 포함)
         all_candidates = self._find_candidates(stocks, positions)
         slots_full     = len(positions) >= max_positions
         if slots_full:
@@ -163,63 +165,7 @@ class MACrossStrategy:
             self.notifier.notify(msg)
             return
 
-        # ── NXT 08:00 블록 (비ETF 종목 — NXT 거래 가능) ─────────────────
-        _now_dt  = datetime.now(KST)
-        _nxt_dt  = _now_dt.replace(hour=8, minute=0, second=0, microsecond=0)
-        _reg_dt  = _now_dt.replace(hour=9, minute=0, second=0, microsecond=0)
-
-        if _now_dt < _reg_dt:
-            if _now_dt < _nxt_dt:
-                wait_sec = (_nxt_dt - _now_dt).total_seconds()
-                logger.info(f"[MA전략] 08:00 NXT 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
-                time.sleep(wait_sec)
-
-            for code in list(positions):
-                if not self._is_nxt_tradeable(code):
-                    continue
-                if positions[code].get("stop_loss_pending"):
-                    logger.info(
-                        f"[MA전략 손절매도 NXT] [{code}] {positions[code]['name']} "
-                        f"— 매수가 대비 -3% 이하 손절 플래그"
-                    )
-                    self._sell(code, positions[code], reason="손절 매수가대비 -3% 이하")
-                    del positions[code]
-                    ma_store.remove_position(code)
-                    _sold += 1
-
-            # NXT 데드크로스 매도
-            for code in list(positions):
-                if not self._is_nxt_tradeable(code):
-                    continue
-                s = stocks.get(code, {})
-                if s.get("ma21_below_ma62") and s.get("ma62_declining_5d"):
-                    logger.info(
-                        f"[MA전략 매도신호 NXT] [{code}] {positions[code]['name']} "
-                        f"— ma21({s.get('ma21',0):,.0f}) < ma62({s.get('ma62',0):,.0f})  "
-                        f"& ma62 5일 하락추세"
-                    )
-                    self._sell(code, positions[code], reason="ma21<ma62 & ma62 5일 하락추세")
-                    del positions[code]
-                    ma_store.remove_position(code)
-                    _sold += 1
-
-            # NXT 매수 (비ETF 후보 중 최대 1종목)
-            nxt_cands = [c for c in candidates if self._is_nxt_tradeable(c["code"])]
-            if not nxt_cands:
-                logger.info("[MA전략 NXT] 매수 신호 없음 (비ETF)")
-            else:
-                avail_cash, _bought = self._do_buy(
-                    nxt_cands, positions, avail_cash, slot_budget, _bought
-                )
-
-            # NXT 거래 후 잔고 재조회
-            try:
-                balance    = self.account.get_balance()
-                avail_cash = balance.cash
-            except Exception:
-                pass
-
-        # ── 09:00 정규장 블록 (ETF 등 NXT 불가 종목) ─────────────────────
+        # ── 09:00 정규장 개장 대기 ────────────────────────────────────────
         _now_dt  = datetime.now(KST)
         _open_dt = _now_dt.replace(hour=9, minute=0, second=0, microsecond=0)
         if _now_dt < _open_dt:
@@ -227,10 +173,8 @@ class MACrossStrategy:
             logger.info(f"[MA전략] 09:00 정규장 개장 대기 ({int(wait_sec//60)}분 {int(wait_sec%60)}초)")
             time.sleep(wait_sec)
 
-        # 정규장 손절 매도
+        # ── 손절 매도 ────────────────────────────────────────────────────
         for code in list(positions):
-            if self._is_nxt_tradeable(code):
-                continue
             if positions[code].get("stop_loss_pending"):
                 logger.info(
                     f"[MA전략 손절매도] [{code}] {positions[code]['name']} "
@@ -241,10 +185,8 @@ class MACrossStrategy:
                 ma_store.remove_position(code)
                 _sold += 1
 
-        # 정규장 데드크로스 매도
+        # ── 데드크로스 매도 ──────────────────────────────────────────────
         for code in list(positions):
-            if self._is_nxt_tradeable(code):
-                continue
             s = stocks.get(code, {})
             if s.get("ma21_below_ma62") and s.get("ma62_declining_5d"):
                 logger.info(
@@ -257,13 +199,12 @@ class MACrossStrategy:
                 ma_store.remove_position(code)
                 _sold += 1
 
-        # 정규장 매수 (ETF 후보 중 최대 1종목)
-        reg_cands = [c for c in candidates if not self._is_nxt_tradeable(c["code"])]
-        if not reg_cands:
-            logger.info("[MA전략 정규장] 매수 신호 없음 (ETF)")
+        # ── 매수 ─────────────────────────────────────────────────────────
+        if not candidates:
+            logger.info("[MA전략] 매수 신호 없음")
         else:
             avail_cash, _bought = self._do_buy(
-                reg_cands, positions, avail_cash, slot_budget, _bought
+                candidates, positions, avail_cash, slot_budget, _bought
             )
 
         logger.info(f"[MA전략] 완료")
@@ -343,13 +284,6 @@ class MACrossStrategy:
                 self.notifier.notify(f"[MA전략 {action_label} 실패] [{code}] {name}: {result.message}")
 
         return avail_cash, bought
-
-    # ═══════════════════════════════════════════════════════════════════
-    @staticmethod
-    def _is_nxt_tradeable(code: str) -> bool:
-        """ETF가 아닌 일반 주식은 NXT(08:00) 거래 가능; ETF는 정규장(09:00)만 가능."""
-        sector = CODE_MAP.get(code, {}).get("sector", "")
-        return not sector.startswith("ETF/")
 
     # ═══════════════════════════════════════════════════════════════════
     def _reconcile(self, json_positions: dict, balance) -> dict:
