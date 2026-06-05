@@ -11,10 +11,10 @@ KIS FHKST01010100(현재가시세) output의 pgtr_ntby_qty 필드:
 Phase 1  08:00~08:40  종목 프로그램 매매 데이터 수집 (초당 9건 이하 throttle)
 Phase 2  08:40~08:45  전체 정배열 종목 중 순매수량 1위 종목 선정
 Phase 3  08:45        NXT 전량 시장가 매수
-Phase 4  08:45~10:00  포지션 모니터링
+Phase 4  08:45~09:50  포지션 모니터링
   · 익절: 매수가 대비 +5% 즉시 매도
   · 손절: 매수가 대비 -3% 즉시 매도
-  · 타임컷: 10:00 무조건 전량 매도
+  · 타임컷: 09:50 무조건 전량 매도
 """
 
 import time
@@ -413,7 +413,7 @@ class MorningSurgeStrategy:
     #  PHASE 3: 포지션 모니터링
     # ═══════════════════════════════════════════════════════════════════
     def _monitor_phase(self) -> None:
-        time_cut   = _kst_time(10, 0)
+        time_cut   = _kst_time(9, 50)
         stop_price = self._entry_price * (1 - STOP_LOSS_RATIO)
         tp_price   = self._entry_price * (1 + TAKE_PROFIT_RATIO)
 
@@ -423,7 +423,7 @@ class MorningSurgeStrategy:
             f"  매수가:  {self._entry_price:,}원\n"
             f"  익절가:  {tp_price:,.0f}원 (매수가+{TAKE_PROFIT_RATIO*100:.0f}%)\n"
             f"  손절가:  {stop_price:,.0f}원 (매수가-{STOP_LOSS_RATIO*100:.0f}%)\n"
-            f"  타임컷:  10:00"
+            f"  타임컷:  09:50"
         )
 
         while True:
@@ -431,8 +431,8 @@ class MorningSurgeStrategy:
 
             # ── 타임컷 ───────────────────────────────────────
             if now >= time_cut:
-                logger.info("[타임컷] 10:00 — 전량 시장가 매도")
-                self._sell_all("타임컷 10:00")
+                logger.info("[타임컷] 09:50 — 전량 시장가 매도")
+                self._sell_all("타임컷 09:50")
                 return
 
             # ── 현재가 조회 (throttle 적용) ───────────────────

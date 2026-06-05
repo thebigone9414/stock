@@ -93,7 +93,7 @@ jobs:
   trade-morning:
     name: 옥동자 오전 전략 (S1)
     runs-on: ubuntu-latest
-    timeout-minutes: 180     # 07:30 시작 → 10:00 타임컷 (150분) + 여유
+    timeout-minutes: 150     # 07:50 시작 → 09:50 타임컷 (120분) + 여유
 
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning'
 
