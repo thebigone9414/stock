@@ -179,6 +179,7 @@ class KISMarket:
                 period="D",
                 start_date=start_dt.strftime("%Y%m%d"),
                 end_date=end_dt.strftime("%Y%m%d"),
+                adj_price=True,   # 수정주가 (분배락/권리락 반영)
             )
             if df.empty:
                 break
