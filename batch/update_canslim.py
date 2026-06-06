@@ -2,21 +2,21 @@
 """
 CANSLIM 일일 스크리닝 배치
 
-[동작]
-  CANSLIM 유니버스 종목에 대해 7개 조건 계산 → data/canslim_data.json 저장
+[스크리닝 대상]
+  dart_ca_screened.json (C·A 분기 사전필터링 결과) 우선 사용.
+  파일이 없으면 canslim_universe.py 전체(~200종목)로 폴백.
 
-  C — 최근 분기 EPS YoY +25% 이상     (dart_data.json)
-  A — 최근 3년 연간 EPS CAGR +15% 이상 (dart_data.json)
-  N — 52주 신고가 대비 10% 이내         (OHLCV)
-  S — 당일 거래량 ≥ 50일 평균의 150%   (OHLCV)
-  L — 3개월 수익률 > KOSPI 3개월 수익률 (OHLCV)
-  I — 외국인+기관 순매수 > 0           (KIS 투자자동향 API)
-  M — KODEX200 MA5 > MA20             (ohlcv_cache.json)
+[조건 계산]
+  C·A — dart_ca_screened.json 에서 이미 확정 (DART 배치 결과 재사용)
+  N   — 52주 신고가 대비 10% 이내         (OHLCV)
+  S   — 당일 거래량 ≥ 50일 평균의 150%   (OHLCV)
+  L   — 3개월 수익률 > KOSPI 3개월 수익률 (OHLCV)
+  I   — 외국인+기관 순매수 > 0           (KIS 투자자동향 API)
+  M   — KODEX200 MA5 > MA20             (ohlcv_cache.json)
 
 [OHLCV 캐시 전략]
-  - S2 MA배치(update_ma.py)가 이미 ohlcv_cache.json을 최신화
-  - 해당 캐시에 있는 종목은 API 호출 생략
-  - KOSDAQ 전용 종목(S2 watchlist에 없음)은 canslim_ohlcv_cache.json에 따로 저장
+  S2 MA배치(update_ma.py)의 ohlcv_cache.json 우선 재사용.
+  KOSDAQ 전용 종목은 canslim_ohlcv_cache.json 에 따로 저장.
 
 장 마감 후(16:40 KST) GitHub Actions에서 실행.
 """
@@ -30,7 +30,6 @@ import pytz
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import numpy as np
 from loguru import logger
 
 from config.settings import get_settings
@@ -38,7 +37,6 @@ from utils.logger import setup_logger
 from utils.notifier import Notifier
 from utils.throttler import RateThrottler
 from kis.factory import KIS
-from data.canslim_universe import CANSLIM_UNIVERSE
 import data.dart_store as dart_store
 import data.canslim_store as canslim_store
 
@@ -69,44 +67,9 @@ def _save_cache(path: Path, cache: dict) -> None:
 
 # ── 조건별 계산 헬퍼 ─────────────────────────────────────────────────
 
-def _check_C(corp: dict) -> bool:
-    """최근 분기 EPS YoY +25% 이상"""
-    if not corp:
-        return False
-    qeps = corp.get("quarterly_eps", [])
-    if len(qeps) < 2:
-        return False
-    # 최신 분기와 동일 분기 전년도 비교
-    latest = next((q for q in qeps if q.get("eps") is not None), None)
-    if not latest or not latest["eps"]:
-        return False
-    qnum, qyear = latest["quarter"], latest["year"]
-    prev = next(
-        (q for q in qeps if q["year"] == qyear - 1 and q["quarter"] == qnum and q.get("eps") is not None),
-        None,
-    )
-    if not prev or not prev["eps"] or prev["eps"] <= 0:
-        return False
-    growth = (latest["eps"] - prev["eps"]) / abs(prev["eps"])
-    return growth >= 0.25
-
-
-def _check_A(corp: dict) -> bool:
-    """최근 3년 연간 EPS CAGR +15% 이상"""
-    if not corp:
-        return False
-    aeps = [a for a in corp.get("annual_eps", []) if a.get("eps") is not None and a["eps"] > 0]
-    if len(aeps) < 2:
-        return False
-    aeps_sorted = sorted(aeps, key=lambda x: x["year"], reverse=True)
-    latest = aeps_sorted[0]["eps"]
-    # 최대 3년 전 데이터 사용
-    oldest = aeps_sorted[min(2, len(aeps_sorted) - 1)]
-    years  = aeps_sorted[0]["year"] - oldest["year"]
-    if years <= 0:
-        return False
-    cagr = (latest / oldest["eps"]) ** (1 / years) - 1
-    return cagr >= 0.15
+# C·A 조건은 canslim_store 에서 공유 (update_dart.py 와 동일 로직)
+_check_C = canslim_store.check_C
+_check_A = canslim_store.check_A
 
 
 def _check_N(closes: list) -> tuple:
@@ -179,7 +142,17 @@ def run_batch(market, notifier: Notifier = None) -> None:
         logger.info(f"[CANSLIM배치] {today} 휴장일 — 미실행")
         return
 
-    dart_data = dart_store.load()
+    # ── 스크리닝 대상 결정 ─────────────────────────────────────────────
+    # DART 배치가 이미 실행됐으면 C·A 통과 목록만 사용, 없으면 전체 유니버스
+    universe     = canslim_store.get_screened_universe()
+    screened_ca  = {s["code"]: s for s in canslim_store.load_ca_screened().get("screened", [])}
+    dart_data    = dart_store.load()
+
+    ca_from_screened = bool(screened_ca)
+    logger.info(
+        f"[CANSLIM배치] 스크리닝 대상: {len(universe)}종목  "
+        f"({'C·A사전필터링목록' if ca_from_screened else '전체유니버스(DART배치미실행)'} 사용)"
+    )
 
     # S2 OHLCV 캐시 (update_ma.py가 이미 최신화)
     s2_cache      = _load_cache(OHLCV_CACHE_PATH)
@@ -188,50 +161,46 @@ def run_batch(market, notifier: Notifier = None) -> None:
     # KODEX200 (M·L 조건용)
     kospi_closes: list = s2_cache.get(KODEX200_CODE, {}).get("closes", [])
     if not kospi_closes:
-        logger.warning(f"[CANSLIM배치] KODEX200 OHLCV 없음 — M·L 조건 비활성화")
+        logger.warning("[CANSLIM배치] KODEX200 OHLCV 없음 — M·L 조건 비활성화")
 
     M_global = _check_M(kospi_closes)
 
-    throttler = RateThrottler(max_per_second=9)
+    throttler  = RateThrottler(max_per_second=9)
     stocks_out: dict = {}
     ok, fail, skip = 0, 0, 0
     today_date = datetime.now(KST).date()
+    n_total    = len(universe)
 
     logger.info("══════════════════════════════════════════")
     logger.info(f" CANSLIM 배치 시작 [{today}]  시장추세(M)={M_global}")
-    logger.info(f" 대상: {len(CANSLIM_UNIVERSE)}종목")
+    logger.info(f" 대상: {n_total}종목")
     logger.info("══════════════════════════════════════════")
 
-    for i, stock in enumerate(CANSLIM_UNIVERSE, 1):
+    for i, stock in enumerate(universe, 1):
         code   = stock["code"]
-        name   = stock["name"]
-        sector = stock["sector"]
+        name   = stock.get("name", code)
+        sector = stock.get("sector", "")
 
         try:
             # ── OHLCV 확보 ────────────────────────────────────────
-            # S2 캐시 우선, 없으면 canslim 전용 캐시, 없으면 API 호출
             s2_entry      = s2_cache.get(code, {})
             canslim_entry = canslim_cache.get(code, {})
 
             if s2_entry.get("last_date") == today and len(s2_entry.get("closes", [])) >= 60:
-                closes  = s2_entry["closes"]
-                volumes = s2_entry.get("volumes", [])
-                last_date = today
+                closes    = s2_entry["closes"]
+                volumes   = s2_entry.get("volumes", [])
                 from_cache = "S2"
             elif canslim_entry.get("last_date") == today and len(canslim_entry.get("closes", [])) >= 60:
-                closes  = canslim_entry["closes"]
-                volumes = canslim_entry.get("volumes", [])
-                last_date = today
+                closes    = canslim_entry["closes"]
+                volumes   = canslim_entry.get("volumes", [])
                 from_cache = "canslim"
             else:
-                # API 호출
-                last_cached = canslim_entry.get("last_date", "") or s2_entry.get("last_date", "")
+                last_cached   = canslim_entry.get("last_date", "") or s2_entry.get("last_date", "")
                 cached_closes = canslim_entry.get("closes") or s2_entry.get("closes", [])
 
                 if last_cached and len(cached_closes) >= 60:
                     stale_days = (
-                        today_date
-                        - datetime.strptime(last_cached, "%Y-%m-%d").date()
+                        today_date - datetime.strptime(last_cached, "%Y-%m-%d").date()
                     ).days
                     fetch_days = max(INCREMENTAL_DAYS, stale_days * 2 + 5)
                 else:
@@ -272,41 +241,49 @@ def run_batch(market, notifier: Notifier = None) -> None:
                 skip += 1
                 continue
 
-            # ── CANSLIM 조건 계산 ─────────────────────────────────
-            corp  = dart_data.get("corps", {}).get(code, {})
-            C     = _check_C(corp)
-            A     = _check_A(corp)
-            N, hi_52w = _check_N(closes)
+            # ── C·A 조건 ──────────────────────────────────────────
+            if ca_from_screened and code in screened_ca:
+                # DART 배치 결과 재사용 (분기 사전 필터링)
+                C = screened_ca[code]["C"]
+                A = screened_ca[code]["A"]
+            else:
+                # DART 배치 미실행 → dart_data.json 에서 직접 계산
+                corp = dart_data.get("corps", {}).get(code, {})
+                C = _check_C(corp)
+                A = _check_A(corp)
+
+            # ── N·S·L·I·M 조건 ────────────────────────────────────
+            N, hi_52w    = _check_N(closes)
             S, vol_ratio = _check_S(volumes) if volumes else (False, 0.0)
-            L, rs_3m  = _check_L(closes, kospi_closes)
-            I         = _check_I(market, code, throttler)
-            M         = M_global
+            L, rs_3m     = _check_L(closes, kospi_closes)
+            I            = _check_I(market, code, throttler)
+            M            = M_global
 
             score    = sum([C, A, N, S, L, I, M])
             all_pass = (score == 7)
 
             stocks_out[code] = {
-                "name":     name,
-                "sector":   sector,
+                "name":      name,
+                "sector":    sector,
                 "C": C, "A": A, "N": N, "S": S, "L": L, "I": I, "M": M,
-                "score":    score,
-                "all_pass": all_pass,
-                "close":    int(closes[-1]),
-                "hi_52w":   hi_52w,
+                "score":     score,
+                "all_pass":  all_pass,
+                "close":     int(closes[-1]),
+                "hi_52w":    hi_52w,
                 "vol_ratio": vol_ratio,
-                "rs_3m":    rs_3m,
+                "rs_3m":     rs_3m,
             }
 
             signal = " ★ALL_PASS" if all_pass else ""
             logger.info(
-                f"[{i:03d}/{len(CANSLIM_UNIVERSE)}] [{code}] {name:14s}  "
+                f"[{i:03d}/{n_total}] [{code}] {name:14s}  "
                 f"C:{int(C)} A:{int(A)} N:{int(N)} S:{int(S)} L:{int(L)} I:{int(I)} M:{int(M)}  "
                 f"score={score}/7  ({from_cache}){signal}"
             )
             ok += 1
 
         except Exception as e:
-            logger.warning(f"[{i:03d}/{len(CANSLIM_UNIVERSE)}] [{code}] {name} 실패: {e}")
+            logger.warning(f"[{i:03d}/{n_total}] [{code}] {name} 실패: {e}")
             fail += 1
 
     # 저장
@@ -321,7 +298,7 @@ def run_batch(market, notifier: Notifier = None) -> None:
 
     canslim_store.git_commit_push(
         [str(canslim_store.CANSLIM_DATA_PATH), str(CANSLIM_OHLCV_CACHE_PATH)],
-        f"data: CANSLIM 스크리닝 {today} ({ok}/{len(CANSLIM_UNIVERSE)}종목)",
+        f"data: CANSLIM 스크리닝 {today} ({ok}/{n_total}종목)",
     )
 
     # 매수 후보 로그
