@@ -92,12 +92,8 @@ ETF_LIST: List[Dict[str, str]] = [
     {"code": "192090", "name": "TIGER 차이나CSI300",            "sector": "ETF/해외"},
     {"code": "117690", "name": "TIGER 차이나H",                 "sector": "ETF/해외"},
 
-    # ── 채권/달러 ETF ────────────────────────────────────────────────
-    {"code": "153130", "name": "KODEX 단기채권",                "sector": "ETF/채권"},
+    # ── 달러 ETF ─────────────────────────────────────────────────────
     {"code": "130680", "name": "TIGER 미국달러선물",            "sector": "ETF/달러"},
-    {"code": "138230", "name": "KOSEF 단기자금",                "sector": "ETF/채권"},
-    {"code": "302190", "name": "TIGER 미국달러단기채권액티브",  "sector": "ETF/달러"},
-    {"code": "182490", "name": "TIGER 단기통안채",              "sector": "ETF/채권"},
 
     # ── 배당/스타일 ETF ──────────────────────────────────────────────
     {"code": "161490", "name": "ARIRANG 고배당주",              "sector": "ETF/배당"},
