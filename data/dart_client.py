@@ -1,11 +1,14 @@
 """
 DART OpenAPI 클라이언트
-- 기업 고유번호(corp_code) 조회 (corpCode.xml.zip)
+- 전체 상장법인 corp_code 조회 (corpCode.xml.zip)
 - 분기/사업보고서 재무 데이터 (주당순이익·매출액) 조회
 
 보고서 코드:
   11013 = 1분기(Q1)  11012 = 반기(H1/Q2)
   11014 = 3분기(Q3)  11011 = 사업보고서(Annual)
+
+캐시 파일: data/dart_corpinfo.json
+  형식: {stock_code: {"corp_code": "...", "name": "...회사명"}}
 """
 import io
 import json
@@ -23,13 +26,16 @@ REPRT_H1        = "11012"
 REPRT_Q3        = "11014"
 REPRT_ANN       = "11011"
 
-CORP_CODE_CACHE = Path("data/dart_corpcode.json")
+CORP_INFO_CACHE = Path("data/dart_corpinfo.json")
+
+# 구버전 캐시 경로 (하위 호환 자동 마이그레이션용)
+_LEGACY_CACHE   = Path("data/dart_corpcode.json")
 
 
 class DARTClient:
     def __init__(self, api_key: str):
         self.api_key  = api_key
-        self._corpmap: Optional[dict] = None
+        self._info_map: Optional[dict] = None   # code → {corp_code, name}
 
     # ── 내부 HTTP ─────────────────────────────────────────────────────
     def _get(self, endpoint: str, params: dict) -> dict:
@@ -44,19 +50,23 @@ class DARTClient:
             return {"list": [], "status": status}
         raise ValueError(f"DART 오류 status={status}: {data.get('message', '')}")
 
-    # ── corp_code 매핑 ────────────────────────────────────────────────
-    def get_corp_map(self) -> dict:
-        """stockCode → corpCode 매핑 딕셔너리 반환 (캐시 재사용)"""
-        if self._corpmap is not None:
-            return self._corpmap
-        if CORP_CODE_CACHE.exists():
-            with open(CORP_CODE_CACHE, "r", encoding="utf-8") as f:
-                self._corpmap = json.load(f)
-            logger.info(f"[DART] corpCode 캐시 로드: {len(self._corpmap):,}개")
-            return self._corpmap
-        return self._download_corp_map()
+    # ── corp_info 매핑 ────────────────────────────────────────────────
+    def get_corp_info_map(self) -> dict:
+        """stockCode → {corp_code, name} 매핑 딕셔너리 (캐시 재사용)"""
+        if self._info_map is not None:
+            return self._info_map
+        if CORP_INFO_CACHE.exists():
+            with open(CORP_INFO_CACHE, "r", encoding="utf-8") as f:
+                self._info_map = json.load(f)
+            logger.info(f"[DART] corpInfo 캐시 로드: {len(self._info_map):,}개")
+            return self._info_map
+        return self._download_corp_info()
 
-    def _download_corp_map(self) -> dict:
+    def get_corp_map(self) -> dict:
+        """하위 호환: stockCode → corp_code (str) 반환"""
+        return {k: v["corp_code"] for k, v in self.get_corp_info_map().items()}
+
+    def _download_corp_info(self) -> dict:
         logger.info("[DART] corpCode.xml 다운로드 중...")
         resp = requests.get(
             f"{DART_BASE}/corpCode.xml",
@@ -72,19 +82,30 @@ class DARTClient:
         for item in root.findall("list"):
             sc = (item.findtext("stock_code") or "").strip()
             cc = (item.findtext("corp_code")  or "").strip()
-            if sc and len(sc) == 6:
-                result[sc] = cc
+            nm = (item.findtext("corp_name")  or "").strip()
+            if sc and len(sc) == 6 and cc:
+                result[sc] = {"corp_code": cc, "name": nm}
 
-        CORP_CODE_CACHE.parent.mkdir(parents=True, exist_ok=True)
-        with open(CORP_CODE_CACHE, "w", encoding="utf-8") as f:
+        CORP_INFO_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        with open(CORP_INFO_CACHE, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False)
 
-        self._corpmap = result
-        logger.info(f"[DART] corpCode 다운로드 완료: {len(result):,}개")
+        self._info_map = result
+        logger.info(f"[DART] corpInfo 다운로드 완료: {len(result):,}개 상장법인")
         return result
 
     def get_corp_code(self, stock_code: str) -> Optional[str]:
-        return self.get_corp_map().get(stock_code)
+        info = self.get_corp_info_map().get(stock_code)
+        return info["corp_code"] if info else None
+
+    def get_all_listed_stocks(self) -> list:
+        """DART에 등록된 전체 상장법인 목록
+        Returns: [{"code": "005930", "name": "삼성전자"}, ...]
+        """
+        return [
+            {"code": code, "name": info["name"]}
+            for code, info in self.get_corp_info_map().items()
+        ]
 
     # ── 재무제표 조회 ─────────────────────────────────────────────────
     def get_financial_statement(
@@ -105,7 +126,6 @@ class DARTClient:
             rows = data.get("list", [])
             if rows or fs_div == "OFS":
                 return rows
-            # 연결재무제표 없음 → 개별 재시도
             logger.debug(f"[DART] {corp_code} {bsns_year} {reprt_code} 연결 없음, 개별 재시도")
             return self.get_financial_statement(corp_code, bsns_year, reprt_code, "OFS")
         except Exception as e:

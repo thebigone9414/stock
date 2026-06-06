@@ -241,6 +241,16 @@ def run_batch(market, notifier: Notifier = None) -> None:
                 skip += 1
                 continue
 
+            # ── 가격 필터: 1만원 미만 제외 ────────────────────────
+            current_price = closes[-1]
+            if current_price < 10_000:
+                logger.debug(
+                    f"[{i:03d}/{n_total}] [{code}] {name}  "
+                    f"가격={current_price:,}원 < 10,000원 → 제외"
+                )
+                skip += 1
+                continue
+
             # ── C·A 조건 ──────────────────────────────────────────
             if ca_from_screened and code in screened_ca:
                 # DART 배치 결과 재사용 (분기 사전 필터링)

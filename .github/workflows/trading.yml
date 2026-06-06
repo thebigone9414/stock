@@ -408,7 +408,7 @@ jobs:
   update-canslim:
     name: CANSLIM 스크리닝 배치
     runs-on: ubuntu-latest
-    timeout-minutes: 60       # OHLCV 풀로딩 초회 대비
+    timeout-minutes: 60       # DART 배치 후: C·A 통과 50~150종목, 증분 OHLCV ~10분
 
     permissions:
       contents: write
@@ -475,7 +475,7 @@ jobs:
   update-dart:
     name: DART 재무 배치 (분기 1회)
     runs-on: ubuntu-latest
-    timeout-minutes: 60       # ~90종목 × 12 API calls = ~1,080 calls, 약 25분
+    timeout-minutes: 120      # 전체 상장 ~2,500종목: 실적없는종목(조기탈출)~9분 + 실적있는종목~45분 = ~54분
 
     permissions:
       contents: write
