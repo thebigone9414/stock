@@ -77,7 +77,9 @@ def _current_quarters(n_years: int = 2) -> list:
 
 def _annual_years(n: int = 3) -> list:
     now  = datetime.now(KST)
-    base = now.year - 1 if now.month < 4 else now.year
+    # 사업보고서(11011)는 전년도 기준 (당해연도 보고서는 다음해 3월에 공시)
+    # 4월 이후 → 전년도 사업보고서 확정, 3월 이전 → 전전년도까지만 확보
+    base = now.year - 1 if now.month >= 4 else now.year - 2
     return [(y, REPRT_ANN) for y in range(base, base - n, -1)]
 
 
