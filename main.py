@@ -3,6 +3,11 @@
 
 Usage:
     python main.py --mode morning          # 옥동자 오전 수급 전략 (기본)
+    python main.py --mode ma-morning       # MA 이평선 전략 (S2)
+    python main.py --mode ma-batch         # MA 배치 업데이트
+    python main.py --mode canslim-morning  # CANSLIM 전략 (S3)
+    python main.py --mode canslim-batch    # CANSLIM 일일 스크리닝 배치
+    python main.py --mode dart-batch       # DART 재무 데이터 배치 (분기 1회)
     python main.py --mode balance          # 잔고 조회
     python main.py --mode market --code 005930   # 종목 시세 조회
     python main.py --mode check-watchlist  # 80개 종목 API 연결 테스트
@@ -40,6 +45,39 @@ def run_ma_batch(kis: KIS, notifier: Notifier) -> None:
     """MA 이평선 배치 업데이트 + 손절 체크 + 잔고 현황 알림"""
     from batch.update_ma import run_batch
     run_batch(kis.market, account=kis.account, notifier=notifier)
+
+
+def run_canslim_morning(kis: KIS, notifier: Notifier) -> None:
+    """CANSLIM 전략3 실행 (09:00 시장가 매수/매도)"""
+    from strategies.canslim import CANSLIMStrategy
+    strategy = CANSLIMStrategy(
+        market=kis.market,
+        order=kis.order,
+        account=kis.account,
+        notifier=notifier,
+        is_paper=kis.is_paper,
+    )
+    strategy.run()
+
+
+def run_canslim_batch(kis: KIS, notifier: Notifier) -> None:
+    """CANSLIM 일일 스크리닝 배치"""
+    from batch.update_canslim import run_batch
+    run_batch(kis.market, notifier=notifier)
+
+
+def run_dart_batch() -> None:
+    """DART 재무 데이터 배치 (분기 1회)"""
+    import os
+    from data.dart_client import DARTClient
+    from batch.update_dart import run_dart_batch as _run
+
+    dart_key = os.environ.get("DART_API_KEY", "")
+    if not dart_key:
+        logger.error("[dart-batch] DART_API_KEY 환경변수가 없습니다. GitHub Secrets에 추가하세요.")
+        sys.exit(1)
+    client = DARTClient(dart_key)
+    _run(client)
 
 
 def run_morning_strategy(kis: KIS, notifier: Notifier) -> None:
@@ -163,8 +201,9 @@ def main():
     parser = argparse.ArgumentParser(description="옥동자 KIS 자동매매 시스템")
     parser.add_argument(
         "--mode",
-        choices=["morning", "ma-morning", "ma-batch", "balance", "market",
-                 "check-watchlist", "debug-investor", "auto"],
+        choices=["morning", "ma-morning", "ma-batch",
+                 "canslim-morning", "canslim-batch", "dart-batch",
+                 "balance", "market", "check-watchlist", "debug-investor", "auto"],
         default="morning",
         help="실행 모드 (기본: morning)"
     )
@@ -191,6 +230,15 @@ def main():
 
     elif args.mode == "ma-batch":
         run_ma_batch(kis, notifier)
+
+    elif args.mode == "canslim-morning":
+        run_canslim_morning(kis, notifier)
+
+    elif args.mode == "canslim-batch":
+        run_canslim_batch(kis, notifier)
+
+    elif args.mode == "dart-batch":
+        run_dart_batch()
 
     elif args.mode == "balance":
         run_balance(kis)
