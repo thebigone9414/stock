@@ -60,10 +60,10 @@ def run_canslim_morning(kis: KIS, notifier: Notifier) -> None:
     strategy.run()
 
 
-def run_canslim_batch(kis: KIS, notifier: Notifier) -> None:
+def run_canslim_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
     """CANSLIM 일일 스크리닝 배치"""
     from batch.update_canslim import run_batch
-    run_batch(kis.market, notifier=notifier)
+    run_batch(kis.market, notifier=notifier, force=force)
 
 
 def run_dart_batch() -> None:
@@ -210,6 +210,7 @@ def main():
     parser.add_argument("--code",      help="종목코드 (--mode market 전용)")
     parser.add_argument("--run-once",  action="store_true", help="단일 사이클 (구형 auto 전용)")
     parser.add_argument("--cycle",     type=int, default=5)
+    parser.add_argument("--force",     action="store_true", help="휴장일·중복실행 체크 무시 (canslim-batch 전용)")
     args = parser.parse_args()
 
     settings = get_settings()
@@ -235,7 +236,7 @@ def main():
         run_canslim_morning(kis, notifier)
 
     elif args.mode == "canslim-batch":
-        run_canslim_batch(kis, notifier)
+        run_canslim_batch(kis, notifier, force=args.force)
 
     elif args.mode == "dart-batch":
         run_dart_batch()

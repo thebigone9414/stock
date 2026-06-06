@@ -127,20 +127,23 @@ def _check_I(market, code: str, throttler: RateThrottler) -> bool:
 
 # ── 메인 배치 ─────────────────────────────────────────────────────────
 
-def run_batch(market, notifier: Notifier = None) -> None:
+def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     from data.holidays import is_market_holiday
 
     today = datetime.now(KST).strftime("%Y-%m-%d")
 
-    # 중복 실행 방지
-    existing_out = canslim_store.load_data()
-    if existing_out.get("updated_at", "").startswith(today):
-        logger.info(f"[CANSLIM배치] {today} 이미 완료 — 중복 실행 건너뜀")
-        return
+    # 중복 실행 방지 (--force 시 건너뜀)
+    if not force:
+        existing_out = canslim_store.load_data()
+        if existing_out.get("updated_at", "").startswith(today):
+            logger.info(f"[CANSLIM배치] {today} 이미 완료 — 중복 실행 건너뜀")
+            return
 
-    if is_market_holiday():
-        logger.info(f"[CANSLIM배치] {today} 휴장일 — 미실행")
-        return
+        if is_market_holiday():
+            logger.info(f"[CANSLIM배치] {today} 휴장일 — 미실행")
+            return
+    else:
+        logger.info(f"[CANSLIM배치] --force 모드: 휴장일·중복 체크 건너뜀")
 
     # ── 스크리닝 대상 결정 ─────────────────────────────────────────────
     # DART 배치가 이미 실행됐으면 C·A 통과 목록만 사용, 없으면 전체 유니버스

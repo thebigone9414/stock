@@ -26,6 +26,14 @@ on:
         description: '종목코드 (market/debug-investor 모드 전용)'
         required: false
         default: '005930'
+      force:
+        description: '휴장일·중복 체크 무시 (canslim-batch 전용)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 concurrency:
   # 배치(ma-batch·canslim-batch·dart-batch·update-watchlist)는 okdongja-batch 그룹
@@ -440,7 +448,12 @@ jobs:
           TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
           LOG_LEVEL:            INFO
-        run: python main.py --mode canslim-batch
+        run: |
+          FORCE_FLAG=""
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+          python main.py --mode canslim-batch $FORCE_FLAG
 
       - name: 배치 실패 텔레그램 알림
         if: failure() || cancelled()
