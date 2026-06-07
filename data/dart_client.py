@@ -137,10 +137,12 @@ class DARTClient:
     def get_eps(
         self, corp_code: str, bsns_year: str, reprt_code: str
     ) -> Optional[int]:
-        """손익계산서(IS)에서 주당순이익(EPS) 추출 → 원 단위 int. 없으면 None"""
+        """IS/CIS에서 주당순이익(EPS) 추출 → 원 단위 int. 없으면 None
+        K-IFRS 상장사는 포괄손익계산서(CIS)에 EPS를 기재하므로 IS+CIS 모두 탐색.
+        """
         rows = self.get_financial_statement(corp_code, bsns_year, reprt_code)
         for row in rows:
-            if row.get("sj_div") != "IS":
+            if row.get("sj_div") not in ("IS", "CIS"):
                 continue
             nm = row.get("account_nm", "")
             if "주당순이익" in nm and "희석" not in nm:
