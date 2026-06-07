@@ -7,6 +7,9 @@
 
 여기에 data/etf_watchlist.py 의 ETF 목록이 항상 추가 병합됨.
 S1·S2 전략 모두 KOSPI200 + ETF 통합 watchlist 대상.
+
+DART 배치 C·A 스크리닝 통과 종목(dart_ca_screened.json)도 자동 병합됨.
+→ S2 MA 배치/전략도 DART 성장주를 함께 커버.
 """
 import json
 from pathlib import Path
@@ -14,7 +17,8 @@ from typing import List, Dict
 
 from data.etf_watchlist import ETF_LIST
 
-_CACHE_PATH = Path(__file__).parent / "kospi200_cache.json"
+_CACHE_PATH        = Path(__file__).parent / "kospi200_cache.json"
+_DART_CA_PATH      = Path(__file__).parent / "dart_ca_screened.json"
 
 # ── 빌트인 폴백 목록 (149종목, 캐시 없을 때 사용) ─────────────────────────────
 _BUILTIN: List[Dict[str, str]] = [
@@ -199,11 +203,22 @@ def _load_kospi200() -> List[Dict[str, str]]:
     return _BUILTIN
 
 
+def _load_dart_ca() -> List[Dict[str, str]]:
+    """DART C·A 스크리닝 통과 종목 로드 (파일 없거나 비어 있으면 빈 리스트)"""
+    try:
+        data    = json.loads(_DART_CA_PATH.read_text(encoding="utf-8"))
+        screened = data.get("screened", [])
+        return [{"code": s["code"], "name": s["name"], "sector": s.get("sector", "성장주")}
+                for s in screened if s.get("code")]
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
 def get_active_watchlist() -> List[Dict[str, str]]:
-    """KOSPI200 + ETF 통합 watchlist 반환 (code 중복 제거)"""
+    """KOSPI200 + ETF + DART C·A 스크리닝 통합 watchlist 반환 (code 중복 제거)"""
     seen: set = set()
     merged: List[Dict[str, str]] = []
-    for item in _load_kospi200() + ETF_LIST:
+    for item in _load_kospi200() + ETF_LIST + _load_dart_ca():
         if item["code"] not in seen:
             seen.add(item["code"])
             merged.append(item)

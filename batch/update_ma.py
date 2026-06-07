@@ -200,9 +200,16 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     ohlcv_cache = load_ohlcv_cache()
     has_cache   = bool(ohlcv_cache)
 
+    from data.watchlist import _load_dart_ca
+    dart_ca_count = len(_load_dart_ca())
+
     logger.info("══════════════════════════════════════════")
     logger.info(f" MA 배치 업데이트 시작 [{today}]")
-    logger.info(f" 대상: {len(WATCHLIST)}종목  캐시: {'있음(증분로딩)' if has_cache else '없음(풀로딩)'}")
+    logger.info(
+        f" 대상: {len(WATCHLIST)}종목  "
+        f"(KOSPI200+ETF 기반 + DART C·A {dart_ca_count}종목 병합)  "
+        f"캐시: {'있음(증분로딩)' if has_cache else '없음(풀로딩)'}"
+    )
     logger.info("══════════════════════════════════════════")
 
     # base_capital 초기화
