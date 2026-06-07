@@ -113,6 +113,15 @@ def run_dart_batch(dart_client: DARTClient) -> None:
     existing_data = dart_store.load()
     corps_out     = existing_data.get("corps", {})
 
+    # 이전 실행에서 이미 수집된 종목 (중단 후 재시작 시 건너뜀)
+    already_done = {
+        code for code, corp in corps_out.items()
+        if (any(q.get("eps") is not None for q in corp.get("quarterly_eps", []))
+            or any(a.get("eps") is not None for a in corp.get("annual_eps", [])))
+    }
+    if already_done:
+        logger.info(f" 재시작 감지: 이미 수집된 {len(already_done):,}개 종목 건너뜀")
+
     # 최신 연간 (Early Bail 판단 기준)
     latest_ann_year, latest_ann_reprt = ann_years[0]
 
@@ -126,6 +135,11 @@ def run_dart_batch(dart_client: DARTClient) -> None:
 
         if not corp_code:
             skip += 1
+            continue
+
+        # 이전 실행에서 이미 수집된 종목 재시작 시 건너뜀
+        if code in already_done:
+            ok += 1
             continue
 
         try:
@@ -181,6 +195,12 @@ def run_dart_batch(dart_client: DARTClient) -> None:
                     f"분기EPS={lq_eps}  연간EPS={la_eps}  "
                     f"(OK={ok} 탈출={bail_out})"
                 )
+
+            # 100개마다 중간 저장 (중단 시 재시작 가능)
+            if ok % 100 == 0:
+                existing_data["corps"] = corps_out
+                dart_store.save(existing_data)
+                logger.info(f"[중간저장] OK={ok}개 저장 완료 ({i}/{n_total})")
 
         except Exception as e:
             fail += 1

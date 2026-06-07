@@ -488,7 +488,7 @@ jobs:
   update-dart:
     name: DART 재무 배치 (분기 1회)
     runs-on: ubuntu-latest
-    timeout-minutes: 120      # 전체 상장 ~2,500종목: 실적없는종목(조기탈출)~9분 + 실적있는종목~45분 = ~54분
+    timeout-minutes: 360      # DART API 실제 응답 2~3s/call → 전체 ~3,800종목 최대 6시간. 중단 후 재시작 가능.
 
     permissions:
       contents: write
