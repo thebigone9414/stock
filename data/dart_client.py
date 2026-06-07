@@ -32,6 +32,12 @@ CORP_INFO_CACHE = Path("data/dart_corpinfo.json")
 _LEGACY_CACHE   = Path("data/dart_corpcode.json")
 
 
+_NET_INCOME_NAMES = frozenset({
+    "당기순이익(손실)", "당기순이익",
+    "분기순이익(손실)", "분기순이익",   # 분기보고서 일부 기업
+})
+
+
 class DARTClient:
     def __init__(self, api_key: str):
         self.api_key  = api_key
@@ -137,15 +143,16 @@ class DARTClient:
     def get_eps(
         self, corp_code: str, bsns_year: str, reprt_code: str
     ) -> Optional[int]:
-        """IS/CIS에서 주당순이익(EPS) 추출 → 원 단위 int. 없으면 None
-        K-IFRS 상장사는 포괄손익계산서(CIS)에 EPS를 기재하므로 IS+CIS 모두 탐색.
+        """IS/CIS에서 당기순이익 추출 → 원 단위 int. 없으면 None
+        fnlttSinglAcnt(주요계정)에 EPS 미포함 → 당기순이익으로 대체.
+        C·A 조건은 성장률 기반이라 절대값 단위 무관.
         """
         rows = self.get_financial_statement(corp_code, bsns_year, reprt_code)
         for row in rows:
             if row.get("sj_div") not in ("IS", "CIS"):
                 continue
-            nm = row.get("account_nm", "")
-            if "주당순이익" in nm and "희석" not in nm:
+            nm = row.get("account_nm", "").strip()
+            if nm in _NET_INCOME_NAMES:
                 raw = row.get("thstrm_amount", "").replace(",", "").strip()
                 try:
                     return int(raw)

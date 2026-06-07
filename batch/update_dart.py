@@ -88,23 +88,6 @@ def run_dart_batch(dart_client: DARTClient) -> None:
     quarters  = _current_quarters(n_years=2)
     ann_years = _annual_years(n=3)
 
-    # ── 진단: 삼성전자로 API 응답 구조 확인 ───────────────────────────────
-    latest_ann_year, latest_ann_reprt = ann_years[0]
-    samsung_cc = dart_client.get_corp_code("005930")
-    logger.info(f"[진단] 삼성전자 corp_code={samsung_cc}  조회연도={latest_ann_year}  보고서코드={latest_ann_reprt}")
-    if samsung_cc:
-        for fs_div in ("CFS", "OFS"):
-            rows = dart_client.get_financial_statement(samsung_cc, str(latest_ann_year), latest_ann_reprt, fs_div)
-            logger.info(f"[진단] 삼성전자 {fs_div} rows={len(rows)}")
-            for r in rows:
-                logger.info(
-                    f"  sj_div={r.get('sj_div')}  account_nm={r.get('account_nm')}  "
-                    f"thstrm_amount={r.get('thstrm_amount')}"
-                )
-        eps_result = dart_client.get_eps(samsung_cc, str(latest_ann_year), latest_ann_reprt)
-        logger.info(f"[진단] 삼성전자 get_eps 결과: {eps_result}")
-    # ── 진단 끝 ─────────────────────────────────────────────────────────
-
     # ── 유니버스 구성 ──────────────────────────────────────────────────
     all_stocks  = dart_client.get_all_listed_stocks()
     universe    = []
