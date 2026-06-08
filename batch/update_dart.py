@@ -176,6 +176,12 @@ def run_dart_batch(dart_client: DARTClient) -> None:
                     existing_data["corps"]      = corps_out
                     dart_store.save(existing_data)
                     logger.info(f"[중간저장] bail={bail_out}개 저장 ({i}/{n_total})")
+                    # 1500개마다 git push (취소되어도 진행분 보존)
+                    if bail_out % 1500 == 0:
+                        dart_store.git_commit_push(
+                            [str(dart_store.DART_DATA_PATH)],
+                            f"data: DART 배치 중간저장 {today} (bail={bail_out} ok={ok})",
+                        )
                 elif i % log_interval == 0:
                     logger.info(
                         f"[{i:04d}/{n_total}] 진행: OK={ok} 조기탈출={bail_out} "
@@ -222,13 +228,18 @@ def run_dart_batch(dart_client: DARTClient) -> None:
                     f"(OK={ok} 탈출={bail_out})"
                 )
 
-            # 100개마다 OK 데이터 중간 저장
+            # 100개마다 OK 데이터 중간 저장 (파일), 500개마다 git push
             if ok % 100 == 0:
                 existing_data["bail_date"]  = today
                 existing_data["bail_codes"] = list(bail_cached)
                 existing_data["corps"]      = corps_out
                 dart_store.save(existing_data)
                 logger.info(f"[중간저장] OK={ok}개 저장 완료 ({i}/{n_total})")
+            if ok % 500 == 0:
+                dart_store.git_commit_push(
+                    [str(dart_store.DART_DATA_PATH)],
+                    f"data: DART 배치 중간저장 {today} (ok={ok} bail={bail_out})",
+                )
 
         except Exception as e:
             fail += 1
