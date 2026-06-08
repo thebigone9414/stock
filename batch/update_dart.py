@@ -3,7 +3,7 @@
 DART 재무 데이터 배치 — 전체 상장 종목 대상 (분기 1회)
 
 [유니버스]
-  DART corpCode.xml 의 전체 상장법인 (~2,500종목)
+  DART corpCode.xml 의 전체 상장법인 (~3,800종목)
   → 이름 패턴 제외: 스팩, 우선주, 리츠, ETF, 인프라펀드
   → 수동 제외: data/canslim_exclusions.py
 
@@ -12,14 +12,20 @@ DART 재무 데이터 배치 — 전체 상장 종목 대상 (분기 1회)
          → None 이면 실적 없음 → 즉시 건너뜀 (ETF, 스팩, 무실적 기업 자연 제거)
   2단계: 실적 있으면 분기 × 8 + 연간 × 3 = 11 call 풀 조회
 
+[재시작(Resume) 지원]
+  중단 후 재실행 시 당일 처리된 종목 자동 건너뜀:
+    - OK 종목: corps_out 에 EPS 데이터 있음 → 100개마다 중간 저장
+    - Bail 종목: dart_data.json bail_codes 에 기록 → 500개마다 중간 저장
+  새 분기 실행 시 bail_date != today 이므로 bail 캐시 무효화, 전체 재처리
+
 [C·A 사전 필터링]
   전체 수집 완료 후 C·A 조건 통과 종목을 data/dart_ca_screened.json 저장
   → 이후 canslim-batch 는 이 목록(예상 50~150종목)만 N·S·L·I·M 계산
 
 [예상 소요 시간]
-  실적 없는 종목(~1,800): call 1개 × 0.3s = ~9분
-  실적 있는 종목(~700): call 11개 × 0.35s = ~45분
-  합계: ~54분 (GitHub Actions timeout=120분 설정)
+  DART API 실제 응답 ~1.6s/bail call, ~23s/OK 종목(11 calls)
+  최초 실행: bail ~3,000종목 81분 + OK ~800종목 307분 ≈ 6.5시간 (2회 분할)
+  재시작 2차: 미처리 종목만 → 30~60분
 
 [실행 시기]
   분기 보고서 공시 완료 후 수동 트리거:
@@ -113,14 +119,23 @@ def run_dart_batch(dart_client: DARTClient) -> None:
     existing_data = dart_store.load()
     corps_out     = existing_data.get("corps", {})
 
-    # 이전 실행에서 이미 수집된 종목 (중단 후 재시작 시 건너뜀)
-    already_done = {
+    # ── 재시작(Resume) 지원 ────────────────────────────────────────────
+    # OK 종목: corps_out 에 EPS 데이터 있는 것
+    ok_cached = {
         code for code, corp in corps_out.items()
         if (any(q.get("eps") is not None for q in corp.get("quarterly_eps", []))
             or any(a.get("eps") is not None for a in corp.get("annual_eps", [])))
     }
+    # Bail 종목: 오늘 날짜로 기록된 것만 (새 분기 실행 시 자동 무효화)
+    bail_date_cached = existing_data.get("bail_date", "")
+    bail_cached = set(existing_data.get("bail_codes", [])) if bail_date_cached == today else set()
+
+    already_done = ok_cached | bail_cached
     if already_done:
-        logger.info(f" 재시작 감지: 이미 수집된 {len(already_done):,}개 종목 건너뜀")
+        logger.info(
+            f" 재시작 감지: OK={len(ok_cached):,}개 + bail={len(bail_cached):,}개 "
+            f"→ {len(already_done):,}개 건너뜀"
+        )
 
     # 최신 연간 (Early Bail 판단 기준)
     latest_ann_year, latest_ann_reprt = ann_years[0]
@@ -137,9 +152,12 @@ def run_dart_batch(dart_client: DARTClient) -> None:
             skip += 1
             continue
 
-        # 이전 실행에서 이미 수집된 종목 재시작 시 건너뜀
+        # 오늘 이미 처리된 종목 건너뜀 (OK 또는 Bail)
         if code in already_done:
-            ok += 1
+            if code in ok_cached:
+                ok += 1
+            else:
+                bail_out += 1
             continue
 
         try:
@@ -150,7 +168,15 @@ def run_dart_batch(dart_client: DARTClient) -> None:
             )
             if eps_check is None:
                 bail_out += 1
-                if i % log_interval == 0:
+                bail_cached.add(code)
+                # 500개마다 bail 목록 중간 저장
+                if bail_out % 500 == 0:
+                    existing_data["bail_date"]  = today
+                    existing_data["bail_codes"] = list(bail_cached)
+                    existing_data["corps"]      = corps_out
+                    dart_store.save(existing_data)
+                    logger.info(f"[중간저장] bail={bail_out}개 저장 ({i}/{n_total})")
+                elif i % log_interval == 0:
                     logger.info(
                         f"[{i:04d}/{n_total}] 진행: OK={ok} 조기탈출={bail_out} "
                         f"실패={fail} 건너뜀={skip}"
@@ -196,9 +222,11 @@ def run_dart_batch(dart_client: DARTClient) -> None:
                     f"(OK={ok} 탈출={bail_out})"
                 )
 
-            # 100개마다 중간 저장 (중단 시 재시작 가능)
+            # 100개마다 OK 데이터 중간 저장
             if ok % 100 == 0:
-                existing_data["corps"] = corps_out
+                existing_data["bail_date"]  = today
+                existing_data["bail_codes"] = list(bail_cached)
+                existing_data["corps"]      = corps_out
                 dart_store.save(existing_data)
                 logger.info(f"[중간저장] OK={ok}개 저장 완료 ({i}/{n_total})")
 
@@ -208,6 +236,8 @@ def run_dart_batch(dart_client: DARTClient) -> None:
 
     # ── dart_data.json 저장 ────────────────────────────────────────────
     existing_data["updated_at"] = today
+    existing_data["bail_date"]  = today
+    existing_data["bail_codes"] = list(bail_cached)
     existing_data["corps"]      = corps_out
     dart_store.save(existing_data)
 
