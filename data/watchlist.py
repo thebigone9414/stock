@@ -12,9 +12,8 @@ from typing import List, Dict
 
 from data.etf_watchlist import ETF_LIST
 
-_CACHE_PATH          = Path(__file__).parent / "kospi200_cache.json"
-_KOSDAQ150_CACHE     = Path(__file__).parent / "kosdaq150_cache.json"
-_DART_CA_PATH        = Path(__file__).parent / "dart_ca_screened.json"
+_CACHE_PATH      = Path(__file__).parent / "kospi200_cache.json"
+_KOSDAQ150_CACHE = Path(__file__).parent / "kosdaq150_cache.json"
 
 # ── KOSPI200 빌트인 폴백 (149종목) ───────────────────────────────────────────
 _BUILTIN: List[Dict[str, str]] = [
@@ -261,16 +260,6 @@ def _load_kosdaq150() -> List[Dict[str, str]]:
     return _KOSDAQ150_BUILTIN
 
 
-def _load_dart_ca() -> List[Dict[str, str]]:
-    """DART C·A 스크리닝 통과 종목 로드 (파일 없거나 비어 있으면 빈 리스트)"""
-    try:
-        data    = json.loads(_DART_CA_PATH.read_text(encoding="utf-8"))
-        screened = data.get("screened", [])
-        return [{"code": s["code"], "name": s["name"], "sector": s.get("sector", "성장주")}
-                for s in screened if s.get("code")]
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
 
 def get_active_watchlist() -> List[Dict[str, str]]:
     """S1/S2/S3 공통 유니버스: KOSPI200 + KOSDAQ150 + ETF (code 중복 제거)"""
@@ -288,7 +277,7 @@ def get_s2_watchlist() -> List[Dict[str, str]]:
     return merged
 
 
-# S1: 오전 수급 전략 대상 (KOSPI200 + ETF + DART CA)
+# S1/S2/S3 공통 유니버스: KOSPI200 + KOSDAQ150 + ETF
 WATCHLIST: List[Dict[str, str]] = get_active_watchlist()
 
 CODE_MAP: Dict[str, Dict[str, str]] = {s["code"]: s for s in WATCHLIST}
