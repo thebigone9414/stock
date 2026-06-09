@@ -84,6 +84,42 @@ def run_sepa_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
     run_batch(kis.market, notifier=notifier, force=force)
 
 
+def run_darvas_morning(kis: KIS, notifier: Notifier) -> None:
+    """Darvas Box 전략5 실행 (09:00 시장가 매수/매도)"""
+    from strategies.darvas import DarvasBoxStrategy
+    DarvasBoxStrategy(
+        market=kis.market,
+        order=kis.order,
+        account=kis.account,
+        notifier=notifier,
+        is_paper=kis.is_paper,
+    ).run()
+
+
+def run_darvas_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
+    """Darvas Box 일일 스크리닝 배치"""
+    from batch.update_darvas import run_batch
+    run_batch(kis.market, notifier=notifier, force=force)
+
+
+def run_connors_morning(kis: KIS, notifier: Notifier) -> None:
+    """Connors RSI(2) 전략6 실행 (09:00 시장가 매수/매도)"""
+    from strategies.connors import ConnorsRSIStrategy
+    ConnorsRSIStrategy(
+        market=kis.market,
+        order=kis.order,
+        account=kis.account,
+        notifier=notifier,
+        is_paper=kis.is_paper,
+    ).run()
+
+
+def run_connors_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
+    """Connors RSI(2) 일일 스크리닝 배치"""
+    from batch.update_connors import run_batch
+    run_batch(kis.market, notifier=notifier, force=force)
+
+
 def run_morning_strategy(kis: KIS, notifier: Notifier) -> None:
     """옥동자 오전 수급 전략 실행"""
     from strategies.morning_surge import MorningSurgeStrategy
@@ -208,6 +244,8 @@ def main():
         choices=["morning", "ma-morning", "ma-batch",
                  "canslim-morning", "canslim-batch",
                  "sepa-morning", "sepa-batch",
+                 "darvas-morning", "darvas-batch",
+                 "connors-morning", "connors-batch",
                  "balance", "market", "check-watchlist", "debug-investor", "auto"],
         default="morning",
         help="실행 모드 (기본: morning)"
@@ -248,6 +286,18 @@ def main():
 
     elif args.mode == "sepa-batch":
         run_sepa_batch(kis, notifier, force=args.force)
+
+    elif args.mode == "darvas-morning":
+        run_darvas_morning(kis, notifier)
+
+    elif args.mode == "darvas-batch":
+        run_darvas_batch(kis, notifier, force=args.force)
+
+    elif args.mode == "connors-morning":
+        run_connors_morning(kis, notifier)
+
+    elif args.mode == "connors-batch":
+        run_connors_batch(kis, notifier, force=args.force)
 
     elif args.mode == "balance":
         run_balance(kis)
