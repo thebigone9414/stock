@@ -1,7 +1,7 @@
 """
 전략3: CANSLIM 자동매매 (William O'Neil)
 
-매수 조건: canslim_data.json 의 all_pass=True 종목 (7개 조건 모두 충족)
+매수 조건: canslim_data.json 의 all_pass=True 종목 (N·S·L·I·M 5개 조건 모두 충족)
 매도 조건:
   - 손절: 매수가 대비 -7% (O'Neil 기본 룰)
   - 익절(기본): +20%
