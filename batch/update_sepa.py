@@ -160,12 +160,14 @@ def _check_vcp(closes: list, volumes: list) -> dict:
     최근 60거래일을 3구간(early/mid/tight, 각 20일)으로 나눠 변동폭·거래량 수축 확인.
     """
     n = len(closes)
-    if n < VCP_BASE_DAYS + 1:
+    if n < VCP_BASE_DAYS + 2:   # 60일 base + 오늘 제외 1일 여유
         return {"vcp_detected": False, "pivot": 0}
 
-    early  = closes[-(VCP_BASE_DAYS)          : -(VCP_STAGE_DAYS * 2)]  # days -60 ~ -40
-    mid    = closes[-(VCP_STAGE_DAYS * 2)     : -VCP_STAGE_DAYS]        # days -40 ~ -20
-    tight  = closes[-VCP_STAGE_DAYS:]                                    # days -20 ~ 0
+    # tight 구간은 오늘 종가 제외 (i-20 ~ i-1): 오늘 종가가 피벗을 돌파하는지 체크하기 위함
+    # 오늘 종가를 tight에 포함하면 pivot >= today → breakout 조건 항상 False
+    early  = closes[-(VCP_BASE_DAYS + 1)       : -(VCP_STAGE_DAYS * 2 + 1)]  # days -61 ~ -42
+    mid    = closes[-(VCP_STAGE_DAYS * 2 + 1)  : -(VCP_STAGE_DAYS + 1)]      # days -41 ~ -22
+    tight  = closes[-(VCP_STAGE_DAYS + 1)      : -1]                          # days -21 ~ -2 (오늘 제외)
 
     def range_pct(seg):
         h, l = max(seg), min(seg)
@@ -178,11 +180,11 @@ def _check_vcp(closes: list, volumes: list) -> dict:
     # 가격 수축 조건: early > mid > tight (단계별 감소)
     price_contracting = (early_range > mid_range > 0 and mid_range > tight_range)
 
-    # 거래량 수축 (데이터 있을 때만)
+    # 거래량 수축 (오늘 제외한 구간 기준)
     vol_contracting = True
-    if len(volumes) >= VCP_BASE_DAYS:
-        vol_early = sum(volumes[-VCP_BASE_DAYS         : -(VCP_STAGE_DAYS * 2)]) / VCP_STAGE_DAYS
-        vol_tight = sum(volumes[-VCP_STAGE_DAYS:]) / VCP_STAGE_DAYS
+    if len(volumes) >= VCP_BASE_DAYS + 1:
+        vol_early = sum(volumes[-(VCP_BASE_DAYS + 1) : -(VCP_STAGE_DAYS * 2 + 1)]) / VCP_STAGE_DAYS
+        vol_tight = sum(volumes[-(VCP_STAGE_DAYS + 1) : -1]) / VCP_STAGE_DAYS
         vol_contracting = (vol_tight < vol_early * VCP_VOL_SHRINK)
 
     pivot = int(max(tight))
