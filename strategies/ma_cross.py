@@ -124,9 +124,9 @@ class MACrossStrategy:
         positions = ma_store.get_positions()
         positions = self._reconcile(positions, balance)
 
-        # S2+S3+S4 공유 슬롯 계산
-        s2_n, s3_n, s4_n = count_shared()
-        total_shared = s2_n + s3_n + s4_n
+        # S2~S6 공유 슬롯 계산
+        s2_n, s3_n, s4_n, s5_n, s6_n = count_shared()
+        total_shared = s2_n + s3_n + s4_n + s5_n + s6_n
 
         extra_info = ""
         if base_cap and extra > 0:
@@ -134,8 +134,8 @@ class MACrossStrategy:
             extra_info = f"  자산증가:{growth_r:+.1f}% → 슬롯 +{extra}개 확장"
         logger.info(
             f"[MA전략] 총자산:{balance.total_eval:,}원  슬롯예산(20%):{slot_budget:,}원  "
-            f"S2+S3+S4 공유 보유:{total_shared}/{max_shared} "
-            f"(S2:{s2_n} S3:{s3_n} S4:{s4_n}){extra_info}"
+            f"공유슬롯 보유:{total_shared}/{max_shared} "
+            f"(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n} S6:{s6_n}){extra_info}"
         )
 
         # 시작 알림 (MA 데이터 신선도 포함)
