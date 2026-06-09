@@ -216,7 +216,7 @@ class CANSLIMStrategy:
 
                 logger.info(
                     f"[S3 매수] [{code}] {name}  현재가:{price:,}  수량:{qty}주  "
-                    f"금액:{price*qty:,}원  (score={info.get('score',0)}/7)"
+                    f"금액:{price*qty:,}원  (score={info.get('score',0)}/5)"
                 )
 
                 if not self.is_paper:
@@ -232,7 +232,7 @@ class CANSLIMStrategy:
                     self.notifier.notify(
                         f"[S3 매수] [{code}] {name}\n"
                         f"현재가:{price:,}원  수량:{qty}주  금액:{price*qty:,}원\n"
-                        f"CANSLIM score={info.get('score',0)}/7"
+                        f"CANSLIM score={info.get('score',0)}/5"
                     )
 
             except Exception as e:

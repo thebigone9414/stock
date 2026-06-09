@@ -1,13 +1,8 @@
 """
 옥동자 매매 대상 종목 관리
 
-[S1 watchlist — get_active_watchlist()]
-  KOSPI200 + ETF
-  → 오전 수급 전략(S1) 대상
-
-[S2/S3 watchlist — get_s2_watchlist()]
-  KOSPI200 + KOSDAQ150 + ETF (채권·금리 ETF 제외)
-  → MA 이평선 전략(S2) + CANSLIM 전략(S3) 대상
+[공통 유니버스 — KOSPI200 + KOSDAQ150 + ETF (채권·금리 ETF 제외)]
+  S1(오전 단기), S2(MA 이평선), S3(CANSLIM N·S·L·I·M) 모두 동일
   → KOSPI200: data/kospi200_cache.json (update_watchlist.py 갱신)
   → KOSDAQ150: data/kosdaq150_cache.json (update_watchlist.py 갱신)
 """
@@ -278,14 +273,8 @@ def _load_dart_ca() -> List[Dict[str, str]]:
 
 
 def get_active_watchlist() -> List[Dict[str, str]]:
-    """S1용: KOSPI200 + ETF 통합 watchlist (code 중복 제거)"""
-    seen: set = set()
-    merged: List[Dict[str, str]] = []
-    for item in _load_kospi200() + ETF_LIST:
-        if item["code"] not in seen:
-            seen.add(item["code"])
-            merged.append(item)
-    return merged
+    """S1/S2/S3 공통 유니버스: KOSPI200 + KOSDAQ150 + ETF (code 중복 제거)"""
+    return get_s2_watchlist()
 
 
 def get_s2_watchlist() -> List[Dict[str, str]]:
