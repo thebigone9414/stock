@@ -49,8 +49,8 @@ def add_position(code: str, name: str, entry_date: str, entry_price: int, quanti
         new_qty   = old_qty + quantity
         new_avg   = (old_price * old_qty + entry_price * quantity) / new_qty
         positions[code] = {
+            **existing,
             "name":            name,
-            "entry_date":      existing.get("entry_date", entry_date),  # 최초 진입일 유지
             "last_entry_date": entry_date,
             "entry_price":     int(round(new_avg)),
             "quantity":        new_qty,
@@ -58,12 +58,15 @@ def add_position(code: str, name: str, entry_date: str, entry_price: int, quanti
         msg = f"chore: S2 포지션 추가매수 {code} (수량 {old_qty}→{new_qty}, 평단 {old_price:,}→{int(round(new_avg)):,})"
     else:
         positions[code] = {
-            "name":        name,
-            "entry_date":  entry_date,
-            "entry_price": entry_price,
-            "quantity":    quantity,
+            "name":                 name,
+            "entry_date":           entry_date,
+            "entry_price":          entry_price,
+            "quantity":             quantity,
+            "peak_price":           entry_price,
+            "peak_gain_pct":        0.0,
+            "early_gain_triggered": False,
         }
-        msg = f"chore: S2 포지션 추가 {code}"
+        msg = f"chore: S2 포지션 추가 {code} {name} @{entry_price:,}"
 
     save(data)
     git_commit_push([str(MA_DATA_PATH)], msg)
@@ -110,6 +113,53 @@ def set_stop_loss_pending(code: str, flag: bool = True) -> None:
     pos["stop_loss_pending"] = flag
     save(data)
     git_commit_push([str(MA_DATA_PATH)], f"chore: S2 손절플래그 {code}={'ON' if flag else 'OFF'}")
+
+
+def set_take_profit_pending(code: str, flag: bool = True) -> None:
+    """포지션에 익절 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
+    data = load()
+    pos = data.get("positions", {}).get(code)
+    if pos is None:
+        return
+    pos["take_profit_pending"] = flag
+    save(data)
+    git_commit_push([str(MA_DATA_PATH)], f"chore: S2 익절플래그 {code}={'ON' if flag else 'OFF'}")
+
+
+def update_position_peak(code: str, current_price: int, current_date: str) -> None:
+    """고점 가격·수익률 갱신 + 조기익절 트리거(21일 이내 +15%) 체크"""
+    data = load()
+    pos  = data.get("positions", {}).get(code)
+    if not pos:
+        return
+
+    ep   = pos.get("entry_price", 0)
+    gain = (current_price - ep) / ep if ep > 0 else 0.0
+
+    changed = False
+    if current_price > pos.get("peak_price", 0):
+        pos["peak_price"]    = current_price
+        pos["peak_gain_pct"] = round(gain, 6)
+        changed = True
+
+    if not pos.get("early_gain_triggered") and gain >= 0.15:
+        from datetime import datetime as _dt
+        try:
+            days_held = (_dt.strptime(current_date, "%Y-%m-%d")
+                         - _dt.strptime(pos["entry_date"], "%Y-%m-%d")).days
+            if days_held <= 21:
+                pos["early_gain_triggered"] = True
+                changed = True
+                logger.info(
+                    f"[S2 조기익절트리거] [{code}] {pos.get('name', '')}  "
+                    f"+{gain:.1%} ({days_held}일) → 목표 +25%로 상향"
+                )
+        except (ValueError, KeyError):
+            pass
+
+    if changed:
+        data["positions"][code] = pos
+        save(data)
 
 
 def git_commit_push(files: list, message: str) -> None:

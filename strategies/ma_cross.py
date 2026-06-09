@@ -36,9 +36,12 @@ from kis.order import KISOrder, OrderType
 from kis.account import KISAccount
 from utils.notifier import Notifier
 
-KST              = pytz.timezone("Asia/Seoul")
-MAX_POSITIONS = 4
-SLOT_RATIO    = 0.20
+KST                = pytz.timezone("Asia/Seoul")
+MAX_POSITIONS      = 4
+SLOT_RATIO         = 0.20
+S2_STOP_LOSS       = 0.07   # 손절 -7%
+S2_TAKE_PROFIT     = 0.20   # 익절 기본 +20%
+S2_TAKE_PROFIT_EXT = 0.25   # 익절 확장 +25% (21일 이내 +15% 달성 시)
 
 
 class MACrossStrategy:
@@ -176,11 +179,28 @@ class MACrossStrategy:
         # ── 손절 매도 ────────────────────────────────────────────────────
         for code in list(positions):
             if positions[code].get("stop_loss_pending"):
+                pos  = positions[code]
                 logger.info(
-                    f"[MA전략 손절매도] [{code}] {positions[code]['name']} "
-                    f"— 매수가 대비 -3% 이하 손절 플래그"
+                    f"[MA전략 손절매도] [{code}] {pos['name']} "
+                    f"— 매수가 대비 -{S2_STOP_LOSS:.0%} 이하 손절 플래그"
                 )
-                self._sell(code, positions[code], reason="손절 매수가대비 -3% 이하")
+                self._sell(code, pos, reason=f"손절 매수가대비 -{S2_STOP_LOSS:.0%} 이하")
+                del positions[code]
+                ma_store.remove_position(code)
+                _sold += 1
+
+        # ── 익절 매도 ────────────────────────────────────────────────────
+        for code in list(positions):
+            if positions[code].get("take_profit_pending"):
+                pos       = positions[code]
+                early_trig = pos.get("early_gain_triggered", False)
+                target    = S2_TAKE_PROFIT_EXT if early_trig else S2_TAKE_PROFIT
+                ext_note  = " (조기확장목표)" if early_trig else ""
+                logger.info(
+                    f"[MA전략 익절매도] [{code}] {pos['name']} "
+                    f"— +{target:.0%}{ext_note} 익절 플래그"
+                )
+                self._sell(code, pos, reason=f"익절 +{target:.0%}{ext_note}")
                 del positions[code]
                 ma_store.remove_position(code)
                 _sold += 1

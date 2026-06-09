@@ -1,15 +1,15 @@
 """
 옥동자 매매 대상 종목 관리
 
-우선순위:
-  1. data/kospi200_cache.json  ← update_watchlist.py 가 매월 KIS API에서 갱신
-  2. _BUILTIN (코드 내 큐레이션 목록, 149종목) ← 캐시 없을 때 폴백
+[S1 watchlist — get_active_watchlist()]
+  KOSPI200 + ETF + DART C·A 스크리닝 통과 종목
+  → 오전 수급 전략(S1) 대상
 
-여기에 data/etf_watchlist.py 의 ETF 목록이 항상 추가 병합됨.
-S1·S2 전략 모두 KOSPI200 + ETF 통합 watchlist 대상.
-
-DART 배치 C·A 스크리닝 통과 종목(dart_ca_screened.json)도 자동 병합됨.
-→ S2 MA 배치/전략도 DART 성장주를 함께 커버.
+[S2 watchlist — get_s2_watchlist()]
+  KOSPI200 + KOSDAQ150
+  → MA 이평선 전략(S2) + DART 재무 배치 대상
+  → KOSPI200: data/kospi200_cache.json (update_watchlist.py 갱신)
+  → KOSDAQ150: data/kosdaq150_cache.json (update_watchlist.py 갱신)
 """
 import json
 from pathlib import Path
@@ -17,10 +17,11 @@ from typing import List, Dict
 
 from data.etf_watchlist import ETF_LIST
 
-_CACHE_PATH        = Path(__file__).parent / "kospi200_cache.json"
-_DART_CA_PATH      = Path(__file__).parent / "dart_ca_screened.json"
+_CACHE_PATH          = Path(__file__).parent / "kospi200_cache.json"
+_KOSDAQ150_CACHE     = Path(__file__).parent / "kosdaq150_cache.json"
+_DART_CA_PATH        = Path(__file__).parent / "dart_ca_screened.json"
 
-# ── 빌트인 폴백 목록 (149종목, 캐시 없을 때 사용) ─────────────────────────────
+# ── KOSPI200 빌트인 폴백 (149종목) ───────────────────────────────────────────
 _BUILTIN: List[Dict[str, str]] = [
     # 반도체/IT
     {"code": "005930", "name": "삼성전자",      "sector": "반도체/IT"},
@@ -190,6 +191,56 @@ _BUILTIN: List[Dict[str, str]] = [
     {"code": "006125", "name": "DL이앤씨",      "sector": "건설/건자재"},
 ]
 
+# ── KOSDAQ150 빌트인 폴백 ──────────────────────────────────────────────────
+_KOSDAQ150_BUILTIN: List[Dict[str, str]] = [
+    # 반도체/장비
+    {"code": "357780", "name": "솔브레인",      "sector": "반도체/IT"},
+    {"code": "005290", "name": "동진쎄미켐",    "sector": "반도체/IT"},
+    {"code": "031980", "name": "피에스케이홀딩스", "sector": "반도체/IT"},
+    {"code": "039030", "name": "이오테크닉스",  "sector": "반도체/IT"},
+    {"code": "140860", "name": "파크시스템스",  "sector": "반도체/IT"},
+    {"code": "403870", "name": "HPSP",          "sector": "반도체/IT"},
+    {"code": "074600", "name": "원익QnC",       "sector": "반도체/IT"},
+    {"code": "058470", "name": "리노공업",      "sector": "반도체/IT"},
+    {"code": "399720", "name": "가온칩스",      "sector": "반도체/IT"},
+    {"code": "064290", "name": "인텍플러스",    "sector": "반도체/IT"},
+    {"code": "203690", "name": "네패스아크",    "sector": "반도체/IT"},
+    {"code": "022100", "name": "포스코DX",      "sector": "반도체/IT"},
+    # 2차전지
+    {"code": "086520", "name": "에코프로",      "sector": "2차전지"},
+    {"code": "247540", "name": "에코프로비엠",  "sector": "2차전지"},
+    {"code": "243840", "name": "신흥에스이씨",  "sector": "2차전지"},
+    {"code": "393890", "name": "더블유씨피",    "sector": "2차전지"},
+    # 바이오/제약
+    {"code": "196170", "name": "알테오젠",      "sector": "바이오/제약"},
+    {"code": "028300", "name": "HLB",           "sector": "바이오/제약"},
+    {"code": "141080", "name": "리가켐바이오",  "sector": "바이오/제약"},
+    {"code": "214450", "name": "파마리서치",    "sector": "바이오/제약"},
+    {"code": "214150", "name": "클래시스",      "sector": "바이오/제약"},
+    {"code": "237690", "name": "에스티팜",      "sector": "바이오/제약"},
+    {"code": "068760", "name": "셀트리온제약",  "sector": "바이오/제약"},
+    {"code": "086900", "name": "메디톡스",      "sector": "바이오/제약"},
+    {"code": "039200", "name": "오스코텍",      "sector": "바이오/제약"},
+    {"code": "214370", "name": "케어젠",        "sector": "바이오/제약"},
+    {"code": "137310", "name": "에스디바이오센서", "sector": "바이오/제약"},
+    {"code": "328130", "name": "루닛",          "sector": "바이오/제약"},
+    {"code": "322510", "name": "제이엘케이",    "sector": "바이오/제약"},
+    {"code": "085370", "name": "루트로닉",      "sector": "바이오/제약"},
+    # 로봇/AI
+    {"code": "454910", "name": "두산로보틱스",  "sector": "중공업/기계"},
+    {"code": "277810", "name": "레인보우로보틱스", "sector": "중공업/기계"},
+    # 플랫폼/게임
+    {"code": "181710", "name": "NHN",           "sector": "플랫폼/게임"},
+    {"code": "112040", "name": "위메이드",      "sector": "플랫폼/게임"},
+    # 통신/부품
+    {"code": "032500", "name": "케이엠더블유",  "sector": "통신/인프라"},
+    {"code": "078070", "name": "유비쿼스",      "sector": "통신/인프라"},
+    {"code": "054050", "name": "와이솔",        "sector": "반도체/IT"},
+    # 소비/유통
+    {"code": "257720", "name": "실리콘투",      "sector": "유통/소비재"},
+    {"code": "403550", "name": "쏘카",          "sector": "유통/소비재"},
+]
+
 
 def _load_kospi200() -> List[Dict[str, str]]:
     """KOSPI200 캐시가 있으면 사용, 없으면 빌트인 폴백 반환"""
@@ -201,6 +252,18 @@ def _load_kospi200() -> List[Dict[str, str]]:
     except (FileNotFoundError, json.JSONDecodeError):
         pass
     return _BUILTIN
+
+
+def _load_kosdaq150() -> List[Dict[str, str]]:
+    """KOSDAQ150 캐시가 있으면 사용, 없으면 빌트인 폴백 반환"""
+    try:
+        data = json.loads(_KOSDAQ150_CACHE.read_text(encoding="utf-8"))
+        stocks = data.get("stocks", [])
+        if len(stocks) >= 10:
+            return stocks
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return _KOSDAQ150_BUILTIN
 
 
 def _load_dart_ca() -> List[Dict[str, str]]:
@@ -215,7 +278,7 @@ def _load_dart_ca() -> List[Dict[str, str]]:
 
 
 def get_active_watchlist() -> List[Dict[str, str]]:
-    """KOSPI200 + ETF + DART C·A 스크리닝 통합 watchlist 반환 (code 중복 제거)"""
+    """S1용: KOSPI200 + ETF + DART C·A 스크리닝 통합 watchlist (code 중복 제거)"""
     seen: set = set()
     merged: List[Dict[str, str]] = []
     for item in _load_kospi200() + ETF_LIST + _load_dart_ca():
@@ -225,7 +288,18 @@ def get_active_watchlist() -> List[Dict[str, str]]:
     return merged
 
 
-# 모듈 로드 시 한 번 계산 — 기존 import 코드 변경 불필요
+def get_s2_watchlist() -> List[Dict[str, str]]:
+    """S2(MA전략) + DART배치용: KOSPI200 + KOSDAQ150 통합 (code 중복 제거)"""
+    seen: set = set()
+    merged: List[Dict[str, str]] = []
+    for item in _load_kospi200() + _load_kosdaq150():
+        if item["code"] not in seen:
+            seen.add(item["code"])
+            merged.append(item)
+    return merged
+
+
+# S1: 오전 수급 전략 대상 (KOSPI200 + ETF + DART CA)
 WATCHLIST: List[Dict[str, str]] = get_active_watchlist()
 
 CODE_MAP: Dict[str, Dict[str, str]] = {s["code"]: s for s in WATCHLIST}

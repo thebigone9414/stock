@@ -23,9 +23,12 @@ from utils.logger import setup_logger
 from kis.factory import KIS
 import data.ma_store as ma_store
 
-KST        = pytz.timezone("Asia/Seoul")
-CACHE_PATH = Path(__file__).parent.parent / "data" / "kospi200_cache.json"
-MIN_STOCKS = 150   # 이 수 미만이면 API 오류로 간주하고 저장하지 않음
+KST                = pytz.timezone("Asia/Seoul")
+CACHE_PATH         = Path(__file__).parent.parent / "data" / "kospi200_cache.json"
+KOSDAQ150_CACHE    = Path(__file__).parent.parent / "data" / "kosdaq150_cache.json"
+KOSPI200_IDX       = "0028"
+KOSDAQ150_IDX      = "1028"
+MIN_STOCKS         = 100   # 이 수 미만이면 API 오류로 간주하고 저장하지 않음
 
 # ── KIS업종명 → 우리 섹터명 매핑 ─────────────────────────────────────────────
 # 앞에 있을수록 우선순위 높음 (키워드 포함 여부로 체크)
@@ -127,24 +130,20 @@ def _map_sector(bstp_name: str, code: str) -> str:
     return "기타"
 
 
-def run(market) -> None:
-    today = datetime.now(KST).strftime("%Y-%m-%d")
-    logger.info(f"══════════════════════════════════════════")
-    logger.info(f" KOSPI200 구성 종목 업데이트 [{today}]")
-    logger.info(f"══════════════════════════════════════════")
-
+def _fetch_index(market, index_code: str, label: str) -> list:
+    """지수 구성 종목 조회 → [{"code", "name", "sector"}] 반환. 실패 시 빈 리스트."""
     try:
-        components = market.get_index_components("0028")
+        components = market.get_index_components(index_code)
     except Exception as e:
-        logger.error(f"[종목업데이트] KIS API 오류: {e}")
-        sys.exit(1)
+        logger.error(f"[종목업데이트] {label} KIS API 오류: {e}")
+        return []
 
     if len(components) < MIN_STOCKS:
         logger.error(
-            f"[종목업데이트] 조회 결과 {len(components)}종목 — "
+            f"[종목업데이트] {label} 조회 결과 {len(components)}종목 — "
             f"최소 {MIN_STOCKS}개 미달, 업데이트 중단 (API 오류 의심)"
         )
-        sys.exit(1)
+        return []
 
     stocks = []
     sector_count: dict[str, int] = {}
@@ -156,18 +155,52 @@ def run(market) -> None:
         stocks.append({"code": code, "name": name, "sector": sector})
         sector_count[sector] = sector_count.get(sector, 0) + 1
 
-    cache = {"updated_at": today, "stocks": stocks}
-    CACHE_PATH.write_text(
-        json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    logger.info(f"[종목업데이트] {len(stocks)}종목 저장 완료 → {CACHE_PATH.name}")
-    logger.info("[종목업데이트] 섹터별 분포:")
+    logger.info(f"[종목업데이트] {label} {len(stocks)}종목  섹터:")
     for sector, cnt in sorted(sector_count.items(), key=lambda x: -x[1]):
         logger.info(f"  {sector:16s}: {cnt}종목")
+    return stocks
+
+
+def run(market) -> None:
+    today = datetime.now(KST).strftime("%Y-%m-%d")
+    logger.info(f"══════════════════════════════════════════")
+    logger.info(f" KOSPI200 + KOSDAQ150 구성 종목 업데이트 [{today}]")
+    logger.info(f"══════════════════════════════════════════")
+
+    kospi200 = _fetch_index(market, KOSPI200_IDX, "KOSPI200")
+    kosdaq150 = _fetch_index(market, KOSDAQ150_IDX, "KOSDAQ150")
+
+    changed_files = []
+
+    if kospi200:
+        CACHE_PATH.write_text(
+            json.dumps({"updated_at": today, "stocks": kospi200}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        logger.info(f"[종목업데이트] KOSPI200 {len(kospi200)}종목 저장 → {CACHE_PATH.name}")
+        changed_files.append(str(CACHE_PATH))
+    else:
+        logger.warning("[종목업데이트] KOSPI200 업데이트 실패 — 기존 캐시 유지")
+
+    if kosdaq150:
+        KOSDAQ150_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        KOSDAQ150_CACHE.write_text(
+            json.dumps({"updated_at": today, "stocks": kosdaq150}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        logger.info(f"[종목업데이트] KOSDAQ150 {len(kosdaq150)}종목 저장 → {KOSDAQ150_CACHE.name}")
+        changed_files.append(str(KOSDAQ150_CACHE))
+    else:
+        logger.warning("[종목업데이트] KOSDAQ150 업데이트 실패 — 기존 캐시 유지")
+
+    if not changed_files:
+        logger.error("[종목업데이트] 양쪽 모두 실패")
+        sys.exit(1)
 
     ma_store.git_commit_push(
-        [str(CACHE_PATH)],
-        f"data: KOSPI200 구성 종목 업데이트 {today} ({len(stocks)}종목)",
+        changed_files,
+        f"data: KOSPI200+KOSDAQ150 구성 종목 업데이트 {today} "
+        f"(KOSPI200:{len(kospi200)} KOSDAQ150:{len(kosdaq150)}종목)",
     )
     logger.info(f"══════════════════════════════════════════")
     logger.info(f" 완료")

@@ -32,16 +32,21 @@ from utils.logger import setup_logger
 from utils.notifier import Notifier
 from utils.throttler import RateThrottler
 from kis.factory import KIS
-from data.watchlist import WATCHLIST
+from data.watchlist import get_s2_watchlist
 import data.ma_store as ma_store
 
-KST               = pytz.timezone("Asia/Seoul")
-MA_PERIODS        = [5, 21, 62, 248, 744]
-OHLCV_DAYS        = 820   # 캐시 없을 때 풀 로딩 일수
-INCREMENTAL_DAYS  = 30    # 캐시 있을 때 증분 로딩 일수
-MIN_DAYS_FULL     = 750   # MA744 계산 최소 일수
-MIN_DAYS_PARTIAL  = 250   # MA248 계산 최소 일수 (부분 정배열)
-S2_STOP_LOSS      = 0.03
+KST                = pytz.timezone("Asia/Seoul")
+MA_PERIODS         = [5, 21, 62, 248, 744]
+OHLCV_DAYS         = 820   # 캐시 없을 때 풀 로딩 일수
+INCREMENTAL_DAYS   = 30    # 캐시 있을 때 증분 로딩 일수
+MIN_DAYS_FULL      = 750   # MA744 계산 최소 일수
+MIN_DAYS_PARTIAL   = 250   # MA248 계산 최소 일수 (부분 정배열)
+S2_STOP_LOSS       = 0.07  # 손절 -7%
+S2_TAKE_PROFIT     = 0.20  # 익절 기본 +20%
+S2_TAKE_PROFIT_EXT = 0.25  # 익절 확장 +25% (21일 이내 +15% 달성 시)
+S2_TIME_STOP_DAYS  = 56    # 타임스탑 8주
+
+S2_WATCHLIST = get_s2_watchlist()   # KOSPI200 + KOSDAQ150
 
 OHLCV_CACHE_PATH  = Path("data/ohlcv_cache.json")
 
@@ -200,14 +205,10 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     ohlcv_cache = load_ohlcv_cache()
     has_cache   = bool(ohlcv_cache)
 
-    from data.watchlist import _load_dart_ca
-    dart_ca_count = len(_load_dart_ca())
-
     logger.info("══════════════════════════════════════════")
     logger.info(f" MA 배치 업데이트 시작 [{today}]")
     logger.info(
-        f" 대상: {len(WATCHLIST)}종목  "
-        f"(KOSPI200+ETF 기반 + DART C·A {dart_ca_count}종목 병합)  "
+        f" 대상: {len(S2_WATCHLIST)}종목 (KOSPI200 + KOSDAQ150)  "
         f"캐시: {'있음(증분로딩)' if has_cache else '없음(풀로딩)'}"
     )
     logger.info("══════════════════════════════════════════")
@@ -227,7 +228,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     stocks_out = {}
     ok, fail, skip, cache_hits = 0, 0, 0, 0
 
-    for i, stock in enumerate(WATCHLIST, 1):
+    for i, stock in enumerate(S2_WATCHLIST, 1):
         code   = stock["code"]
         name   = stock["name"]
         sector = stock["sector"]
@@ -245,7 +246,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
                 last_date = today
                 cache_hits += 1
                 logger.info(
-                    f"[{i:03d}/{len(WATCHLIST)}] [{code}] {name} — 캐시 히트 (API 생략)"
+                    f"[{i:03d}/{len(S2_WATCHLIST)}] [{code}] {name} — 캐시 히트 (API 생략)"
                 )
 
             # ── 캐시 미스: 증분 or 풀 로딩 ──────────────────────────────
@@ -262,7 +263,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
 
                 if df.empty:
                     logger.warning(
-                        f"[{i:03d}/{len(WATCHLIST)}] [{code}] {name} 빈 응답 — 건너뜀"
+                        f"[{i:03d}/{len(S2_WATCHLIST)}] [{code}] {name} 빈 응답 — 건너뜀"
                     )
                     skip += 1
                     continue
@@ -296,7 +297,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
             # ── 데이터 충분 여부 확인 ──────────────────────────────────
             if len(closes) < MIN_DAYS_PARTIAL:
                 logger.warning(
-                    f"[{i:03d}/{len(WATCHLIST)}] [{code}] {name} "
+                    f"[{i:03d}/{len(S2_WATCHLIST)}] [{code}] {name} "
                     f"데이터 부족({len(closes)}일 < {MIN_DAYS_PARTIAL}) — 건너뜀"
                 )
                 skip += 1
@@ -318,7 +319,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
                 signal = " ⚠ma21<ma62"
 
             logger.info(
-                f"[{i:03d}/{len(WATCHLIST)}] [{code}] {name:12s} "
+                f"[{i:03d}/{len(S2_WATCHLIST)}] [{code}] {name:12s} "
                 f"{'전체' if has744 else 'MA248'}정배열:{str(aligned):5s} "
                 f"62↑:{entry['ma62_uptrend']} "
                 f"248↑:{entry['ma248_uptrend']}"
@@ -328,7 +329,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
             ok += 1
 
         except Exception as e:
-            logger.warning(f"[{i:03d}/{len(WATCHLIST)}] [{code}] {name} 실패: {e}")
+            logger.warning(f"[{i:03d}/{len(S2_WATCHLIST)}] [{code}] {name} 실패: {e}")
             fail += 1
 
     logger.info(
@@ -346,7 +347,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
 
     ma_store.git_commit_push(
         [str(OHLCV_CACHE_PATH), str(ma_store.MA_DATA_PATH)],
-        f"data: MA 이평선 업데이트 {today} ({ok}/{len(WATCHLIST)}종목, 캐시히트:{cache_hits})",
+        f"data: MA 이평선 업데이트 {today} ({ok}/{len(S2_WATCHLIST)}종목, 캐시히트:{cache_hits})",
     )
 
     # 매수/매도 후보 요약
@@ -386,7 +387,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
         logger.info(" 내일 매도 예정 없음")
     logger.info("══════════════════════════════════════════")
 
-    _check_s2_stop_loss(stocks_out, notifier)
+    _check_s2_exits(stocks_out, notifier)
     _notify_daily_summary(stocks_out, buy_signals, sell_signals, account, notifier)
 
 
@@ -406,50 +407,96 @@ def _is_buy_signal(s: dict) -> bool:
         return s.get("partial_aligned") and not s.get("prev_partial_aligned")
 
 
-# ── S2 손절 체크 ───────────────────────────────────────────────────────
+# ── S2 매도 플래그 체크 (손절·익절·타임스탑) ──────────────────────────────
 
-def _check_s2_stop_loss(stocks_out: dict, notifier: Notifier = None) -> None:
+def _check_s2_exits(stocks_out: dict, notifier: Notifier = None) -> None:
     positions = ma_store.get_positions()
     if not positions:
         return
 
-    newly_flagged = []
+    today_str          = datetime.now(KST).strftime("%Y-%m-%d")
+    stop_loss_flagged  = []
+    take_profit_flagged = []
+
     for code, pos in positions.items():
         entry_price = pos.get("entry_price", 0)
+        entry_date  = pos.get("entry_date", today_str)
         name        = pos.get("name", code)
         if not entry_price:
             continue
         stock       = stocks_out.get(code)
         close_price = stock.get("close", 0) if stock else 0
         if not close_price:
-            logger.warning(f"[S2 손절체크] [{code}] {name} — MA배치 데이터 없음, 건너뜀")
+            logger.warning(f"[S2 익절체크] [{code}] {name} — MA배치 데이터 없음, 건너뜀")
             continue
 
-        pnl_rate = (close_price - entry_price) / entry_price
+        pnl_rate  = (close_price - entry_price) / entry_price
+        try:
+            days_held = (
+                datetime.strptime(today_str, "%Y-%m-%d")
+                - datetime.strptime(entry_date, "%Y-%m-%d")
+            ).days
+        except ValueError:
+            days_held = 0
+
+        # 고점 갱신 + 조기익절 트리거 체크
+        ma_store.update_position_peak(code, close_price, today_str)
+        pos         = ma_store.get_positions().get(code, pos)
+        early_trig  = pos.get("early_gain_triggered", False)
+        target      = S2_TAKE_PROFIT_EXT if early_trig else S2_TAKE_PROFIT
+
+        # 손절 -7%
         if pnl_rate <= -S2_STOP_LOSS:
             if not pos.get("stop_loss_pending"):
                 ma_store.set_stop_loss_pending(code, True)
-                newly_flagged.append((code, name, entry_price, close_price, pnl_rate))
+                stop_loss_flagged.append((code, name, entry_price, close_price, pnl_rate))
                 logger.warning(
                     f"[S2 손절플래그] [{code}] {name}  "
                     f"매수가:{entry_price:,} → 마감가:{close_price:,}  "
-                    f"{pnl_rate*100:+.2f}% → 내일 09:00 시초가 매도"
+                    f"{pnl_rate*100:+.2f}% ≤ -7% → 내일 09:00 시초가 매도"
                 )
             else:
+                logger.info(f"[S2 손절대기중] [{code}] {name}  {pnl_rate*100:+.2f}% (이미 플래그)")
+
+        # 익절 +20% / +25%
+        elif pnl_rate >= target:
+            if not pos.get("take_profit_pending"):
+                ma_store.set_take_profit_pending(code, True)
+                take_profit_flagged.append((code, name, entry_price, close_price, pnl_rate, target))
                 logger.info(
-                    f"[S2 손절대기중] [{code}] {name}  마감가:{close_price:,}  "
-                    f"{pnl_rate*100:+.2f}% (이미 플래그)"
+                    f"[S2 익절플래그] [{code}] {name}  "
+                    f"매수가:{entry_price:,} → 마감가:{close_price:,}  "
+                    f"{pnl_rate*100:+.2f}% ≥ {target:.0%} → 내일 09:00 시초가 매도"
+                )
+            else:
+                logger.info(f"[S2 익절대기중] [{code}] {name}  {pnl_rate*100:+.2f}% (이미 플래그)")
+
+        # 타임스탑 56일
+        elif days_held >= S2_TIME_STOP_DAYS:
+            if not pos.get("stop_loss_pending") and not pos.get("take_profit_pending"):
+                ma_store.set_stop_loss_pending(code, True)
+                logger.info(
+                    f"[S2 타임스탑플래그] [{code}] {name}  "
+                    f"{days_held}일 경과 ({pnl_rate*100:+.2f}%) → 내일 09:00 시초가 매도"
                 )
         else:
+            ext_mark = " (확장목표)" if early_trig else ""
             logger.info(
                 f"[S2 보유중] [{code}] {name}  "
-                f"매수가:{entry_price:,} → 마감가:{close_price:,}  {pnl_rate*100:+.2f}%"
+                f"매수가:{entry_price:,} → 마감가:{close_price:,}  "
+                f"{pnl_rate*100:+.2f}%  목표:{target:.0%}{ext_mark}  {days_held}일"
             )
 
-    if newly_flagged and notifier:
-        lines = [f"[MA전략] 손절 대상 {len(newly_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
-        for code, name, ep, cp, rate in newly_flagged:
+    if stop_loss_flagged and notifier:
+        lines = [f"[MA전략] 손절 대상 {len(stop_loss_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
+        for code, name, ep, cp, rate in stop_loss_flagged:
             lines.append(f"  [{code}] {name}  매수:{ep:,} → 마감:{cp:,}  {rate*100:+.2f}%")
+        notifier.notify("\n".join(lines))
+
+    if take_profit_flagged and notifier:
+        lines = [f"[MA전략] 익절 대상 {len(take_profit_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
+        for code, name, ep, cp, rate, tgt in take_profit_flagged:
+            lines.append(f"  [{code}] {name}  매수:{ep:,} → 마감:{cp:,}  {rate*100:+.2f}% ≥ {tgt:.0%}")
         notifier.notify("\n".join(lines))
 
 
