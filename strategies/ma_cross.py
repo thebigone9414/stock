@@ -32,6 +32,7 @@ from loguru import logger
 
 import data.ma_store as ma_store
 from data.canslim_store import load_positions as load_canslim_positions
+from data.shared_slots import count_shared
 from data.holidays import is_market_holiday
 from kis.market import KISMarket
 from kis.order import KISOrder, OrderType
@@ -122,9 +123,9 @@ class MACrossStrategy:
         positions = ma_store.get_positions()
         positions = self._reconcile(positions, balance)
 
-        # S2+S3 공유 슬롯: S3(CANSLIM) 포지션도 합산
-        s3_count     = len(load_canslim_positions())
-        total_shared = len(positions) + s3_count
+        # S2+S3+S4 공유 슬롯 계산
+        s2_n, s3_n, s4_n = count_shared()
+        total_shared = s2_n + s3_n + s4_n
 
         extra_info = ""
         if base_cap and extra > 0:
@@ -132,7 +133,8 @@ class MACrossStrategy:
             extra_info = f"  자산증가:{growth_r:+.1f}% → 슬롯 +{extra}개 확장"
         logger.info(
             f"[MA전략] 총자산:{balance.total_eval:,}원  슬롯예산(20%):{slot_budget:,}원  "
-            f"S2+S3 공유 보유:{total_shared}/{max_shared} (S2:{len(positions)} S3:{s3_count}){extra_info}"
+            f"S2+S3+S4 공유 보유:{total_shared}/{max_shared} "
+            f"(S2:{s2_n} S3:{s3_n} S4:{s4_n}){extra_info}"
         )
 
         # 시작 알림 (MA 데이터 신선도 포함)

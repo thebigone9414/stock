@@ -66,6 +66,23 @@ def run_canslim_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None
     run_batch(kis.market, notifier=notifier, force=force)
 
 
+def run_sepa_morning(kis: KIS, notifier: Notifier) -> None:
+    """SEPA 전략4 실행 (09:00 시장가 매수/매도)"""
+    from strategies.sepa import SEPAStrategy
+    SEPAStrategy(
+        market=kis.market,
+        order=kis.order,
+        account=kis.account,
+        notifier=notifier,
+        is_paper=kis.is_paper,
+    ).run()
+
+
+def run_sepa_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
+    """SEPA 트렌드 템플릿 + VCP 스크리닝 배치"""
+    from batch.update_sepa import run_batch
+    run_batch(kis.market, notifier=notifier, force=force)
+
 
 def run_morning_strategy(kis: KIS, notifier: Notifier) -> None:
     """옥동자 오전 수급 전략 실행"""
@@ -190,6 +207,7 @@ def main():
         "--mode",
         choices=["morning", "ma-morning", "ma-batch",
                  "canslim-morning", "canslim-batch",
+                 "sepa-morning", "sepa-batch",
                  "balance", "market", "check-watchlist", "debug-investor", "auto"],
         default="morning",
         help="실행 모드 (기본: morning)"
@@ -197,7 +215,7 @@ def main():
     parser.add_argument("--code",      help="종목코드 (--mode market 전용)")
     parser.add_argument("--run-once",  action="store_true", help="단일 사이클 (구형 auto 전용)")
     parser.add_argument("--cycle",     type=int, default=5)
-    parser.add_argument("--force",     action="store_true", help="휴장일·중복실행 체크 무시 (canslim-batch 전용)")
+    parser.add_argument("--force",     action="store_true", help="휴장일·중복실행 체크 무시 (canslim-batch·sepa-batch 전용)")
     args = parser.parse_args()
 
     settings = get_settings()
@@ -224,6 +242,12 @@ def main():
 
     elif args.mode == "canslim-batch":
         run_canslim_batch(kis, notifier, force=args.force)
+
+    elif args.mode == "sepa-morning":
+        run_sepa_morning(kis, notifier)
+
+    elif args.mode == "sepa-batch":
+        run_sepa_batch(kis, notifier, force=args.force)
 
     elif args.mode == "balance":
         run_balance(kis)
