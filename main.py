@@ -66,19 +66,6 @@ def run_canslim_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None
     run_batch(kis.market, notifier=notifier, force=force)
 
 
-def run_dart_batch() -> None:
-    """DART 재무 데이터 배치 (분기 1회)"""
-    import os
-    from data.dart_client import DARTClient
-    from batch.update_dart import run_dart_batch as _run
-
-    dart_key = os.environ.get("DART_API_KEY", "")
-    if not dart_key:
-        logger.error("[dart-batch] DART_API_KEY 환경변수가 없습니다. GitHub Secrets에 추가하세요.")
-        sys.exit(1)
-    client = DARTClient(dart_key)
-    _run(client)
-
 
 def run_morning_strategy(kis: KIS, notifier: Notifier) -> None:
     """옥동자 오전 수급 전략 실행"""
@@ -202,7 +189,7 @@ def main():
     parser.add_argument(
         "--mode",
         choices=["morning", "ma-morning", "ma-batch",
-                 "canslim-morning", "canslim-batch", "dart-batch",
+                 "canslim-morning", "canslim-batch",
                  "balance", "market", "check-watchlist", "debug-investor", "auto"],
         default="morning",
         help="실행 모드 (기본: morning)"
@@ -237,9 +224,6 @@ def main():
 
     elif args.mode == "canslim-batch":
         run_canslim_batch(kis, notifier, force=args.force)
-
-    elif args.mode == "dart-batch":
-        run_dart_batch()
 
     elif args.mode == "balance":
         run_balance(kis)

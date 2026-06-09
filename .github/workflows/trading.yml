@@ -16,8 +16,7 @@ on:
           - ma-batch         # MA 이평선 배치 (16:35 KST)
           - canslim-morning  # 전략3 CANSLIM (cron-job.org 트리거)
           - canslim-batch    # CANSLIM 스크리닝 배치 (16:40 KST)
-          - dart-batch       # DART 재무 배치 (분기 1회 수동)
-          - update-watchlist # KOSPI200 구성 종목 갱신 (월 1회 자동)
+          - update-watchlist # KOSPI200+KOSDAQ150 구성 종목 갱신 (월 1회 자동)
           - balance          # 잔고 조회
           - check-watchlist  # 종목 수급 API 테스트
           - debug-investor   # 단일 종목 raw JSON 덤프
@@ -43,7 +42,6 @@ concurrency:
     ${{
       (github.event.inputs.mode == 'ma-batch'      ||
        github.event.inputs.mode == 'canslim-batch' ||
-       github.event.inputs.mode == 'dart-batch'    ||
        github.event.inputs.mode == 'update-watchlist')
       && 'okdongja-batch' || 'okdongja-trading'
     }}
@@ -71,7 +69,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: claude/stock-trading-system-z6xQh
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -119,7 +117,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: claude/stock-trading-system-z6xQh
+          ref: main
 
       - name: Python 3.11 설정
         uses: actions/setup-python@v5
@@ -165,14 +163,13 @@ jobs:
       github.event.inputs.mode != 'ma-batch'        &&
       github.event.inputs.mode != 'canslim-morning' &&
       github.event.inputs.mode != 'canslim-batch'   &&
-      github.event.inputs.mode != 'dart-batch'      &&
       github.event.inputs.mode != 'update-watchlist'
 
     steps:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: claude/stock-trading-system-z6xQh
+          ref: main
 
       - name: Python 3.11 설정
         uses: actions/setup-python@v5
@@ -252,7 +249,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: claude/stock-trading-system-z6xQh
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -320,7 +317,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: claude/stock-trading-system-z6xQh
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -376,7 +373,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: claude/stock-trading-system-z6xQh
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -416,7 +413,7 @@ jobs:
   update-canslim:
     name: CANSLIM 스크리닝 배치
     runs-on: ubuntu-latest
-    timeout-minutes: 60       # DART 배치 후: C·A 통과 50~150종목, 증분 OHLCV ~10분
+    timeout-minutes: 60       # KOSPI200+KOSDAQ150+ETF ~400종목, 증분 OHLCV ~20분
 
     permissions:
       contents: write
@@ -427,7 +424,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: claude/stock-trading-system-z6xQh
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -477,57 +474,3 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job H: DART 재무 데이터 배치 (분기 1회 수동 트리거)
-# 실행 시기: 분기보고서 공시 완료 후
-#   Q1: 5월 중순 이후  Q2: 8월 중순 이후
-#   Q3: 11월 중순 이후  Annual: 다음해 3월 말 이후
-# 사전 설정: GitHub Secrets에 DART_API_KEY 추가 필요
-#   (발급: https://opendart.fss.or.kr → 인증키 신청/관리)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  update-dart:
-    name: DART 재무 배치 (분기 1회)
-    runs-on: ubuntu-latest
-    timeout-minutes: 360      # DART API 실제 응답 2~3s/call → 전체 ~3,800종목 최대 6시간. 중단 후 재시작 가능.
-
-    permissions:
-      contents: write
-
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'dart-batch'
-
-    steps:
-      - name: 소스 체크아웃
-        uses: actions/checkout@v4
-        with:
-          ref: claude/stock-trading-system-z6xQh
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Python 3.11 설정
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: 패키지 설치
-        run: pip install -r requirements.txt
-
-      - name: DART 재무 데이터 배치 실행
-        env:
-          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
-          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
-          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
-          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
-          DART_API_KEY:         ${{ secrets.DART_API_KEY }}
-          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
-          LOG_LEVEL:            INFO
-        run: python main.py --mode dart-batch
-
-      - name: 로그 저장
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dart-batch-log-${{ github.run_id }}
-          path: logs/
-          retention-days: 90
-          if-no-files-found: ignore
