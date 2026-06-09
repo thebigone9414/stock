@@ -170,6 +170,8 @@ jobs:
       github.event.inputs.mode != 'ma-batch'        &&
       github.event.inputs.mode != 'canslim-morning' &&
       github.event.inputs.mode != 'canslim-batch'   &&
+      github.event.inputs.mode != 'sepa-morning'    &&
+      github.event.inputs.mode != 'sepa-batch'      &&
       github.event.inputs.mode != 'update-watchlist'
 
     steps:
