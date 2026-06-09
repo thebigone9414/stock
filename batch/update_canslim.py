@@ -3,20 +3,20 @@
 CANSLIM 일일 스크리닝 배치
 
 [스크리닝 대상]
-  dart_ca_screened.json (C·A 분기 사전필터링 결과) 우선 사용.
-  파일이 없으면 canslim_universe.py 전체(~200종목)로 폴백.
+  S2/S3 통합 유니버스: KOSPI200 + KOSDAQ150 + ETF (채권·금리 ETF 제외)
+  → get_s2_watchlist() 사용 (S2, S3 공통)
 
 [조건 계산]
-  C·A — dart_ca_screened.json 에서 이미 확정 (DART 배치 결과 재사용)
   N   — 52주 신고가 대비 10% 이내         (OHLCV)
   S   — 당일 거래량 ≥ 50일 평균의 150%   (OHLCV)
   L   — 3개월 수익률 > KOSPI 3개월 수익률 (OHLCV)
   I   — 외국인+기관 순매수 > 0           (KIS 투자자동향 API)
   M   — KODEX200 MA5 > MA20             (ohlcv_cache.json)
+  ※ C·A(DART 재무조건) 제외 — DART 배치는 S2 유니버스에 한정
 
 [OHLCV 캐시 전략]
   S2 MA배치(update_ma.py)의 ohlcv_cache.json 우선 재사용.
-  KOSDAQ 전용 종목은 canslim_ohlcv_cache.json 에 따로 저장.
+  S3 전용 종목은 canslim_ohlcv_cache.json 에 따로 저장.
 
 장 마감 후(16:40 KST) GitHub Actions에서 실행.
 """
@@ -37,8 +37,8 @@ from utils.logger import setup_logger
 from utils.notifier import Notifier
 from utils.throttler import RateThrottler
 from kis.factory import KIS
-import data.dart_store as dart_store
 import data.canslim_store as canslim_store
+from data.watchlist import get_s2_watchlist
 
 KST = pytz.timezone("Asia/Seoul")
 
@@ -66,11 +66,6 @@ def _save_cache(path: Path, cache: dict) -> None:
 
 
 # ── 조건별 계산 헬퍼 ─────────────────────────────────────────────────
-
-# C·A 조건은 canslim_store 에서 공유 (update_dart.py 와 동일 로직)
-_check_C = canslim_store.check_C
-_check_A = canslim_store.check_A
-
 
 def _check_N(closes: list) -> tuple:
     """52주 신고가 대비 10% 이내 여부 + 신고가"""
@@ -145,17 +140,9 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     else:
         logger.info(f"[CANSLIM배치] --force 모드: 휴장일·중복 체크 건너뜀")
 
-    # ── 스크리닝 대상 결정 ─────────────────────────────────────────────
-    # DART 배치가 이미 실행됐으면 C·A 통과 목록만 사용, 없으면 전체 유니버스
-    universe     = canslim_store.get_screened_universe()
-    screened_ca  = {s["code"]: s for s in canslim_store.load_ca_screened().get("screened", [])}
-    dart_data    = dart_store.load()
-
-    ca_from_screened = bool(screened_ca)
-    logger.info(
-        f"[CANSLIM배치] 스크리닝 대상: {len(universe)}종목  "
-        f"({'C·A사전필터링목록' if ca_from_screened else '전체유니버스(DART배치미실행)'} 사용)"
-    )
+    # ── 스크리닝 대상: S2/S3 통합 유니버스 ────────────────────────────
+    universe = get_s2_watchlist()
+    logger.info(f"[CANSLIM배치] 스크리닝 대상: {len(universe)}종목 (KOSPI200+KOSDAQ150+ETF)")
 
     # S2 OHLCV 캐시 (update_ma.py가 이미 최신화)
     s2_cache      = _load_cache(OHLCV_CACHE_PATH)
@@ -254,17 +241,6 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
                 skip += 1
                 continue
 
-            # ── C·A 조건 ──────────────────────────────────────────
-            if ca_from_screened and code in screened_ca:
-                # DART 배치 결과 재사용 (분기 사전 필터링)
-                C = screened_ca[code]["C"]
-                A = screened_ca[code]["A"]
-            else:
-                # DART 배치 미실행 → dart_data.json 에서 직접 계산
-                corp = dart_data.get("corps", {}).get(code, {})
-                C = _check_C(corp)
-                A = _check_A(corp)
-
             # ── N·S·L·I·M 조건 ────────────────────────────────────
             N, hi_52w    = _check_N(closes)
             S, vol_ratio = _check_S(volumes) if volumes else (False, 0.0)
@@ -272,13 +248,13 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
             I            = _check_I(market, code, throttler)
             M            = M_global
 
-            score    = sum([C, A, N, S, L, I, M])
-            all_pass = (score == 7)
+            score    = sum([N, S, L, I, M])
+            all_pass = (score == 5)
 
             stocks_out[code] = {
                 "name":      name,
                 "sector":    sector,
-                "C": C, "A": A, "N": N, "S": S, "L": L, "I": I, "M": M,
+                "N": N, "S": S, "L": L, "I": I, "M": M,
                 "score":     score,
                 "all_pass":  all_pass,
                 "close":     int(closes[-1]),
@@ -290,8 +266,8 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
             signal = " ★ALL_PASS" if all_pass else ""
             logger.info(
                 f"[{i:03d}/{n_total}] [{code}] {name:14s}  "
-                f"C:{int(C)} A:{int(A)} N:{int(N)} S:{int(S)} L:{int(L)} I:{int(I)} M:{int(M)}  "
-                f"score={score}/7  ({from_cache}){signal}"
+                f"N:{int(N)} S:{int(S)} L:{int(L)} I:{int(I)} M:{int(M)}  "
+                f"score={score}/5  ({from_cache}){signal}"
             )
             ok += 1
 
@@ -321,9 +297,9 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     )
 
     logger.info("══════════════════════════════════════════")
-    logger.info(f" CANSLIM 완료: 성공:{ok} / 실패:{fail} / 건너뜀:{skip}")
+    logger.info(f" CANSLIM(N·S·L·I·M) 완료: 성공:{ok} / 실패:{fail} / 건너뜀:{skip}")
     if all_pass_list:
-        logger.info(f" 내일 매수 후보 (ALL_PASS) — {len(all_pass_list)}종목:")
+        logger.info(f" 내일 매수 후보 (ALL_PASS 5/5) — {len(all_pass_list)}종목:")
         for c, s in all_pass_list[:5]:
             logger.info(
                 f"  [{c}] {s['name']}  close={s['close']:,}  "

@@ -5,9 +5,9 @@
   KOSPI200 + ETF + DART C·A 스크리닝 통과 종목
   → 오전 수급 전략(S1) 대상
 
-[S2 watchlist — get_s2_watchlist()]
-  KOSPI200 + KOSDAQ150
-  → MA 이평선 전략(S2) + DART 재무 배치 대상
+[S2/S3 watchlist — get_s2_watchlist()]
+  KOSPI200 + KOSDAQ150 + ETF (채권·금리 ETF 제외)
+  → MA 이평선 전략(S2) + CANSLIM 전략(S3) + DART 재무 배치 대상
   → KOSPI200: data/kospi200_cache.json (update_watchlist.py 갱신)
   → KOSDAQ150: data/kosdaq150_cache.json (update_watchlist.py 갱신)
 """
@@ -289,10 +289,10 @@ def get_active_watchlist() -> List[Dict[str, str]]:
 
 
 def get_s2_watchlist() -> List[Dict[str, str]]:
-    """S2(MA전략) + DART배치용: KOSPI200 + KOSDAQ150 통합 (code 중복 제거)"""
+    """S2(MA전략) + S3(CANSLIM) + DART배치용: KOSPI200 + KOSDAQ150 + ETF 통합 (code 중복 제거)"""
     seen: set = set()
     merged: List[Dict[str, str]] = []
-    for item in _load_kospi200() + _load_kosdaq150():
+    for item in _load_kospi200() + _load_kosdaq150() + ETF_LIST:
         if item["code"] not in seen:
             seen.add(item["code"])
             merged.append(item)
