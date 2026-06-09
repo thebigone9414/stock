@@ -363,7 +363,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     sell_signals = [
         (c, s["name"])
         for c, s in stocks_out.items()
-        if c in positions_now and s["ma21_below_ma62"] and s.get("ma62_declining_5d")
+        if c in positions_now and s["ma21_below_ma62"]
     ]
 
     logger.info("══════════════════════════════════════════")
@@ -382,7 +382,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     if sell_signals:
         logger.info(f" 내일 매도 대상 ({len(sell_signals)}종목):")
         for c, sname in sell_signals:
-            logger.info(f"  [{c}] {sname}  ma21<ma62 & ma62하락추세")
+            logger.info(f"  [{c}] {sname}  ma21<ma62 데드크로스")
     else:
         logger.info(" 내일 매도 예정 없음")
     logger.info("══════════════════════════════════════════")
@@ -602,7 +602,7 @@ def _notify_daily_summary(
     if sell_signals:
         lines.append(f"\n내일 매도 예정 ({len(sell_signals)}종목):")
         for code, sname in sell_signals:
-            lines.append(f"  [{code}] {sname}  ma21<ma62 & ma62하락추세")
+            lines.append(f"  [{code}] {sname}  ma21<ma62 데드크로스")
     else:
         lines.append("내일 매도 예정 없음")
 

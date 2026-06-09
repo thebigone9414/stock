@@ -161,7 +161,7 @@ class MACrossStrategy:
         any_take_profit = any(p.get("take_profit_pending") for p in positions.values())
         any_time_stop  = any(p.get("time_stop_pending") for p in positions.values())
         any_sell_sig   = any(
-            stocks.get(c, {}).get("ma21_below_ma62") and stocks.get(c, {}).get("ma62_declining_5d")
+            stocks.get(c, {}).get("ma21_below_ma62")
             for c in positions
         )
         if not any_stop_loss and not any_take_profit and not any_time_stop and not any_sell_sig and not candidates:
@@ -223,13 +223,12 @@ class MACrossStrategy:
         # ── 데드크로스 매도 ──────────────────────────────────────────────
         for code in list(positions):
             s = stocks.get(code, {})
-            if s.get("ma21_below_ma62") and s.get("ma62_declining_5d"):
+            if s.get("ma21_below_ma62"):
                 logger.info(
-                    f"[MA전략 매도신호] [{code}] {positions[code]['name']} "
-                    f"— ma21({s.get('ma21',0):,.0f}) < ma62({s.get('ma62',0):,.0f})  "
-                    f"& ma62 5일 하락추세"
+                    f"[MA전략 데드크로스매도] [{code}] {positions[code]['name']} "
+                    f"— ma21({s.get('ma21',0):,.0f}) < ma62({s.get('ma62',0):,.0f})"
                 )
-                self._sell(code, positions[code], reason="ma21<ma62 & ma62 5일 하락추세")
+                self._sell(code, positions[code], reason="데드크로스 ma21<ma62")
                 del positions[code]
                 ma_store.remove_position(code)
                 _sold += 1
