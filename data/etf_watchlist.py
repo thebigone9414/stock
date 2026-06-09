@@ -17,15 +17,10 @@ ETF_LIST: List[Dict[str, str]] = [
     {"code": "102780", "name": "TIGER 200",                     "sector": "ETF/지수"},
     {"code": "152100", "name": "ARIRANG 200",                   "sector": "ETF/지수"},
     {"code": "278530", "name": "KODEX 200TR",                   "sector": "ETF/지수"},
-    {"code": "122630", "name": "KODEX 레버리지",                "sector": "ETF/레버리지"},
-    {"code": "252670", "name": "KODEX 200선물인버스2X",         "sector": "ETF/인버스"},
-    {"code": "114800", "name": "KODEX 인버스",                  "sector": "ETF/인버스"},
 
     # ── 코스닥150 인덱스 ──────────────────────────────────────────────
     {"code": "229200", "name": "KODEX 코스닥150",               "sector": "ETF/지수"},
     {"code": "232080", "name": "TIGER 코스닥150",               "sector": "ETF/지수"},
-    {"code": "233740", "name": "KODEX 코스닥150레버리지",       "sector": "ETF/레버리지"},
-    {"code": "251340", "name": "KODEX 코스닥150선물인버스",     "sector": "ETF/인버스"},
 
     # ── 반도체/IT ETF ────────────────────────────────────────────────
     {"code": "091160", "name": "KODEX 반도체",                  "sector": "ETF/반도체"},
@@ -85,27 +80,14 @@ ETF_LIST: List[Dict[str, str]] = [
     {"code": "379800", "name": "KODEX 미국S&P500TR",            "sector": "ETF/미국주식"},
     {"code": "379810", "name": "KODEX 미국나스닥100TR",         "sector": "ETF/미국주식"},
     {"code": "381180", "name": "TIGER 미국필라델피아반도체나스닥", "sector": "ETF/미국주식"},
-    {"code": "458730", "name": "TIGER 미국S&P500레버리지(합성H)", "sector": "ETF/레버리지"},
     {"code": "465580", "name": "ACE 미국빅테크TOP7Plus",        "sector": "ETF/미국주식"},
-
-    # ── 중국/신흥국 ETF ──────────────────────────────────────────────
-    {"code": "192090", "name": "TIGER 차이나CSI300",            "sector": "ETF/해외"},
-    {"code": "117690", "name": "TIGER 차이나H",                 "sector": "ETF/해외"},
-
-    # ── 달러 ETF ─────────────────────────────────────────────────────
-    {"code": "130680", "name": "TIGER 미국달러선물",            "sector": "ETF/달러"},
 
     # ── 배당/스타일 ETF ──────────────────────────────────────────────
     {"code": "161490", "name": "ARIRANG 고배당주",              "sector": "ETF/배당"},
     {"code": "211900", "name": "KODEX 배당가치",                "sector": "ETF/배당"},
 
     # ── 리츠/부동산 ETF ──────────────────────────────────────────────
-    {"code": "329200", "name": "KODEX TRF7030",                 "sector": "ETF/리츠"},
     {"code": "352560", "name": "KODEX 한국부동산리츠인프라",    "sector": "ETF/리츠"},
-
-    # ── 원자재/금 ETF ────────────────────────────────────────────────
-    {"code": "132030", "name": "KODEX 골드선물(H)",             "sector": "ETF/원자재"},
-    {"code": "319640", "name": "TIGER 골드선물(H)",             "sector": "ETF/원자재"},
 
     # ── 4차산업/테마 ETF ─────────────────────────────────────────────
     {"code": "195930", "name": "TIGER 글로벌4차산업혁신기술",   "sector": "ETF/4차산업"},
