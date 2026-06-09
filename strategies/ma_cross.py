@@ -2,14 +2,15 @@
 옥동자 전략 2호 — 이동평균선 정배열 중장기 전략
 
 [매수 조건 - 완전 정배열]
-  조건 1: 5 > 21 > 62 > 248 > 744 완전 정배열이 전날 처음 달성된 종목
-  조건 2: 62, 248, 744 이평선 모두 20일 이상 연속 상승 추세
-  조건 3: 전일 양봉 (종가 > 시가)
+  조건 1: MA5 > MA21 > MA62 > MA248 > MA744 정배열 달성 첫날 (당일 처음 정배열)
+  조건 2: MA62, MA248, MA744 이평선 모두 상승 추세
+  조건 3: 정배열 첫날 양봉 (당일 종가 > 시가)
+  ※ 배치는 장 마감 후 실행 → "정배열 첫날 양봉" 확인 후 다음날 09:00 시장가 매수
 
 [매수 조건 - 부분 정배열 (데이터 250~749일 종목, 신생 ETF 등)]
-  조건 1: 5 > 21 > 62 > 248 부분 정배열이 전날 처음 달성된 종목
-  조건 2: 62, 248 이평선 모두 20일 이상 연속 상승 추세
-  조건 3: 전일 양봉 (종가 > 시가)
+  조건 1: MA5 > MA21 > MA62 > MA248 정배열 달성 첫날
+  조건 2: MA62, MA248 이평선 모두 상승 추세
+  조건 3: 정배열 첫날 양봉 (당일 종가 > 시가)
 
 [매도 조건]
   ma21이 ma62 아래로 이동한 다음날 아침 시장가 매도
@@ -30,6 +31,7 @@ import pytz
 from loguru import logger
 
 import data.ma_store as ma_store
+from data.canslim_store import load_positions as load_canslim_positions
 from data.holidays import is_market_holiday
 from kis.market import KISMarket
 from kis.order import KISOrder, OrderType
@@ -37,7 +39,8 @@ from kis.account import KISAccount
 from utils.notifier import Notifier
 
 KST                = pytz.timezone("Asia/Seoul")
-MAX_POSITIONS      = 4
+S2_S3_BASE_SLOTS   = 4     # S2+S3 공유 슬롯 기본값 (총 5: S1=1 고정, S2+S3=4)
+MAX_POSITIONS      = S2_S3_BASE_SLOTS   # 하위 호환 유지
 SLOT_RATIO         = 0.20
 S2_STOP_LOSS       = 0.07   # 손절 -7%
 S2_TAKE_PROFIT     = 0.20   # 익절 기본 +20%
@@ -109,23 +112,27 @@ class MACrossStrategy:
             self.notifier.notify(msg)
             return
 
-        # 슬롯 확장: 수익률이 20% 증가할 때마다 S2 슬롯 1개 추가
+        # 슬롯 확장: 자산 증가(수익 + 추가 입금)마다 S2+S3 공유 풀 슬롯 추가
         base_cap      = ma_store.get_base_capital()
         extra         = ma_store.extra_slots(base_cap, balance.total_eval) if base_cap else 0
-        max_positions = MAX_POSITIONS + extra
+        max_shared    = S2_S3_BASE_SLOTS + extra   # S2+S3 공유 최대 슬롯
         slot_budget   = int(balance.total_eval * SLOT_RATIO)
 
         # 포지션 로드 + KIS 실잔고 대조
         positions = ma_store.get_positions()
         positions = self._reconcile(positions, balance)
 
-        profit_info = ""
+        # S2+S3 공유 슬롯: S3(CANSLIM) 포지션도 합산
+        s3_count     = len(load_canslim_positions())
+        total_shared = len(positions) + s3_count
+
+        extra_info = ""
         if base_cap and extra > 0:
-            profit_r    = (balance.total_eval - base_cap) / base_cap * 100
-            profit_info = f"  수익률:{profit_r:+.1f}% → 슬롯 +{extra}개 확장"
+            growth_r   = (balance.total_eval - base_cap) / base_cap * 100
+            extra_info = f"  자산증가:{growth_r:+.1f}% → 슬롯 +{extra}개 확장"
         logger.info(
             f"[MA전략] 총자산:{balance.total_eval:,}원  슬롯예산(20%):{slot_budget:,}원  "
-            f"보유:{len(positions)}/{max_positions}{profit_info}"
+            f"S2+S3 공유 보유:{total_shared}/{max_shared} (S2:{len(positions)} S3:{s3_count}){extra_info}"
         )
 
         # 시작 알림 (MA 데이터 신선도 포함)
@@ -145,13 +152,13 @@ class MACrossStrategy:
         _bought = 0
         avail_cash = balance.cash
 
-        # 매수 후보 선정 (슬롯 체크 포함)
+        # 매수 후보 선정 (S2+S3 공유 슬롯 체크)
         all_candidates = self._find_candidates(stocks, positions)
-        slots_full     = len(positions) >= max_positions
+        slots_full     = total_shared >= max_shared
         if slots_full:
             new_cands = [c for c in all_candidates if c["code"] not in positions]
             if new_cands:
-                self._notify_full(new_cands, max_positions)
+                self._notify_full(new_cands, max_shared)
             candidates = [c for c in all_candidates if c["code"] in positions]
         else:
             candidates = all_candidates

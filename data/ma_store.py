@@ -92,9 +92,9 @@ def set_base_capital(amount: int) -> None:
 
 
 def extra_slots(base_capital: int, total_eval: int, slot_ratio: float = 0.20) -> int:
-    """수익률 기반 추가 슬롯 수 계산
-    - 수익금이 기준 자산의 20%씩 증가할 때마다 슬롯 1개 추가
-    - 예) 기준 1000만 → 현재 1200만(+20%): +1슬롯
+    """자산 증가 기반 추가 슬롯 수 계산 (수익 + 추가 입금 모두 반영)
+    - (현재 총자산 - 기준 자산)이 기준 자산의 20%씩 증가할 때마다 S2+S3 공유 슬롯 1개 추가
+    - 예) 기준 1000만 → 현재 1200만(수익/추가입금 무관): +1슬롯
     """
     if base_capital <= 0:
         return 0

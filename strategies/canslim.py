@@ -9,8 +9,9 @@
   - 타임스탑: 8주(56 캘린더일) 경과 후 목표 미달성 시 청산
 
 포지션 관리:
-  - 최대 보유 종목: 5개
-  - 신규 매수 예산: 가용 현금 / 잔여 슬롯
+  - S2+S3 공유 슬롯: 기본 4개 (S1=1 고정, 총 5개)
+  - 자산 증가(수익+추가입금) 기준 자산의 20%마다 슬롯 1개 추가
+  - 신규 매수 예산: 총자산의 20% (슬롯당)
   - 시장 하락장(M=False): 신규 매수 보류
 
 실행 시각: 09:00 정규장 개장 시 시장가 주문
@@ -21,6 +22,7 @@ from datetime import datetime, date
 import pytz
 from loguru import logger
 
+import data.ma_store as ma_store
 from data.canslim_store import (
     get_buy_candidates,
     load_positions,
@@ -30,8 +32,9 @@ from data.canslim_store import (
     load_data as load_canslim_data,
 )
 
-KST             = pytz.timezone("Asia/Seoul")
-MAX_POSITIONS   = 5
+KST              = pytz.timezone("Asia/Seoul")
+S2_S3_BASE_SLOTS = 4     # S2+S3 공유 슬롯 기본값 (총 5: S1=1 고정, S2+S3=4)
+MAX_POSITIONS    = S2_S3_BASE_SLOTS   # 하위 호환 유지
 STOP_LOSS       = 0.07    # -7%
 TAKE_PROFIT     = 0.20    # +20%
 TAKE_PROFIT_EXT = 0.25    # +25% (조기 +15% 달성 시)
@@ -157,12 +160,28 @@ class CANSLIMStrategy:
             logger.info("[S3] 시장 하락장(M=False) — 신규 매수 보류")
             return
 
-        positions = load_positions()
-        slots_used = len(positions)
-        slots_free = MAX_POSITIONS - slots_used
+        # S2+S3 공유 슬롯 계산 (S2 포지션도 합산)
+        s3_positions = load_positions()
+        s2_count     = len(ma_store.get_positions())
+        total_shared = len(s3_positions) + s2_count
+
+        # 슬롯 확장: 자산 증가(수익 + 추가 입금)마다 슬롯 추가
+        try:
+            bal      = self.account.get_balance()
+            base_cap = ma_store.get_base_capital()
+            extra    = ma_store.extra_slots(base_cap, bal.total_eval) if base_cap else 0
+        except Exception as e:
+            logger.error(f"[S3] 잔고 조회 실패: {e}")
+            return
+
+        max_shared = S2_S3_BASE_SLOTS + extra
+        slots_free = max_shared - total_shared
 
         if slots_free <= 0:
-            logger.info(f"[S3] 포지션 만석 ({slots_used}/{MAX_POSITIONS}) — 매수 보류")
+            logger.info(
+                f"[S3] S2+S3 포지션 만석 ({total_shared}/{max_shared}, "
+                f"S2:{s2_count} S3:{len(s3_positions)}) — 매수 보류"
+            )
             return
 
         # 스크리닝 데이터가 오늘 것인지 확인 (오래된 데이터로 매수 방지)
@@ -173,6 +192,7 @@ class CANSLIMStrategy:
             )
             return
 
+        positions = s3_positions
         candidates = [
             (code, info)
             for code, info in get_buy_candidates()
@@ -183,14 +203,11 @@ class CANSLIMStrategy:
             logger.info("[S3] 매수 후보 없음 (all_pass 종목 없음 또는 이미 보유)")
             return
 
-        # 예산 계산
-        try:
-            bal       = self.account.get_balance()
-            cash      = bal.cash
-            per_slot  = int(cash / slots_free) if slots_free > 0 else 0
-        except Exception as e:
-            logger.error(f"[S3] 잔고 조회 실패: {e}")
-            return
+        # 슬롯당 예산: 총자산의 20%
+        cash     = bal.cash
+        per_slot = int(bal.total_eval * 0.20)
+        if per_slot > cash:
+            per_slot = cash  # 현금 초과 방지
 
         if per_slot < 10_000:
             logger.info(f"[S3] 가용 예산 부족 (슬롯당 {per_slot:,}원) — 매수 건너뜀")
@@ -198,7 +215,7 @@ class CANSLIMStrategy:
 
         logger.info(
             f"[S3] 매수 후보 {len(candidates)}종목  "
-            f"슬롯 {slots_free}개  슬롯당 예산 {per_slot:,}원"
+            f"잔여슬롯 {slots_free}개  슬롯당 예산 {per_slot:,}원 (총자산 20%)"
         )
 
         bought = 0
