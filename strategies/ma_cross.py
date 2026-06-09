@@ -80,9 +80,10 @@ class MACrossStrategy:
             self.notifier.notify(msg)
             return
 
-        # 지연 실행 감지: 09:20 이후면 시장가 주문 시간대 초과
+        # 지연 실행 감지: 09:45 이후면 시장가 주문 시간대 초과
+        # (S1이 okdongja-s1 별도 그룹으로 분리되어 있어도 GitHub 큐잉 지연 여유 확보)
         _now = datetime.now(KST)
-        if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 20):
+        if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 45):
             msg = (
                 f"[MA전략] 실행 지연 감지 — {_now.strftime('%H:%M')} KST 시작\n"
                 f"09:00 시장가 주문 불가, 오늘 건너뜀"

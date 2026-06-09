@@ -59,9 +59,9 @@ class CANSLIMStrategy:
             logger.info(f"[S3] 09:00 개장 대기 ({wait_sec:.0f}초)")
             time.sleep(wait_sec)
 
-        # 지연 감지
+        # 지연 감지: 09:45 이후면 시장가 주문 시간대 초과
         _now = datetime.now(KST)
-        if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 20):
+        if _now.hour > 9 or (_now.hour == 9 and _now.minute >= 45):
             logger.warning(f"[S3] 지연 실행 감지 ({_now.strftime('%H:%M')}) — 시장가 주문 불가, 종료")
             return
 

@@ -37,16 +37,20 @@ on:
           - 'true'
 
 concurrency:
-  # 배치(ma-batch·canslim-batch·sepa-batch·update-watchlist)는 okdongja-batch 그룹
-  # 매매(morning·ma-morning·canslim-morning·sepa-morning)는 okdongja-trading 그룹
-  # → 아침 매매 run이 살아있어도 배치 run이 대기열에 갇히지 않음
+  # 배치(ma-batch·canslim-batch·sepa-batch·update-watchlist): okdongja-batch 그룹
+  # S1(morning): okdongja-s1 그룹 (07:50~09:50, 최대 150분 점유)
+  # S2/S3/S4(ma-morning·canslim-morning·sepa-morning): okdongja-trading 그룹
+  # → S1 실행 중에도 S2/S3/S4가 별도 큐에서 즉시 실행 가능
   group: >-
     ${{
       (github.event.inputs.mode == 'ma-batch'      ||
        github.event.inputs.mode == 'canslim-batch' ||
        github.event.inputs.mode == 'sepa-batch'    ||
        github.event.inputs.mode == 'update-watchlist')
-      && 'okdongja-batch' || 'okdongja-trading'
+      && 'okdongja-batch'
+      || github.event.inputs.mode == 'morning'
+      && 'okdongja-s1'
+      || 'okdongja-trading'
     }}
   cancel-in-progress: false   # 실행 중인 매매 절대 중단 금지
 
