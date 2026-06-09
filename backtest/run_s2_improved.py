@@ -6,6 +6,8 @@ S2 MA 이평선 전략 백테스트 — 개선 버전
 1. 타임스탑: 56 영업일 → 40 영업일 (실제 전략의 56 캘린더일 ≈ 40 영업일에 맞춤)
 2. 조기익절 판단: 21 영업일 → 15 영업일 (실제 전략의 21 캘린더일에 맞춤)
 3. 종목 우선순위: dict 순서 → 63일 RS(상대강도) 높은 순으로 슬롯 배정
+4. 시장 필터(M): KODEX200 MA20 < MA60 전환 시 전체 포지션 강제 청산 (★ 추가)
+   → 매수 차단은 S2 정배열 조건이 이미 처리 — 시장 붕괴 보호가 실질적 개선
 
 Usage:
     python backtest/run_s2_improved.py
@@ -31,6 +33,10 @@ EARLY_GAIN_TRIGGER = 0.15
 EARLY_GAIN_DAYS    = 15      # ★ 개선: 21 영업일 → 15 영업일 (≈ 21 캘린더일)
 TIME_STOP_DAYS     = 40      # ★ 개선: 56 영업일 → 40 영업일 (≈ 56 캘린더일)
 MA_TREND_LOOKBACK  = 5
+
+KODEX200_CODE      = "069500"  # ★ 시장 필터용
+MARKET_MA_FAST     = 20        # ★ 시장 필터: MA20 > MA60
+MARKET_MA_SLOW     = 60
 
 BUY_FEE  = 0.00015
 SELL_FEE = 0.00015 + 0.002
@@ -71,6 +77,24 @@ def _precompute_mas(stocks: dict) -> None:
             "ma248": _ma(c, 248),
             "ma744": _ma(c, 744),
         }
+
+
+def _market_uptrend(kodex_closes: np.ndarray, i: int) -> bool:
+    """KODEX200 MA20 > MA60 → 시장 상승추세"""
+    if i < MARKET_MA_SLOW - 1:
+        return True   # 데이터 부족 시 필터 비활성
+    ma_fast = kodex_closes[i - MARKET_MA_FAST + 1 : i + 1].mean()
+    ma_slow = kodex_closes[i - MARKET_MA_SLOW + 1 : i + 1].mean()
+    return bool(ma_fast > ma_slow)
+
+
+def _market_turned_bearish(kodex_closes: np.ndarray, i: int) -> bool:
+    """오늘 MA20 < MA60 이고 어제는 MA20 >= MA60 → 시장 하락 전환"""
+    if i < MARKET_MA_SLOW:
+        return False
+    today_up   = _market_uptrend(kodex_closes, i)
+    yest_up    = _market_uptrend(kodex_closes, i - 1)
+    return (not today_up) and yest_up
 
 
 def _golden_align(mas: dict, i: int) -> bool:
@@ -114,12 +138,18 @@ def _rs_score(closes: np.ndarray, i: int) -> float:
 
 
 # ── 시뮬레이션 ────────────────────────────────────────────────────────────
-def run_backtest(initial_capital: int = 10_000_000) -> tuple[list, list]:
+def run_backtest(initial_capital: int = 10_000_000,
+                 use_market_exit: bool = True) -> tuple[list, list]:
     print("데이터 로딩 중...")
     stocks = _load_data()
     print(f"  → {len(stocks)}종목 로드")
     print("MA 계산 중...")
     _precompute_mas(stocks)
+
+    if KODEX200_CODE not in stocks:
+        print(f"[오류] KODEX200({KODEX200_CODE}) 없음")
+        sys.exit(1)
+    kodex_closes = stocks[KODEX200_CODE]["closes"]
 
     capital   = float(initial_capital)
     positions = {}
@@ -135,6 +165,29 @@ def run_backtest(initial_capital: int = 10_000_000) -> tuple[list, list]:
         pos_val    = sum(stocks[c]["closes"][i] * p["qty"]
                          for c, p in positions.items() if c in stocks)
         total_eval = capital + pos_val
+
+        # ── 시장 하락 전환 → 전체 포지션 강제 청산 (i+1 시가) ─────────
+        if use_market_exit and _market_turned_bearish(kodex_closes, i):
+            for code in list(positions):
+                if code not in stocks:
+                    del positions[code]
+                    continue
+                pos      = positions[code]
+                sell_px  = stocks[code]["opens"][i + 1]
+                received = sell_px * pos["qty"] * (1 - SELL_FEE)
+                capital += received
+                trades.append({
+                    "code":        code,
+                    "entry_i":     pos["entry_i"],
+                    "exit_i":      i + 1,
+                    "entry_price": pos["entry_price"],
+                    "exit_price":  sell_px,
+                    "qty":         pos["qty"],
+                    "pnl_pct":     (sell_px - pos["entry_price"]) / pos["entry_price"],
+                    "reason":      "시장하락전환",
+                    "days_held":   pos["days_held"],
+                })
+                del positions[code]
 
         # ── 매도 ──────────────────────────────────────────────────────
         for code in list(positions):
@@ -184,8 +237,9 @@ def run_backtest(initial_capital: int = 10_000_000) -> tuple[list, list]:
                 })
                 del positions[code]
 
-        # ── 매수: ★ RS 높은 순으로 후보 정렬 후 슬롯 배정 ────────────
-        if len(positions) < MAX_SLOTS:
+        # ── 매수: RS 높은 순 슬롯 배정 (v2는 시장 필터 추가) ────────────
+        market_ok = (not use_market_exit) or _market_uptrend(kodex_closes, i)
+        if len(positions) < MAX_SLOTS and market_ok:
             slot_budget = total_eval * SLOT_RATIO
 
             # 1단계: 조건 충족 후보 수집
@@ -301,40 +355,76 @@ def _report(trades: list, port_hist: list, initial_capital: int,
             "n_trades": len(trades), "total_r": total_r}
 
 
+def _run_orig(capital: int) -> dict:
+    """원본 run_s2.py 를 직접 실행해서 통계 반환"""
+    import backtest.run_s2 as orig
+    trades, hist = orig.run_backtest(capital)
+    if not hist:
+        return {}
+    final   = hist[-1]
+    total_r = (final - capital) / capital
+    years   = len(hist) / 252
+    cagr    = (final / capital) ** (1 / max(years, 0.01)) - 1
+    arr     = np.array(hist)
+    mdd     = float(((arr - np.maximum.accumulate(arr)) / np.maximum.accumulate(arr)).min())
+    wins    = [t for t in trades if t["pnl_pct"] > 0]
+    wr      = len(wins) / len(trades) * 100 if trades else 0
+    return {"cagr": cagr, "mdd": mdd, "wr": wr, "n_trades": len(trades),
+            "total_r": total_r, "trades": trades, "hist": hist}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--capital", type=int, default=10_000_000)
-    parser.add_argument("--compare", action="store_true",
-                        help="원본과 나란히 비교 출력")
     args = parser.parse_args()
 
-    # 개선 버전 실행
-    trades_new, hist_new = run_backtest(args.capital)
-    stats_new = _report(trades_new, hist_new, args.capital,
-                        label="[개선: 타임스탑40일·RS우선순위]")
+    cap = args.capital
 
-    if args.compare:
-        # 원본 버전 파라미터로 재실행 (TIME_STOP=56, EARLY_GAIN_DAYS=21, dict 순서)
-        import backtest.run_s2 as orig
-        print("\n" + "─" * 57)
-        print("  [참고] 원본 파라미터로 재실행:")
-        trades_orig, hist_orig = orig.run_backtest(args.capital)
-        stats_orig = orig._report(trades_orig, hist_orig, args.capital)
+    # ── 원본 ─────────────────────────────────────────────────────────────
+    import backtest.run_s2 as orig
+    print("─" * 57)
+    print("  [1] 원본 (타임스탑56일, dict순서)")
+    trades_o, hist_o = orig.run_backtest(cap)
 
-        print("\n" + "=" * 57)
-        print("  비교 요약")
-        print("=" * 57)
-        print(f"  {'항목':12s} {'원본':>15s} {'개선':>15s}")
-        print("-" * 57)
-        for key, label in [("cagr","CAGR"), ("mdd","MDD"),
-                            ("wr","승률"), ("n_trades","매매횟수")]:
-            o = stats_orig.get(key, 0)
-            n = stats_new.get(key, 0)
-            if key in ("cagr","mdd","wr","total_r"):
-                print(f"  {label:12s} {o:>+14.2%}  {n:>+14.2%}")
-            else:
-                print(f"  {label:12s} {o:>15}  {n:>15}")
-        print("=" * 57 + "\n")
+    # ── 개선 v1: 타임스탑+RS 우선순위 (시장필터 없음) ─────────────────
+    print("\n─" * 28)
+    print("  [2] 개선v1 (타임스탑40일·RS우선순위)")
+    trades_v1, hist_v1 = run_backtest(cap, use_market_exit=False)
+    s_v1 = _report(trades_v1, hist_v1, cap, label="[v1: 타임스탑40일·RS우선순위]")
+
+    # ── 개선 v2: v1 + 시장 필터 ─────────────────────────────────────
+    print("\n─" * 28)
+    print("  [3] 개선v2 (v1 + 시장필터 KODEX200 MA20>MA60 하락전환 강제청산)")
+    trades_v2, hist_v2 = run_backtest(cap, use_market_exit=True)
+    s_v2 = _report(trades_v2, hist_v2, cap, label="[v2: +시장필터]")
+
+    # ── 비교 테이블 ───────────────────────────────────────────────────
+    # 원본 통계 직접 계산
+    if hist_o:
+        final_o = hist_o[-1]; yr_o = len(hist_o)/252
+        cagr_o  = (final_o/cap)**(1/max(yr_o,0.01))-1
+        arr_o   = np.array(hist_o)
+        mdd_o   = float(((arr_o-np.maximum.accumulate(arr_o))/np.maximum.accumulate(arr_o)).min())
+        wins_o  = [t for t in trades_o if t["pnl_pct"]>0]
+        wr_o    = len(wins_o)/len(trades_o)*100 if trades_o else 0
+        tr_o    = (final_o-cap)/cap
+    else:
+        cagr_o=mdd_o=wr_o=tr_o=0; trades_o=[]
+
+    W = 61
+    print("\n" + "=" * W)
+    print(f"  {'':20s} {'원본':>12s} {'v1(타임+RS)':>12s} {'v2(+시장필터)':>12s}")
+    print("-" * W)
+    rows = [
+        ("총 수익률",   f"{tr_o:>+11.2%}",  f"{s_v1['total_r']:>+11.2%}", f"{s_v2['total_r']:>+11.2%}"),
+        ("CAGR",        f"{cagr_o:>+11.2%}", f"{s_v1['cagr']:>+11.2%}",   f"{s_v2['cagr']:>+11.2%}"),
+        ("MDD",         f"{mdd_o:>+11.2%}",  f"{s_v1['mdd']:>+11.2%}",    f"{s_v2['mdd']:>+11.2%}"),
+        ("승률",        f"{wr_o:>10.1f} %",  f"{s_v1['wr']*100:>10.1f} %",f"{s_v2['wr']*100:>10.1f} %"),
+        ("매매 횟수",   f"{len(trades_o):>11}회", f"{s_v1['n_trades']:>11}회", f"{s_v2['n_trades']:>11}회"),
+    ]
+    for label, o, v1, v2 in rows:
+        print(f"  {label:12s}  {o}  {v1}  {v2}")
+    print("=" * W + "\n")
 
 
 if __name__ == "__main__":
