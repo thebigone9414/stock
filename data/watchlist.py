@@ -1,13 +1,8 @@
 """
 옥동자 매매 대상 종목 관리
 
-[S1 watchlist — get_active_watchlist()]
-  KOSPI200 + ETF
-  → 오전 수급 전략(S1) 대상
-
-[S2/S3 watchlist — get_s2_watchlist()]
-  KOSPI200 + KOSDAQ150 + ETF (채권·금리 ETF 제외)
-  → MA 이평선 전략(S2) + CANSLIM 전략(S3) 대상
+[공통 유니버스 — KOSPI200 + KOSDAQ150 + ETF (채권·금리 ETF 제외)]
+  S1(오전 단기), S2(MA 이평선), S3(CANSLIM N·S·L·I·M) 모두 동일
   → KOSPI200: data/kospi200_cache.json (update_watchlist.py 갱신)
   → KOSDAQ150: data/kosdaq150_cache.json (update_watchlist.py 갱신)
 """
@@ -17,9 +12,8 @@ from typing import List, Dict
 
 from data.etf_watchlist import ETF_LIST
 
-_CACHE_PATH          = Path(__file__).parent / "kospi200_cache.json"
-_KOSDAQ150_CACHE     = Path(__file__).parent / "kosdaq150_cache.json"
-_DART_CA_PATH        = Path(__file__).parent / "dart_ca_screened.json"
+_CACHE_PATH      = Path(__file__).parent / "kospi200_cache.json"
+_KOSDAQ150_CACHE = Path(__file__).parent / "kosdaq150_cache.json"
 
 # ── KOSPI200 빌트인 폴백 (149종목) ───────────────────────────────────────────
 _BUILTIN: List[Dict[str, str]] = [
@@ -266,26 +260,9 @@ def _load_kosdaq150() -> List[Dict[str, str]]:
     return _KOSDAQ150_BUILTIN
 
 
-def _load_dart_ca() -> List[Dict[str, str]]:
-    """DART C·A 스크리닝 통과 종목 로드 (파일 없거나 비어 있으면 빈 리스트)"""
-    try:
-        data    = json.loads(_DART_CA_PATH.read_text(encoding="utf-8"))
-        screened = data.get("screened", [])
-        return [{"code": s["code"], "name": s["name"], "sector": s.get("sector", "성장주")}
-                for s in screened if s.get("code")]
-    except (FileNotFoundError, json.JSONDecodeError):
-        return []
-
-
 def get_active_watchlist() -> List[Dict[str, str]]:
-    """S1용: KOSPI200 + ETF 통합 watchlist (code 중복 제거)"""
-    seen: set = set()
-    merged: List[Dict[str, str]] = []
-    for item in _load_kospi200() + ETF_LIST:
-        if item["code"] not in seen:
-            seen.add(item["code"])
-            merged.append(item)
-    return merged
+    """S1/S2/S3 공통 유니버스: KOSPI200 + KOSDAQ150 + ETF (code 중복 제거)"""
+    return get_s2_watchlist()
 
 
 def get_s2_watchlist() -> List[Dict[str, str]]:
@@ -299,7 +276,7 @@ def get_s2_watchlist() -> List[Dict[str, str]]:
     return merged
 
 
-# S1: 오전 수급 전략 대상 (KOSPI200 + ETF + DART CA)
+# S1/S2/S3 공통 유니버스: KOSPI200 + KOSDAQ150 + ETF
 WATCHLIST: List[Dict[str, str]] = get_active_watchlist()
 
 CODE_MAP: Dict[str, Dict[str, str]] = {s["code"]: s for s in WATCHLIST}
