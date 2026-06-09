@@ -158,11 +158,13 @@ class MACrossStrategy:
 
         # ── 오늘 할 일 없으면 조기 종료 (Actions 분 절약) ────────────────
         any_stop_loss  = any(p.get("stop_loss_pending") for p in positions.values())
+        any_take_profit = any(p.get("take_profit_pending") for p in positions.values())
+        any_time_stop  = any(p.get("time_stop_pending") for p in positions.values())
         any_sell_sig   = any(
             stocks.get(c, {}).get("ma21_below_ma62") and stocks.get(c, {}).get("ma62_declining_5d")
             for c in positions
         )
-        if not any_stop_loss and not any_sell_sig and not candidates:
+        if not any_stop_loss and not any_take_profit and not any_time_stop and not any_sell_sig and not candidates:
             msg = "[MA전략] 오늘 매수·매도 신호 없음 — 조기 종료"
             logger.info(msg)
             self.notifier.notify(msg)
@@ -201,6 +203,19 @@ class MACrossStrategy:
                     f"— +{target:.0%}{ext_note} 익절 플래그"
                 )
                 self._sell(code, pos, reason=f"익절 +{target:.0%}{ext_note}")
+                del positions[code]
+                ma_store.remove_position(code)
+                _sold += 1
+
+        # ── 타임스탑 매도 (56일 경과) ────────────────────────────────────
+        for code in list(positions):
+            if positions[code].get("time_stop_pending"):
+                pos = positions[code]
+                logger.info(
+                    f"[MA전략 타임스탑매도] [{code}] {pos['name']} "
+                    f"— 56일(8주) 경과 타임스탑 플래그"
+                )
+                self._sell(code, pos, reason="타임스탑 56일(8주) 경과")
                 del positions[code]
                 ma_store.remove_position(code)
                 _sold += 1

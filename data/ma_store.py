@@ -126,6 +126,17 @@ def set_take_profit_pending(code: str, flag: bool = True) -> None:
     git_commit_push([str(MA_DATA_PATH)], f"chore: S2 익절플래그 {code}={'ON' if flag else 'OFF'}")
 
 
+def set_time_stop_pending(code: str, flag: bool = True) -> None:
+    """포지션에 타임스탑 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
+    data = load()
+    pos = data.get("positions", {}).get(code)
+    if pos is None:
+        return
+    pos["time_stop_pending"] = flag
+    save(data)
+    git_commit_push([str(MA_DATA_PATH)], f"chore: S2 타임스탑플래그 {code}={'ON' if flag else 'OFF'}")
+
+
 def update_position_peak(code: str, current_price: int, current_date: str) -> None:
     """고점 가격·수익률 갱신 + 조기익절 트리거(21일 이내 +15%) 체크"""
     data = load()

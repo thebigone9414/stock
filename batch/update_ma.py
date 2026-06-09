@@ -414,9 +414,10 @@ def _check_s2_exits(stocks_out: dict, notifier: Notifier = None) -> None:
     if not positions:
         return
 
-    today_str          = datetime.now(KST).strftime("%Y-%m-%d")
-    stop_loss_flagged  = []
+    today_str           = datetime.now(KST).strftime("%Y-%m-%d")
+    stop_loss_flagged   = []
     take_profit_flagged = []
+    time_stop_flagged   = []
 
     for code, pos in positions.items():
         entry_price = pos.get("entry_price", 0)
@@ -473,12 +474,15 @@ def _check_s2_exits(stocks_out: dict, notifier: Notifier = None) -> None:
 
         # 타임스탑 56일
         elif days_held >= S2_TIME_STOP_DAYS:
-            if not pos.get("stop_loss_pending") and not pos.get("take_profit_pending"):
-                ma_store.set_stop_loss_pending(code, True)
+            if not pos.get("stop_loss_pending") and not pos.get("take_profit_pending") and not pos.get("time_stop_pending"):
+                ma_store.set_time_stop_pending(code, True)
+                time_stop_flagged.append((code, name, entry_price, close_price, pnl_rate, days_held))
                 logger.info(
                     f"[S2 타임스탑플래그] [{code}] {name}  "
                     f"{days_held}일 경과 ({pnl_rate*100:+.2f}%) → 내일 09:00 시초가 매도"
                 )
+            else:
+                logger.info(f"[S2 타임스탑대기중] [{code}] {name}  {days_held}일 경과 (이미 플래그)")
         else:
             ext_mark = " (확장목표)" if early_trig else ""
             logger.info(
@@ -497,6 +501,12 @@ def _check_s2_exits(stocks_out: dict, notifier: Notifier = None) -> None:
         lines = [f"[MA전략] 익절 대상 {len(take_profit_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
         for code, name, ep, cp, rate, tgt in take_profit_flagged:
             lines.append(f"  [{code}] {name}  매수:{ep:,} → 마감:{cp:,}  {rate*100:+.2f}% ≥ {tgt:.0%}")
+        notifier.notify("\n".join(lines))
+
+    if time_stop_flagged and notifier:
+        lines = [f"[MA전략] 타임스탑 대상 {len(time_stop_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
+        for code, name, ep, cp, rate, days in time_stop_flagged:
+            lines.append(f"  [{code}] {name}  매수:{ep:,} → 마감:{cp:,}  {rate*100:+.2f}%  {days}일 경과")
         notifier.notify("\n".join(lines))
 
 
@@ -534,7 +544,12 @@ def _notify_daily_summary(
         lines.append(f"\nMA전략 보유 ({len(positions)}종목):")
         for code, pos in positions.items():
             ep      = pos.get("entry_price", 0)
-            sl_flag = "  ※내일매도" if pos.get("stop_loss_pending") else ""
+            sl_flag = (
+                "  ※내일손절매도" if pos.get("stop_loss_pending")
+                else "  ※내일익절매도" if pos.get("take_profit_pending")
+                else "  ※내일타임스탑매도" if pos.get("time_stop_pending")
+                else ""
+            )
             kis_p   = kis_pos_map.get(code)
             if kis_p:
                 name = kis_p.name
