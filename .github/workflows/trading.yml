@@ -35,7 +35,7 @@ on:
           - 'true'
 
 concurrency:
-  # 배치(ma-batch·canslim-batch·dart-batch·update-watchlist)는 okdongja-batch 그룹
+  # 배치(ma-batch·canslim-batch·update-watchlist)는 okdongja-batch 그룹
   # 매매(morning·ma-morning·canslim-morning)는 okdongja-trading 그룹
   # → 아침 매매 run이 살아있어도 배치 run이 대기열에 갇히지 않음
   group: >-
@@ -231,8 +231,8 @@ jobs:
 # Job D: MA 이평선 배치 업데이트
 # cron-job.org 외부 트리거 권장 (GitHub Actions schedule은 지연/누락 가능):
 #   URL  : https://api.github.com/repos/thebigone9414/stock/actions/workflows/trading.yml/dispatches
-#   Body : {"ref":"claude/stock-trading-system-z6xQh","inputs":{"mode":"ma-batch"}}
-#   [1차] 16:35 KST (07:35 UTC)  Mon-Fri
+#   Body : {"ref":"main","inputs":{"mode":"ma-batch"}}
+#   [1차] 16:30 KST (07:30 UTC)  Mon-Fri
 #   [2차] 18:05 KST (09:05 UTC)  Mon-Fri  ← 1차 실패 시 재시도 (중복 실행 자동 방지)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   update-ma:
