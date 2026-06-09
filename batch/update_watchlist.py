@@ -194,7 +194,16 @@ def run(market) -> None:
         logger.warning("[종목업데이트] KOSDAQ150 업데이트 실패 — 기존 캐시 유지")
 
     if not changed_files:
-        logger.error("[종목업데이트] 양쪽 모두 실패")
+        now_kst = datetime.now(KST)
+        if now_kst.hour >= 15 and now_kst.minute >= 30 or now_kst.hour >= 16 or now_kst.hour < 9:
+            logger.warning(
+                "[종목업데이트] 양쪽 모두 실패 — "
+                f"현재 {now_kst.strftime('%H:%M')} KST, "
+                "FHPUP02100000 API는 장중(09:00~15:20)에만 응답합니다. "
+                "장중에 재실행하세요."
+            )
+        else:
+            logger.error("[종목업데이트] 양쪽 모두 실패")
         sys.exit(1)
 
     ma_store.git_commit_push(
