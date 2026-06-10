@@ -7,6 +7,10 @@ S4 SEPA 전략 백테스트 (Mark Minervini VCP 브레이크아웃)
 데이터: data/ohlcv_cache.json (820일, closes+opens)
         data/canslim_ohlcv_cache.json (최대 300일, volumes — 후반 300일 정렬)
 
+비교:
+  원본: 손절(-7%) + 타임스탑(40영업일) + 익절(+20/25%)
+  신규: 손절(-7%) + 트레일링스탑(고점-10%, 고점+10%이상일 때) + 익절(+20/25%)
+
 ※ 유니버스: KOSPI200+KOSDAQ150+ETF (ohlcv_cache 기준, 820일 이상 종목)
 ※ 거래량 데이터: 후반 ~300일만 유효. 앞 구간은 가격 기반 VCP만 검증
 
@@ -32,7 +36,9 @@ TAKE_PROFIT        = 0.20
 TAKE_PROFIT_EXT    = 0.25
 EARLY_GAIN_TRIGGER = 0.15
 EARLY_GAIN_DAYS    = 15      # 영업일 ≈ 21 캘린더일
-TIME_STOP_DAYS     = 40      # 영업일 ≈ 56 캘린더일
+TIME_STOP_DAYS     = 40      # 원본 파라미터 (영업일)
+TRAIL_STOP_PCT     = 0.10    # 트레일링스탑: 고점 대비 -10%
+TRAIL_STOP_MIN     = 0.10    # 트레일링스탑 활성화 최소 고점 수익률
 
 # ── 거래비용 ──────────────────────────────────────────────────────────
 BUY_FEE  = 0.00015
@@ -176,7 +182,8 @@ def _check_vcp_breakout(closes: np.ndarray, volumes: np.ndarray,
 
 
 # ── 포트폴리오 시뮬레이션 ─────────────────────────────────────────────
-def run_backtest(initial_capital: int = 10_000_000) -> tuple[list, list]:
+def run_backtest(initial_capital: int = 10_000_000,
+                 use_trail: bool = False) -> tuple[list, list]:
     print("데이터 로딩 중...")
     stocks = _load_data()
     print(f"  → {len(stocks)}종목 로드")
@@ -197,7 +204,8 @@ def run_backtest(initial_capital: int = 10_000_000) -> tuple[list, list]:
     start = 221
     end   = OHLCV_DAYS - 1   # opens[i+1] 접근 가능한 마지막
 
-    print(f"시뮬레이션 시작 (구간: {end - start}영업일 ≈ {(end - start) / 252:.1f}년)\n")
+    mode_str = "트레일링스탑" if use_trail else f"타임스탑({TIME_STOP_DAYS}영업일)"
+    print(f"시뮬레이션 시작 (구간: {end - start}영업일 ≈ {(end - start) / 252:.1f}년, 모드: {mode_str})\n")
 
     for i in range(start, end):
         # 현재 포지션 평가
@@ -231,12 +239,15 @@ def run_backtest(initial_capital: int = 10_000_000) -> tuple[list, list]:
             target = TAKE_PROFIT_EXT if pos["early_triggered"] else TAKE_PROFIT
 
             reason = None
+            peak_gain = (pos["peak"] - entry) / entry
             if gain <= -STOP_LOSS:
                 reason = "손절"
-            elif days >= TIME_STOP_DAYS:
-                reason = "타임스탑"
             elif gain >= target:
                 reason = "익절"
+            elif use_trail and peak_gain >= TRAIL_STOP_MIN and cur < pos["peak"] * (1 - TRAIL_STOP_PCT):
+                reason = "트레일링스탑"
+            elif not use_trail and days >= TIME_STOP_DAYS:
+                reason = "타임스탑"
 
             if reason:
                 sell_px  = stocks[code]["opens"][i + 1]
@@ -327,64 +338,70 @@ def run_backtest(initial_capital: int = 10_000_000) -> tuple[list, list]:
     return trades, port_hist
 
 
-# ── 결과 리포트 ───────────────────────────────────────────────────────
-def _report(trades: list, port_hist: list, initial_capital: int) -> None:
+# ── 결과 집계 ─────────────────────────────────────────────────────────
+def _stats(trades: list, port_hist: list, initial_capital: int) -> dict:
     if not port_hist:
-        print("시뮬레이션 결과 없음")
-        return
-
+        return {}
     final   = port_hist[-1]
-    total_r = (final - initial_capital) / initial_capital
     n_days  = len(port_hist)
     years   = n_days / 252
     cagr    = (final / initial_capital) ** (1 / max(years, 0.01)) - 1
-
-    arr  = np.array(port_hist)
-    peak = np.maximum.accumulate(arr)
-    dd   = (arr - peak) / peak
-    mdd  = float(dd.min())
-
-    sells     = trades
-    wins      = [t for t in sells if t["pnl_pct"] > 0]
+    arr     = np.array(port_hist)
+    peak    = np.maximum.accumulate(arr)
+    mdd     = float(((arr - peak) / peak).min())
+    wins    = [t for t in trades if t["pnl_pct"] > 0]
+    losses  = [t for t in trades if t["pnl_pct"] <= 0]
     by_reason: dict = {}
-    for t in sells:
+    for t in trades:
         by_reason.setdefault(t["reason"], []).append(t["pnl_pct"])
+    return {
+        "final": final, "total_r": (final - initial_capital) / initial_capital,
+        "cagr": cagr, "mdd": mdd, "n_days": n_days, "years": years,
+        "n_trades": len(trades), "wins": len(wins), "losses": len(losses),
+        "wr": len(wins) / len(trades) * 100 if trades else 0,
+        "avg_win":  float(np.mean([t["pnl_pct"] for t in wins]))   if wins   else 0,
+        "avg_loss": float(np.mean([t["pnl_pct"] for t in losses])) if losses else 0,
+        "avg_days": float(np.mean([t["days_held"] for t in trades])) if trades else 0,
+        "by_reason": {r: (len(v), float(np.mean(v))) for r, v in by_reason.items()},
+    }
 
-    W = 57
+
+def _print_comparison(s_orig: dict, s_trail: dict, initial_capital: int) -> None:
+    W = 60
     print("\n" + "=" * W)
-    print(f"  S4 SEPA 전략 백테스트 결과 (VCP 브레이크아웃)")
-    print(f"  시뮬레이션 기간: {n_days}영업일 ({years:.1f}년)")
+    print("  S4 SEPA 전략 백테스트 — 타임스탑 vs 트레일링스탑 비교")
     print("=" * W)
-    print(f"  초기자본     : {initial_capital:>20,} 원")
-    print(f"  최종자산     : {final:>20,.0f} 원")
-    print(f"  총 수익률    : {total_r:>+19.2%}")
-    print(f"  CAGR         : {cagr:>+19.2%}")
-    print(f"  MDD          : {mdd:>+19.2%}")
+    print(f"  {'':30s}{'원본(타임스탑)':>12s}  {'신규(트레일링)':>12s}")
     print("-" * W)
-    print(f"  총 매매 횟수 : {len(sells):>15} 회")
-    if sells:
-        wr       = len(wins) / len(sells) * 100
-        avg_win  = np.mean([t["pnl_pct"] for t in wins]) if wins else 0.0
-        loss_t   = [t for t in sells if t["pnl_pct"] <= 0]
-        avg_loss = np.mean([t["pnl_pct"] for t in loss_t]) if loss_t else 0.0
-        avg_days = np.mean([t["days_held"] for t in sells])
-        print(f"  승률         : {wr:>18.1f} %")
-        print(f"  평균수익(승) : {avg_win:>+19.2%}")
-        print(f"  평균손실(패) : {avg_loss:>+19.2%}")
-        print(f"  평균 보유일  : {avg_days:>16.1f} 일")
+
+    def row(name, orig, trail):
+        print(f"  {name:30s}{orig:>12s}  {trail:>12s}")
+
+    row("초기자본",     f"{initial_capital/1e6:.0f}백만",  f"{initial_capital/1e6:.0f}백만")
+    row("최종자산",     f"{s_orig['final']/1e6:.2f}M",     f"{s_trail['final']/1e6:.2f}M")
+    row("총 수익률",    f"{s_orig['total_r']:+.1%}",        f"{s_trail['total_r']:+.1%}")
+    row("CAGR",        f"{s_orig['cagr']:+.1%}",           f"{s_trail['cagr']:+.1%}")
+    row("MDD",         f"{s_orig['mdd']:+.1%}",            f"{s_trail['mdd']:+.1%}")
     print("-" * W)
-    print("  매도 사유별:")
-    if by_reason:
-        for reason, pnls in sorted(by_reason.items(), key=lambda x: -len(x[1])):
-            avg = np.mean(pnls)
-            print(f"    {reason:10s}: {len(pnls):3d}회  평균 {avg:+.2%}")
-    else:
-        print("    없음")
+    row("매매 횟수",    f"{s_orig['n_trades']}회",          f"{s_trail['n_trades']}회")
+    row("승률",         f"{s_orig['wr']:.1f}%",             f"{s_trail['wr']:.1f}%")
+    row("평균수익(승)", f"{s_orig['avg_win']:+.1%}",        f"{s_trail['avg_win']:+.1%}")
+    row("평균손실(패)", f"{s_orig['avg_loss']:+.1%}",       f"{s_trail['avg_loss']:+.1%}")
+    row("평균 보유일",  f"{s_orig['avg_days']:.1f}d",       f"{s_trail['avg_days']:.1f}d")
     print("=" * W)
-    print("  ※ 유니버스: KOSPI200+KOSDAQ150+ETF (820일 이상 종목, ~405종목)")
-    print("  ※ 거래량: 후반 ~300일만 유효 — 앞 구간은 가격 기반 VCP만 적용")
-    print(f"  ※ 타임스탑 {TIME_STOP_DAYS}영업일 ≈ 56 캘린더일")
-    print("  ※ 실제 전략은 S2/S3와 슬롯 공유 → 실매매와 결과 차이 있음")
+
+    print("\n  매도 사유별 (원본):")
+    for reason, (cnt, avg) in sorted(s_orig["by_reason"].items(), key=lambda x: -x[1][0]):
+        print(f"    {reason:12s}: {cnt:3d}회  평균 {avg:+.2%}")
+
+    print("\n  매도 사유별 (트레일링):")
+    for reason, (cnt, avg) in sorted(s_trail["by_reason"].items(), key=lambda x: -x[1][0]):
+        print(f"    {reason:12s}: {cnt:3d}회  평균 {avg:+.2%}")
+
+    print("\n" + "=" * W)
+    print("  ※ 원본: 손절(-7%) + 타임스탑(40영업일) + 익절(+20/25%)")
+    print(f"  ※ 신규: 손절(-7%) + 트레일링스탑(고점-{TRAIL_STOP_PCT:.0%}, >{TRAIL_STOP_MIN:.0%}활성) + 익절(+20/25%)")
+    print("  ※ 유니버스: KOSPI200+KOSDAQ150+ETF (~405종목, 820일 이상)")
     print("=" * W + "\n")
 
 
@@ -394,8 +411,14 @@ def main():
                         help="초기자본 (기본: 1,000만원)")
     args = parser.parse_args()
 
-    trades, port_hist = run_backtest(args.capital)
-    _report(trades, port_hist, args.capital)
+    print("\n[원본] 타임스탑(40영업일) 시뮬레이션...")
+    t_orig,  ph_orig  = run_backtest(args.capital, use_trail=False)
+    print("\n[신규] 트레일링스탑(고점-10%) 시뮬레이션...")
+    t_trail, ph_trail = run_backtest(args.capital, use_trail=True)
+
+    s_orig  = _stats(t_orig,  ph_orig,  args.capital)
+    s_trail = _stats(t_trail, ph_trail, args.capital)
+    _print_comparison(s_orig, s_trail, args.capital)
 
 
 if __name__ == "__main__":

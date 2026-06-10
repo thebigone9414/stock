@@ -11,7 +11,6 @@
   - 익절(기본): +20%
   - 익절(확장): 진입 후 21 캘린더일 이내 +15% 달성 시 → 목표 +25%로 상향
   - 트레일링스탑: 고점 대비 -10% (고점수익률 +10% 이상일 때만 활성화)
-  - 타임스탑: 12주(84 캘린더일) 경과 후 청산
 
 포지션 관리:
   - S2+S3+S4 공유 슬롯: 기본 4개 (S1=1 고정, 총 5개)
@@ -45,7 +44,6 @@ TRAIL_STOP_PCT   = 0.10   # 고점 대비 -10% 트레일링 스탑
 TRAIL_STOP_MIN   = 0.10   # 트레일링 스탑 활성화 최소 고점 수익률
 TAKE_PROFIT      = 0.20   # +20%
 TAKE_PROFIT_EXT  = 0.25   # +25% (조기 트리거)
-TIME_STOP_DAYS   = 84     # 12주 (이전 56일→84일: 타임스탑 연장)
 
 
 class SEPAStrategy:
@@ -150,15 +148,6 @@ class SEPAStrategy:
                     code, name, quantity, entry_price, current,
                     f"트레일링스탑(고점-{TRAIL_STOP_PCT:.0%})",
                 )
-                continue
-
-            # 타임스탑 84일
-            if days_held >= TIME_STOP_DAYS:
-                logger.info(
-                    f"[S4 타임스탑] [{code}] {name}  "
-                    f"{days_held}일 경과 ({gain:+.2%}) — 청산"
-                )
-                self._sell_market(code, name, quantity, entry_price, current, f"타임스탑({days_held}일)")
                 continue
 
             logger.info(

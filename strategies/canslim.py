@@ -7,19 +7,17 @@
   - 트레일링스탑: 고점 대비 -10% (고점수익률 +10% 이상일 때만 활성화)
   - 익절(기본): +20%
   - 익절(확장): 진입 후 21 캘린더일 이내 +15% 달성 시 → 목표 +25%로 상향
-  - 타임스탑: 8주(56 캘린더일) 경과 후 목표 미달성 시 청산
 
 포지션 관리:
   - S2+S3 공유 슬롯: 기본 4개 (S1=1 고정, 총 5개)
   - 자산 증가(수익+추가입금) 기준 자산의 20%마다 슬롯 1개 추가
   - 신규 매수 예산: 총자산의 20% (슬롯당)
   - 시장 하락장(M=False): 신규 매수 보류
-  - 손절 후 90일간 동일 종목 재진입 금지
 
 실행 시각: 09:00 정규장 개장 시 시장가 주문
 """
 import time
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 
 import pytz
 from loguru import logger
@@ -34,9 +32,6 @@ from data.canslim_store import (
     update_position_peak,
     load_data as load_canslim_data,
     load_ca_screened,
-    get_stop_blacklist,
-    add_to_stop_blacklist,
-    STOP_BLACKLIST_DAYS,
 )
 
 KST              = pytz.timezone("Asia/Seoul")
@@ -47,7 +42,6 @@ TRAIL_STOP_PCT   = 0.10   # 고점 대비 -10% 트레일링 스탑
 TRAIL_STOP_MIN   = 0.10   # 트레일링 스탑 활성화 최소 고점 수익률
 TAKE_PROFIT      = 0.20   # +20%
 TAKE_PROFIT_EXT  = 0.25   # +25% (조기 +15% 달성 시)
-TIME_STOP_DAYS   = 56     # 8주
 
 
 class CANSLIMStrategy:
@@ -132,7 +126,6 @@ class CANSLIMStrategy:
                     f"[S3 손절] [{code}] {name}  "
                     f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  시장가 매도"
                 )
-                add_to_stop_blacklist(code, today_str)
                 self._sell_market(code, name, quantity, entry_price, current, "손절(-7%)")
                 continue
 
@@ -156,15 +149,6 @@ class CANSLIMStrategy:
                     code, name, quantity, entry_price, current,
                     f"트레일링스탑(고점-{TRAIL_STOP_PCT:.0%})",
                 )
-                continue
-
-            # ── 타임스탑 ───────────────────────────────────────────
-            if days_held >= TIME_STOP_DAYS:
-                logger.info(
-                    f"[S3 타임스탑] [{code}] {name}  "
-                    f"{days_held}일 경과 ({gain:+.2%}) — 청산"
-                )
-                self._sell_market(code, name, quantity, entry_price, current, f"타임스탑({days_held}일)")
                 continue
 
             logger.info(
@@ -235,17 +219,7 @@ class CANSLIMStrategy:
         positions  = s3_positions
         raw_cands  = [(code, info) for code, info in get_buy_candidates()
                       if code not in positions]
-
-        # 손절 블랙리스트 필터 (90일 재진입 금지)
-        blacklist    = get_stop_blacklist()
-        cutoff_date  = (datetime.now(KST) - timedelta(days=STOP_BLACKLIST_DAYS)).strftime("%Y-%m-%d")
-        bl_filtered  = [(code, info) for code, info in raw_cands
-                        if blacklist.get(code, "0000-00-00") < cutoff_date]
-        bl_skipped   = len(raw_cands) - len(bl_filtered)
-        if bl_skipped:
-            logger.info(f"[S3] 손절 블랙리스트 {bl_skipped}종목 제외 (90일 재진입 금지)")
-
-        candidates = [(code, info) for code, info in bl_filtered
+        candidates = [(code, info) for code, info in raw_cands
                       if not use_ca or code in ca_codes]
 
         if not candidates:
