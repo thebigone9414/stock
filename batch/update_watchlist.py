@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 KOSPI200 + KOSDAQ150 구성 종목 자동 업데이트
-KRX 공개 데이터(FinanceDataReader)로 구성 종목을 가져와 data/kospi200_cache.json 등에 저장.
+KRX 공개 API(data.krx.co.kr)에 직접 요청해 구성 종목을 가져와 저장.
 분기 리밸런싱(3·6·9·12월) 후 자동 반영되도록 매월 1회 cron 실행.
 
 Usage:
@@ -9,11 +9,11 @@ Usage:
 """
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, date as dt_date, timedelta
 from pathlib import Path
 
+import requests
 import pytz
-import FinanceDataReader as fdr
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -26,10 +26,28 @@ import data.ma_store as ma_store
 KST                = pytz.timezone("Asia/Seoul")
 CACHE_PATH         = Path(__file__).parent.parent / "data" / "kospi200_cache.json"
 KOSDAQ150_CACHE    = Path(__file__).parent.parent / "data" / "kosdaq150_cache.json"
-# KRX 지수 코드 (FinanceDataReader SnapDataReader 사용)
-KOSPI200_KRX_CODE  = "1028"   # 코스피 200
-KOSDAQ150_KRX_CODE = "2203"   # 코스닥 150
-MIN_STOCKS         = 100   # 이 수 미만이면 조회 오류로 간주하고 저장하지 않음
+# KRX 지수 티커 (indIdx=첫자리, indIdx2=나머지)
+KOSPI200_TICKER    = "1028"   # 코스피 200
+KOSDAQ150_TICKER   = "2203"   # 코스닥 150
+MIN_STOCKS         = 100
+
+_KRX_URL = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
+_KRX_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Referer": (
+        "https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/"
+        "index.cmd?menuId=MDC0201020506"
+    ),
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Accept-Language": "ko-KR,ko;q=0.9",
+    "Origin": "https://data.krx.co.kr",
+    "X-Requested-With": "XMLHttpRequest",
+}
 
 # ── KIS업종명 → 우리 섹터명 매핑 ─────────────────────────────────────────────
 # 앞에 있을수록 우선순위 높음 (키워드 포함 여부로 체크)
@@ -131,39 +149,53 @@ def _map_sector(bstp_name: str, code: str) -> str:
     return "기타"
 
 
-def _fetch_index(krx_code: str, label: str) -> list:
-    """FinanceDataReader로 KRX에서 지수 구성 종목 직접 조회 → [{"code", "name", "sector"}] 반환."""
+def _recent_trading_date() -> str:
+    """가장 최근 거래일 반환 (오늘이 주말이면 직전 금요일)"""
+    d = dt_date.today()
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    return d.strftime("%Y%m%d")
+
+
+def _fetch_index(ticker: str, label: str) -> list:
+    """KRX data.krx.co.kr 직접 호출로 지수 구성 종목 조회.
+    bld=MDCSTAT00601, params: trdDd / indIdx / indIdx2
+    """
+    trd_dd   = _recent_trading_date()
+    ind_idx  = ticker[0]     # "1028" → "1"
+    ind_idx2 = ticker[1:]    # "1028" → "028"
+
+    payload = {
+        "bld":     "dbms/MDC/STAT/standard/MDCSTAT00601",
+        "locale":  "ko_KR",
+        "trdDd":   trd_dd,
+        "indIdx":  ind_idx,
+        "indIdx2": ind_idx2,
+    }
+
     try:
-        df = fdr.SnapDataReader(f"KRX/INDEX/STOCK/{krx_code}")
+        resp = requests.post(_KRX_URL, headers=_KRX_HEADERS, data=payload, timeout=30)
+        resp.raise_for_status()
+        rows = resp.json().get("output", [])
     except Exception as e:
-        logger.error(f"[종목업데이트] {label} FinanceDataReader 조회 오류: {e}")
+        logger.error(f"[종목업데이트] {label} KRX 조회 오류 (trdDd={trd_dd}): {e}")
         return []
 
-    if df is None or len(df) < MIN_STOCKS:
+    if len(rows) < MIN_STOCKS:
         logger.error(
-            f"[종목업데이트] {label} 조회 결과 {len(df) if df is not None else 0}종목 — "
-            f"최소 {MIN_STOCKS}개 미달, 업데이트 중단"
+            f"[종목업데이트] {label} 조회 결과 {len(rows)}종목 — "
+            f"최소 {MIN_STOCKS}개 미달 (trdDd={trd_dd})"
         )
         return []
 
-    logger.debug(f"[종목업데이트] {label} 컬럼: {list(df.columns)}")
-
-    # 컬럼명 정규화 (FDR 버전별로 다를 수 있음)
-    col_code = next((c for c in ["Code", "종목코드", "ISU_SRT_CD"] if c in df.columns), None)
-    col_name = next((c for c in ["Name", "종목명", "ISU_NM", "ISU_ABBRV"] if c in df.columns), None)
-    col_bstp = next((c for c in ["Industry", "업종명", "IDX_IND_NM", "Sector"] if c in df.columns), None)
-
-    # 코드가 인덱스에 있는 경우 처리
-    if col_code is None:
-        df = df.reset_index()
-        col_code = df.columns[0]
-
     stocks = []
     sector_count: dict[str, int] = {}
-    for _, row in df.iterrows():
-        code = str(row[col_code]).strip().zfill(6)
-        name = str(row[col_name]).strip() if col_name else code
-        bstp = str(row[col_bstp]).strip() if col_bstp else ""
+    for r in rows:
+        code = r.get("ISU_SRT_CD", "").strip()
+        name = (r.get("ISU_ABBRV") or r.get("ISU_NM", "")).strip()
+        bstp = r.get("IDX_IND_NM", "").strip()
+        if not code:
+            continue
         sector = _map_sector(bstp, code)
         stocks.append({"code": code, "name": name, "sector": sector})
         sector_count[sector] = sector_count.get(sector, 0) + 1
@@ -180,8 +212,8 @@ def run() -> None:
     logger.info(f" KOSPI200 + KOSDAQ150 구성 종목 업데이트 [{today}]")
     logger.info(f"══════════════════════════════════════════")
 
-    kospi200  = _fetch_index(KOSPI200_KRX_CODE,  "KOSPI200")
-    kosdaq150 = _fetch_index(KOSDAQ150_KRX_CODE, "KOSDAQ150")
+    kospi200  = _fetch_index(KOSPI200_TICKER,  "KOSPI200")
+    kosdaq150 = _fetch_index(KOSDAQ150_TICKER, "KOSDAQ150")
 
     changed_files = []
 
