@@ -239,8 +239,8 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
         cached_opens     = cached.get("opens",  [])
 
         try:
-            # ── 캐시 히트: 오늘 이미 저장돼 있으면 API 생략 ──────────────
-            if last_cached_date == today and len(cached_closes) >= MIN_DAYS_PARTIAL:
+            # ── 캐시 히트: 오늘 이미 저장돼 있으면 API 생략 (force 시 무시) ──
+            if not force and last_cached_date == today and len(cached_closes) >= MIN_DAYS_PARTIAL:
                 closes    = cached_closes
                 opens     = cached_opens
                 last_date = today
