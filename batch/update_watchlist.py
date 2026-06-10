@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
 KOSPI200 + KOSDAQ150 구성 종목 자동 업데이트
-KRX 공개 API(data.krx.co.kr)에 직접 요청해 구성 종목을 가져와 저장.
-분기 리밸런싱(3·6·9·12월) 후 자동 반영되도록 매월 1회 cron 실행.
+NAVER Finance 모바일 API → 실패 시 기존 캐시 유지 (분기 4회 갱신 목적)
 
 Usage:
     python batch/update_watchlist.py
 """
 import json
 import sys
-from datetime import datetime, date as dt_date, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -23,20 +22,20 @@ from config.settings import get_settings
 from utils.logger import setup_logger
 import data.ma_store as ma_store
 
-KST                = pytz.timezone("Asia/Seoul")
-CACHE_PATH         = Path(__file__).parent.parent / "data" / "kospi200_cache.json"
-KOSDAQ150_CACHE    = Path(__file__).parent.parent / "data" / "kosdaq150_cache.json"
-# KRX 지수 티커 (indIdx=첫자리, indIdx2=나머지)
-KOSPI200_TICKER    = "1028"   # 코스피 200
-KOSDAQ150_TICKER   = "2203"   # 코스닥 150
-MIN_STOCKS         = 100
+KST             = pytz.timezone("Asia/Seoul")
+CACHE_PATH      = Path(__file__).parent.parent / "data" / "kospi200_cache.json"
+KOSDAQ150_CACHE = Path(__file__).parent.parent / "data" / "kosdaq150_cache.json"
+MIN_STOCKS      = 100
 
-_KRX_URL = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
-# pykrx 소스(website/comm/webio.py)와 동일한 헤더
-_KRX_HEADERS = {
-    "User-Agent": "Mozilla/5.0",
-    "Referer": "https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd",
-    "X-Requested-With": "XMLHttpRequest",
+# NAVER Finance 모바일 API — 인증 불필요, GitHub Actions에서 접근 가능
+_NAVER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Linux; Android 10; SM-G975F) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Mobile Safari/537.36"
+    ),
+    "Referer": "https://m.stock.naver.com/",
+    "Accept": "application/json, text/plain, */*",
 }
 
 # ── KIS업종명 → 우리 섹터명 매핑 ─────────────────────────────────────────────
@@ -130,7 +129,7 @@ _CODE_SECTOR_OVERRIDE: dict[str, str] = {
 
 
 def _map_sector(bstp_name: str, code: str) -> str:
-    """KIS 업종명 + 코드 → 우리 섹터명"""
+    """업종명 + 코드 → 우리 섹터명"""
     if code in _CODE_SECTOR_OVERRIDE:
         return _CODE_SECTOR_OVERRIDE[code]
     for keyword, sector in _SECTOR_KEYWORDS:
@@ -139,52 +138,66 @@ def _map_sector(bstp_name: str, code: str) -> str:
     return "기타"
 
 
-def _recent_trading_date() -> str:
-    """가장 최근 거래일 반환 (오늘이 주말이면 직전 금요일)"""
-    d = dt_date.today()
-    while d.weekday() >= 5:
-        d -= timedelta(days=1)
-    return d.strftime("%Y%m%d")
+def _fetch_index(index_code: str, label: str, page_size: int = 300) -> list:
+    """NAVER Finance 모바일 API로 지수 구성 종목 조회.
 
-
-def _fetch_index(ticker: str, label: str, session: requests.Session) -> list:
-    """KRX data.krx.co.kr 직접 호출로 지수 구성 종목 조회.
-    bld=MDCSTAT00601, params: trdDd / indIdx / indIdx2
+    https://m.stock.naver.com/api/index/{index_code}/constituent?page=1&pageSize=N
+    인증 불필요, GitHub Actions IP에서 접근 가능.
     """
-    trd_dd   = _recent_trading_date()
-    ind_idx  = ticker[0]     # "1028" → "1"
-    ind_idx2 = ticker[1:]    # "1028" → "028"
-
-    payload = {
-        "bld":     "dbms/MDC/STAT/standard/MDCSTAT00601",
-        "trdDd":   trd_dd,
-        "indIdx":  ind_idx,
-        "indIdx2": ind_idx2,
-    }
+    url = f"https://m.stock.naver.com/api/index/{index_code}/constituent"
+    params = {"page": 1, "pageSize": page_size}
 
     try:
-        resp = session.post(_KRX_URL, data=payload, timeout=30)
+        resp = requests.get(url, headers=_NAVER_HEADERS, params=params, timeout=30)
         if not resp.ok:
             logger.error(f"[종목업데이트] {label} HTTP {resp.status_code}: {resp.text[:400]}")
         resp.raise_for_status()
-        rows = resp.json().get("output", [])
+        data = resp.json()
     except Exception as e:
-        logger.error(f"[종목업데이트] {label} KRX 조회 오류 (trdDd={trd_dd}): {e}")
+        logger.error(f"[종목업데이트] {label} NAVER API 조회 오류: {e}")
         return []
 
-    if len(rows) < MIN_STOCKS:
+    # 응답 구조 탐색: stocks / list / constituents / 배열 직접
+    items = (
+        data.get("stocks")
+        or data.get("list")
+        or data.get("constituents")
+        or data.get("result", {}).get("stocks")
+        or (data if isinstance(data, list) else [])
+    )
+
+    if len(items) < MIN_STOCKS:
         logger.error(
-            f"[종목업데이트] {label} 조회 결과 {len(rows)}종목 — "
-            f"최소 {MIN_STOCKS}개 미달 (trdDd={trd_dd})"
+            f"[종목업데이트] {label} 결과 {len(items)}종목 — "
+            f"최소 {MIN_STOCKS}개 미달"
         )
+        logger.debug(f"[종목업데이트] 응답 샘플: {str(data)[:500]}")
         return []
 
     stocks = []
     sector_count: dict[str, int] = {}
-    for r in rows:
-        code = r.get("ISU_SRT_CD", "").strip()
-        name = (r.get("ISU_ABBRV") or r.get("ISU_NM", "")).strip()
-        bstp = r.get("IDX_IND_NM", "").strip()
+    for item in items:
+        code = (
+            item.get("itemCode")
+            or item.get("code")
+            or item.get("shrtCd")
+            or item.get("stockCode")
+            or ""
+        ).strip()
+        name = (
+            item.get("stockName")
+            or item.get("name")
+            or item.get("hname")
+            or item.get("itemName")
+            or ""
+        ).strip()
+        bstp = (
+            item.get("industryName")
+            or item.get("industry")
+            or item.get("upjong")
+            or item.get("sectorName")
+            or ""
+        ).strip()
         if not code:
             continue
         sector = _map_sector(bstp, code)
@@ -203,21 +216,13 @@ def run() -> None:
     logger.info(f" KOSPI200 + KOSDAQ150 구성 종목 업데이트 [{today}]")
     logger.info(f"══════════════════════════════════════════")
 
-    # 세션 유지 + KRX 메인 접속으로 쿠키 초기화
-    session = requests.Session()
-    session.headers.update(_KRX_HEADERS)
-    try:
-        session.get("https://data.krx.co.kr/", timeout=10)
-        logger.debug("[종목업데이트] KRX 세션 초기화 완료")
-    except Exception as e:
-        logger.warning(f"[종목업데이트] KRX 세션 초기화 실패 (무시): {e}")
-
-    kospi200  = _fetch_index(KOSPI200_TICKER,  "KOSPI200",  session)
-    kosdaq150 = _fetch_index(KOSDAQ150_TICKER, "KOSDAQ150", session)
+    kospi200  = _fetch_index("KOSPI200",  "KOSPI200",  300)
+    kosdaq150 = _fetch_index("KOSDAQ150", "KOSDAQ150", 200)
 
     changed_files = []
 
     if kospi200:
+        CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         CACHE_PATH.write_text(
             json.dumps({"updated_at": today, "stocks": kospi200}, ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -225,7 +230,10 @@ def run() -> None:
         logger.info(f"[종목업데이트] KOSPI200 {len(kospi200)}종목 저장 → {CACHE_PATH.name}")
         changed_files.append(str(CACHE_PATH))
     else:
-        logger.warning("[종목업데이트] KOSPI200 업데이트 실패 — 기존 캐시 유지")
+        if CACHE_PATH.exists():
+            logger.warning("[종목업데이트] KOSPI200 업데이트 실패 — 기존 캐시 유지")
+        else:
+            logger.error("[종목업데이트] KOSPI200 업데이트 실패 + 캐시 없음")
 
     if kosdaq150:
         KOSDAQ150_CACHE.parent.mkdir(parents=True, exist_ok=True)
@@ -236,17 +244,28 @@ def run() -> None:
         logger.info(f"[종목업데이트] KOSDAQ150 {len(kosdaq150)}종목 저장 → {KOSDAQ150_CACHE.name}")
         changed_files.append(str(KOSDAQ150_CACHE))
     else:
-        logger.warning("[종목업데이트] KOSDAQ150 업데이트 실패 — 기존 캐시 유지")
+        if KOSDAQ150_CACHE.exists():
+            logger.warning("[종목업데이트] KOSDAQ150 업데이트 실패 — 기존 캐시 유지")
+        else:
+            logger.error("[종목업데이트] KOSDAQ150 업데이트 실패 + 캐시 없음")
 
-    if not changed_files:
-        logger.error("[종목업데이트] 양쪽 모두 실패")
+    # API 실패여도 캐시가 있으면 정상 종료 (분기 업데이트 특성상 이전 캐시로 운영 가능)
+    if not kospi200 and not CACHE_PATH.exists():
+        logger.error("[종목업데이트] KOSPI200 데이터 없음 — 캐시도 없어 종료")
+        sys.exit(1)
+    if not kosdaq150 and not KOSDAQ150_CACHE.exists():
+        logger.error("[종목업데이트] KOSDAQ150 데이터 없음 — 캐시도 없어 종료")
         sys.exit(1)
 
-    ma_store.git_commit_push(
-        changed_files,
-        f"data: KOSPI200+KOSDAQ150 구성 종목 업데이트 {today} "
-        f"(KOSPI200:{len(kospi200)} KOSDAQ150:{len(kosdaq150)}종목)",
-    )
+    if changed_files:
+        ma_store.git_commit_push(
+            changed_files,
+            f"data: KOSPI200+KOSDAQ150 구성 종목 업데이트 {today} "
+            f"(KOSPI200:{len(kospi200)} KOSDAQ150:{len(kosdaq150)}종목)",
+        )
+    else:
+        logger.info("[종목업데이트] 변경 없음 (API 실패) — 기존 캐시로 운영 계속")
+
     logger.info(f"══════════════════════════════════════════")
     logger.info(f" 완료")
     logger.info(f"══════════════════════════════════════════")
@@ -255,5 +274,5 @@ def run() -> None:
 if __name__ == "__main__":
     settings = get_settings()
     setup_logger(settings.log_level)
-    logger.info("=== KOSPI200+KOSDAQ150 종목 업데이트 (KRX pykrx) ===")
+    logger.info("=== KOSPI200+KOSDAQ150 종목 업데이트 (NAVER Finance) ===")
     run()
