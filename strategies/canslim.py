@@ -194,19 +194,21 @@ class CANSLIMStrategy:
             )
             return
 
-        # C·A 사전 필터 로드 (DART 스크리닝 결과)
+        # A 사전 필터 로드 (DART 스크리닝 결과 — A 조건만 적용)
+        # C 조건은 2025Q1 데이터 수집 후(8월 Q2 배치) C AND A 로 전환 예정
         ca_data     = load_ca_screened()
         ca_screened = ca_data.get("screened", [])
-        ca_codes    = {s["code"] for s in ca_screened}  # C 또는 A 통과 종목
+        ca_codes    = {s["code"] for s in ca_screened if s.get("A")}  # A 통과 종목만
         ca_updated  = ca_data.get("updated_at", "")
         use_ca      = bool(ca_codes)
 
         if use_ca:
             logger.info(
-                f"[S3] C·A 필터 적용 — {len(ca_codes)}종목 (갱신:{ca_updated})"
+                f"[S3] A 필터 적용 — {len(ca_codes)}종목 (갱신:{ca_updated})"
+                f" ※C 조건은 8월 Q2 배치 후 AND 조건으로 전환 예정"
             )
         else:
-            logger.warning("[S3] C·A 스크리닝 데이터 없음 — C·A 필터 미적용 (전체 후보 사용)")
+            logger.warning("[S3] A 스크리닝 데이터 없음 — A 필터 미적용 (전체 후보 사용)")
 
         positions  = s3_positions
         raw_cands  = [(code, info) for code, info in get_buy_candidates()
@@ -218,7 +220,7 @@ class CANSLIMStrategy:
             if use_ca and raw_cands:
                 logger.info(
                     f"[S3] 매수 후보 없음 — N·S·L·M 통과 {len(raw_cands)}종목이 "
-                    f"C·A 필터 미통과 (C·A 통과 종목 대기 중)"
+                    f"A 필터 미통과 (연간 EPS CAGR +15% 미달)"
                 )
             else:
                 logger.info("[S3] 매수 후보 없음 (all_pass 종목 없음 또는 이미 보유)")
