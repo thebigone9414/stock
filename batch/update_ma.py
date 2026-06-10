@@ -171,7 +171,7 @@ def compute_stock_entry(
 
 # ── 배치 메인 ──────────────────────────────────────────────────────────
 
-def run_batch(market, account=None, notifier: Notifier = None) -> None:
+def run_batch(market, account=None, notifier: Notifier = None, force: bool = False) -> None:
     from data.holidays import is_market_holiday
 
     today      = datetime.now(KST).strftime("%Y-%m-%d")
@@ -180,7 +180,7 @@ def run_batch(market, account=None, notifier: Notifier = None) -> None:
     # 중복 실행 방지 (18:05 재시도 대비)
     existing = ma_store.load()
     last_run = existing.get("updated_at_kst", "")
-    if last_run.startswith(today):
+    if not force and last_run.startswith(today):
         try:
             last_run_hour = int(last_run.split(" ")[1].split(":")[0])
         except (IndexError, ValueError):
@@ -616,13 +616,20 @@ def _notify_daily_summary(
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true", help="중복 실행 방지 건너뜀 (장중 데이터 덮어쓰기)")
+    args = parser.parse_args()
+
     settings = get_settings()
     setup_logger(settings.log_level)
+    if args.force:
+        logger.info("=== MA 배치 [--force: 중복체크 무시] ===")
     logger.info(f"=== MA 배치 [{'모의' if settings.kis_is_paper_trading else '실전'}투자] ===")
     notifier = Notifier.from_settings(settings)
     try:
         kis = KIS(settings)
-        run_batch(kis.market, account=kis.account, notifier=notifier)
+        run_batch(kis.market, account=kis.account, notifier=notifier, force=args.force)
     except Exception as _e:
         logger.exception(f"[MA배치] 예외 발생: {_e}")
         notifier.notify(f"[MA배치] 배치 비정상 종료\n오류: {_e}")
