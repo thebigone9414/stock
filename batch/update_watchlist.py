@@ -133,6 +133,27 @@ _CODE_SECTOR_OVERRIDE: dict[str, str] = {
     "051600": "AI전력/설비",
 }
 
+# ── KOSDAQ150 검증용 종목 (KOSPI200에 없는 KOSDAQ 전용 종목) ──────────────────
+# entryJongmok.naver 가 잘못된 코드를 받으면 KOSPI200 데이터를 기본값으로 반환함.
+# 이 목록의 종목이 0개 매칭되면 KOSPI200 데이터로 판단, fetch 결과를 버림.
+_KOSDAQ150_VALIDATORS = frozenset([
+    "086520",  # 에코프로
+    "247540",  # 에코프로비엠
+    "196170",  # 알테오젠
+    "028300",  # HLB
+    "454910",  # 두산로보틱스
+    "141080",  # 리가켐바이오
+    "357780",  # 솔브레인
+    "403870",  # HPSP
+])
+
+# ── ETF 목록 URL (우선순위 순, 404 시 다음 URL 시도) ─────────────────────────
+_ETF_LIST_URLS = [
+    "https://finance.naver.com/fund/etfAllList.naver",
+    "https://finance.naver.com/fund/etfTopCreator.naver",
+    "https://finance.naver.com/fund/etf.naver",
+]
+
 # ── ETF 제외 키워드 (채권·금리·단기자금 관련) ─────────────────────────────────
 _ETF_EXCLUDE = frozenset([
     "채권",    # bond
@@ -262,11 +283,17 @@ def _load_old_sectors(cache_path: Path, key: str = "stocks") -> dict[str, str]:
         return {}
 
 
-def _fetch_index(index_code: str, label: str, old_cache_path: Path) -> list:
+def _fetch_index(
+    index_code: str,
+    label: str,
+    old_cache_path: Path,
+    validators: frozenset[str] | None = None,
+) -> list:
     """NAVER Finance 지수 구성 종목 페이지 HTML 스크레이핑.
 
     URL: https://finance.naver.com/sise/entryJongmok.naver?code={index_code}&page={n}
-    NAVER 내부 코드: KOSPI200 → KPI200, KOSDAQ150 → KDAQ150
+    NAVER 내부 코드: KOSPI200 → KPI200
+    validators: 결과에 반드시 포함돼야 하는 종목 코드 집합. 하나도 없으면 잘못된 코드로 판단.
     """
     old_sectors = _load_old_sectors(old_cache_path)
     stocks: list[dict] = []
@@ -314,6 +341,19 @@ def _fetch_index(index_code: str, label: str, old_cache_path: Path) -> list:
         logger.error(f"[종목업데이트] {label} 결과 {len(stocks)}종목 — 최소 {MIN_STOCKS}개 미달")
         return []
 
+    # 검증: 알려진 종목이 하나도 없으면 잘못된 코드 → 기본값(KOSPI200) 반환으로 판단
+    if validators:
+        found = {s["code"] for s in stocks}
+        matched = found & validators
+        if not matched:
+            logger.error(
+                f"[종목업데이트] {label} 검증 실패 — 코드 '{index_code}' 가 유효하지 않거나 "
+                f"NAVER Finance가 기본값(KOSPI200) 반환 중. "
+                f"검증 종목 {len(validators)}개 중 0개 매칭."
+            )
+            return []
+        logger.debug(f"[종목업데이트] {label} 검증 OK: {len(matched)}개 매칭")
+
     sector_count: dict[str, int] = {}
     for s in stocks:
         sector_count[s["sector"]] = sector_count.get(s["sector"], 0) + 1
@@ -323,31 +363,26 @@ def _fetch_index(index_code: str, label: str, old_cache_path: Path) -> list:
     return stocks
 
 
-def _fetch_etf() -> list:
-    """NAVER Finance ETF 전체 목록 스크레이핑.
-
-    URL: https://finance.naver.com/fund/etfAllList.naver?page={n}
-    채권·금리·TRF 관련 ETF 자동 제외.
-    """
+def _try_fetch_etf(base_url: str) -> list:
+    """단일 URL에서 ETF 목록 스크레이핑 시도. 실패 또는 MIN_ETFS 미달 시 [] 반환."""
     etfs: list[dict] = []
     seen: set[str] = set()
     excluded_cnt = 0
 
     for page in range(1, 60):
-        url = "https://finance.naver.com/fund/etfAllList.naver"
         try:
             resp = requests.get(
-                url,
+                base_url,
                 headers=_NAVER_ETF_HEADERS,
                 params={"page": page},
                 timeout=30,
             )
             if not resp.ok:
-                logger.error(f"[ETF업데이트] 페이지 {page} HTTP {resp.status_code}")
+                logger.debug(f"[ETF업데이트] {base_url} 페이지 {page} HTTP {resp.status_code}")
                 break
             html = resp.text
         except Exception as e:
-            logger.error(f"[ETF업데이트] 페이지 {page} 오류: {e}")
+            logger.debug(f"[ETF업데이트] {base_url} 페이지 {page} 오류: {e}")
             break
 
         matches = re.findall(
@@ -362,29 +397,42 @@ def _fetch_etf() -> list:
             seen.add(code)
             if any(kw in name for kw in _ETF_EXCLUDE):
                 excluded_cnt += 1
-                logger.debug(f"[ETF업데이트] 제외: {name}")
                 continue
             new.append({"code": code, "name": name, "sector": _etf_sector(name)})
 
         if not new:
-            logger.debug(f"[ETF업데이트] 페이지 {page}: 신규 없음 → 종료")
             break
 
         etfs.extend(new)
-        logger.debug(f"[ETF업데이트] 페이지 {page}: +{len(new)}개 (누적 {len(etfs)}, 제외 {excluded_cnt})")
+        logger.debug(f"[ETF업데이트] 페이지 {page}: +{len(new)}개 (누적 {len(etfs)})")
         time.sleep(0.3)
 
     if len(etfs) < MIN_ETFS:
-        logger.error(f"[ETF업데이트] 결과 {len(etfs)}개 — 최소 {MIN_ETFS}개 미달")
         return []
 
-    sector_count: dict[str, int] = {}
-    for e in etfs:
-        sector_count[e["sector"]] = sector_count.get(e["sector"], 0) + 1
-    logger.info(f"[ETF업데이트] 총 {len(etfs)}개 (채권/금리 {excluded_cnt}개 제외)  섹터:")
-    for sector, cnt in sorted(sector_count.items(), key=lambda x: -x[1]):
-        logger.info(f"  {sector:16s}: {cnt}개")
     return etfs
+
+
+def _fetch_etf() -> list:
+    """NAVER Finance ETF 목록 스크레이핑. _ETF_LIST_URLS 순서대로 시도, 성공 시 반환.
+    채권·금리·TRF 관련 ETF 자동 제외.
+    """
+    for url in _ETF_LIST_URLS:
+        logger.debug(f"[ETF업데이트] 시도: {url}")
+        etfs = _try_fetch_etf(url)
+        if etfs:
+            logger.info(f"[ETF업데이트] {url} → {len(etfs)}개 수집 성공")
+            sector_count: dict[str, int] = {}
+            for e in etfs:
+                sector_count[e["sector"]] = sector_count.get(e["sector"], 0) + 1
+            logger.info(f"[ETF업데이트] 섹터 분포:")
+            for sector, cnt in sorted(sector_count.items(), key=lambda x: -x[1]):
+                logger.info(f"  {sector:16s}: {cnt}개")
+            return etfs
+        logger.warning(f"[ETF업데이트] {url} 실패 (다음 URL 시도)")
+
+    logger.warning("[ETF업데이트] 모든 URL 실패 — 정적 ETF_LIST 폴백 사용")
+    return []
 
 
 def run() -> None:
@@ -393,9 +441,12 @@ def run() -> None:
     logger.info(f" KOSPI200 + KOSDAQ150 + ETF 종목 업데이트 [{today}]")
     logger.info("══════════════════════════════════════════")
 
-    # NAVER Finance 내부 코드: KOSPI200 → KPI200, KOSDAQ150 → KDAQ150
-    kospi200  = _fetch_index("KPI200",  "KOSPI200",  CACHE_PATH)
-    kosdaq150 = _fetch_index("KDAQ150", "KOSDAQ150", KOSDAQ150_CACHE)
+    # KOSPI200: NAVER 내부 코드 KPI200
+    kospi200  = _fetch_index("KPI200", "KOSPI200", CACHE_PATH)
+    # KOSDAQ150: entryJongmok.naver 가 KOSDAQ150을 지원하지 않아 KOSPI200 기본값 반환.
+    # 검증 실패 시 [] 반환 → 빌트인 폴백으로 덮어씀.
+    kosdaq150 = _fetch_index("KDAQ150", "KOSDAQ150", KOSDAQ150_CACHE,
+                             validators=_KOSDAQ150_VALIDATORS)
     etfs      = _fetch_etf()
 
     changed_files = []
@@ -423,10 +474,17 @@ def run() -> None:
         logger.info(f"[종목업데이트] KOSDAQ150 {len(kosdaq150)}종목 저장 → {KOSDAQ150_CACHE.name}")
         changed_files.append(str(KOSDAQ150_CACHE))
     else:
-        if KOSDAQ150_CACHE.exists():
-            logger.warning("[종목업데이트] KOSDAQ150 업데이트 실패 — 기존 캐시 유지")
-        else:
-            logger.error("[종목업데이트] KOSDAQ150 업데이트 실패 + 캐시 없음")
+        # NAVER Finance가 KOSDAQ150 구성 종목 페이지를 지원하지 않음.
+        # watchlist.py 빌트인 목록으로 캐시를 덮어써서 잘못된 KOSPI200 데이터를 교체.
+        from data.watchlist import _KOSDAQ150_BUILTIN  # noqa: PLC0415
+        kosdaq150 = _KOSDAQ150_BUILTIN
+        KOSDAQ150_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        KOSDAQ150_CACHE.write_text(
+            json.dumps({"updated_at": today, "stocks": kosdaq150}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        logger.info(f"[종목업데이트] KOSDAQ150 빌트인 폴백 {len(kosdaq150)}종목 저장 → {KOSDAQ150_CACHE.name}")
+        changed_files.append(str(KOSDAQ150_CACHE))
 
     if etfs:
         ETF_CACHE.parent.mkdir(parents=True, exist_ok=True)
@@ -442,12 +500,9 @@ def run() -> None:
         else:
             logger.warning("[ETF업데이트] 업데이트 실패 + 캐시 없음 (정적 ETF_LIST 폴백 사용)")
 
-    # 인덱스 실패해도 캐시 있으면 정상 종료
+    # KOSPI200 캐시 없으면 치명적 실패
     if not kospi200 and not CACHE_PATH.exists():
         logger.error("[종목업데이트] KOSPI200 데이터 없음 — 캐시도 없어 종료")
-        sys.exit(1)
-    if not kosdaq150 and not KOSDAQ150_CACHE.exists():
-        logger.error("[종목업데이트] KOSDAQ150 데이터 없음 — 캐시도 없어 종료")
         sys.exit(1)
 
     if changed_files:
