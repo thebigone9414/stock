@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
 KOSPI200 + KOSDAQ150 구성 종목 자동 업데이트
-NAVER Finance 모바일 API → 실패 시 기존 캐시 유지 (분기 4회 갱신 목적)
+NAVER Finance 구성 종목 페이지 스크레이핑 → 실패 시 기존 캐시 유지 (분기 4회 갱신 목적)
 
 Usage:
     python batch/update_watchlist.py
 """
 import json
+import re
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -27,21 +29,20 @@ CACHE_PATH      = Path(__file__).parent.parent / "data" / "kospi200_cache.json"
 KOSDAQ150_CACHE = Path(__file__).parent.parent / "data" / "kosdaq150_cache.json"
 MIN_STOCKS      = 100
 
-# NAVER Finance 모바일 API — 인증 불필요, GitHub Actions에서 접근 가능
+# NAVER Finance 데스크탑 헤더 (GitHub Actions에서 접근 가능)
 _NAVER_HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (Linux; Android 10; SM-G975F) "
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Mobile Safari/537.36"
+        "Chrome/124.0.0.0 Safari/537.36"
     ),
-    "Referer": "https://m.stock.naver.com/",
-    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://finance.naver.com/sise/",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "ko-KR,ko;q=0.9",
 }
 
 # ── KIS업종명 → 우리 섹터명 매핑 ─────────────────────────────────────────────
-# 앞에 있을수록 우선순위 높음 (키워드 포함 여부로 체크)
 _SECTOR_KEYWORDS = [
-    # 세부 업종 먼저 (오탐 방지)
     ("반도체",      "반도체/IT"),
     ("전기·전자",   "반도체/IT"),
     ("전기전자",    "반도체/IT"),
@@ -105,31 +106,29 @@ _SECTOR_KEYWORDS = [
     ("시멘트",      "건설/건자재"),
 ]
 
-# 수동 오버라이드: KIS 업종 분류보다 우선 (잘못 분류되기 쉬운 종목)
 _CODE_SECTOR_OVERRIDE: dict[str, str] = {
-    "005490": "2차전지",      # POSCO홀딩스 (2차전지 소재 핵심)
-    "096770": "2차전지/정유", # SK이노베이션
-    "010960": "건설/건자재",  # 삼호개발
-    "028260": "금융/지주",    # 삼성물산 (건설+지주)
-    "000150": "금융/지주",    # 두산
-    "034730": "금융/지주",    # SK
-    "003550": "금융/지주",    # LG
-    "000880": "금융/지주",    # 한화
-    "001040": "금융/지주",    # CJ
-    "004990": "금융/지주",    # 롯데지주
-    "078930": "금융/지주",    # GS
-    "002790": "금융/지주",    # 아모레G
-    "329180": "중공업/기계",  # HD현대 (중공업 지주)
-    "034020": "AI전력/설비",  # 두산에너빌리티
-    "267260": "AI전력/설비",  # HD현대일렉트릭
-    "010120": "AI전력/설비",  # LS ELECTRIC
-    "006260": "AI전력/설비",  # LS
-    "051600": "AI전력/설비",  # 한전KPS
+    "005490": "2차전지",
+    "096770": "2차전지/정유",
+    "010960": "건설/건자재",
+    "028260": "금융/지주",
+    "000150": "금융/지주",
+    "034730": "금융/지주",
+    "003550": "금융/지주",
+    "000880": "금융/지주",
+    "001040": "금융/지주",
+    "004990": "금융/지주",
+    "078930": "금융/지주",
+    "002790": "금융/지주",
+    "329180": "중공업/기계",
+    "034020": "AI전력/설비",
+    "267260": "AI전력/설비",
+    "010120": "AI전력/설비",
+    "006260": "AI전력/설비",
+    "051600": "AI전력/설비",
 }
 
 
 def _map_sector(bstp_name: str, code: str) -> str:
-    """업종명 + 코드 → 우리 섹터명"""
     if code in _CODE_SECTOR_OVERRIDE:
         return _CODE_SECTOR_OVERRIDE[code]
     for keyword, sector in _SECTOR_KEYWORDS:
@@ -138,72 +137,78 @@ def _map_sector(bstp_name: str, code: str) -> str:
     return "기타"
 
 
-def _fetch_index(index_code: str, label: str, page_size: int = 300) -> list:
-    """NAVER Finance 모바일 API로 지수 구성 종목 조회.
-
-    https://m.stock.naver.com/api/index/{index_code}/constituent?page=1&pageSize=N
-    인증 불필요, GitHub Actions IP에서 접근 가능.
-    """
-    url = f"https://m.stock.naver.com/api/index/{index_code}/constituent"
-    params = {"page": 1, "pageSize": page_size}
-
+def _load_old_sectors(cache_path: Path) -> dict[str, str]:
+    """기존 캐시에서 섹터 정보 로드 (새 목록 보강용)"""
+    if not cache_path.exists():
+        return {}
     try:
-        resp = requests.get(url, headers=_NAVER_HEADERS, params=params, timeout=30)
-        if not resp.ok:
-            logger.error(f"[종목업데이트] {label} HTTP {resp.status_code}: {resp.text[:400]}")
-        resp.raise_for_status()
-        data = resp.json()
-    except Exception as e:
-        logger.error(f"[종목업데이트] {label} NAVER API 조회 오류: {e}")
-        return []
+        data = json.loads(cache_path.read_text(encoding="utf-8"))
+        return {s["code"]: s.get("sector", "기타") for s in data.get("stocks", [])}
+    except Exception:
+        return {}
 
-    # 응답 구조 탐색: stocks / list / constituents / 배열 직접
-    items = (
-        data.get("stocks")
-        or data.get("list")
-        or data.get("constituents")
-        or data.get("result", {}).get("stocks")
-        or (data if isinstance(data, list) else [])
-    )
 
-    if len(items) < MIN_STOCKS:
-        logger.error(
-            f"[종목업데이트] {label} 결과 {len(items)}종목 — "
-            f"최소 {MIN_STOCKS}개 미달"
+def _fetch_index(index_code: str, label: str, old_cache_path: Path) -> list:
+    """NAVER Finance 구성 종목 페이지 HTML 스크레이핑.
+
+    URL: https://finance.naver.com/sise/entryJongmok.naver?code={index_code}&page={n}
+    한 페이지당 ~10종목, KOSPI200은 ~20페이지, KOSDAQ150은 ~15페이지.
+    """
+    old_sectors = _load_old_sectors(old_cache_path)
+    stocks: list[dict] = []
+    seen: set[str] = set()
+
+    for page in range(1, 30):
+        url = "https://finance.naver.com/sise/entryJongmok.naver"
+        try:
+            resp = requests.get(
+                url,
+                headers=_NAVER_HEADERS,
+                params={"code": index_code, "page": page},
+                timeout=30,
+            )
+            if not resp.ok:
+                logger.error(f"[종목업데이트] {label} 페이지 {page} HTTP {resp.status_code}")
+                break
+            html = resp.text
+        except Exception as e:
+            logger.error(f"[종목업데이트] {label} 페이지 {page} 오류: {e}")
+            break
+
+        # href="/item/main.naver?code=XXXXXX">종목명</a> 패턴
+        matches = re.findall(
+            r'href="/item/main\.naver\?code=(\d{6})"[^>]*>([^<\n\r]+)</a>',
+            html,
         )
-        logger.debug(f"[종목업데이트] 응답 샘플: {str(data)[:500]}")
+        new = []
+        for code, raw_name in matches:
+            name = raw_name.strip()
+            if not name or code in seen:
+                continue
+            seen.add(code)
+            # 기존 캐시 섹터 우선, 없으면 코드 오버라이드, 없으면 기타
+            sector = old_sectors.get(code) or _map_sector("", code)
+            new.append({"code": code, "name": name, "sector": sector})
+
+        if not new:
+            logger.debug(f"[종목업데이트] {label} 페이지 {page}: 신규 없음 → 종료")
+            break
+
+        stocks.extend(new)
+        logger.debug(f"[종목업데이트] {label} 페이지 {page}: +{len(new)}종목 (누적 {len(stocks)})")
+        time.sleep(0.3)
+
+    if len(stocks) < MIN_STOCKS:
+        logger.error(
+            f"[종목업데이트] {label} 결과 {len(stocks)}종목 — 최소 {MIN_STOCKS}개 미달"
+        )
+        if stocks:
+            logger.debug(f"[종목업데이트] 첫 3종목: {stocks[:3]}")
         return []
 
-    stocks = []
     sector_count: dict[str, int] = {}
-    for item in items:
-        code = (
-            item.get("itemCode")
-            or item.get("code")
-            or item.get("shrtCd")
-            or item.get("stockCode")
-            or ""
-        ).strip()
-        name = (
-            item.get("stockName")
-            or item.get("name")
-            or item.get("hname")
-            or item.get("itemName")
-            or ""
-        ).strip()
-        bstp = (
-            item.get("industryName")
-            or item.get("industry")
-            or item.get("upjong")
-            or item.get("sectorName")
-            or ""
-        ).strip()
-        if not code:
-            continue
-        sector = _map_sector(bstp, code)
-        stocks.append({"code": code, "name": name, "sector": sector})
-        sector_count[sector] = sector_count.get(sector, 0) + 1
-
+    for s in stocks:
+        sector_count[s["sector"]] = sector_count.get(s["sector"], 0) + 1
     logger.info(f"[종목업데이트] {label} {len(stocks)}종목  섹터:")
     for sector, cnt in sorted(sector_count.items(), key=lambda x: -x[1]):
         logger.info(f"  {sector:16s}: {cnt}종목")
@@ -212,12 +217,12 @@ def _fetch_index(index_code: str, label: str, page_size: int = 300) -> list:
 
 def run() -> None:
     today = datetime.now(KST).strftime("%Y-%m-%d")
-    logger.info(f"══════════════════════════════════════════")
+    logger.info("══════════════════════════════════════════")
     logger.info(f" KOSPI200 + KOSDAQ150 구성 종목 업데이트 [{today}]")
-    logger.info(f"══════════════════════════════════════════")
+    logger.info("══════════════════════════════════════════")
 
-    kospi200  = _fetch_index("KOSPI200",  "KOSPI200",  300)
-    kosdaq150 = _fetch_index("KOSDAQ150", "KOSDAQ150", 200)
+    kospi200  = _fetch_index("KOSPI200",  "KOSPI200",  CACHE_PATH)
+    kosdaq150 = _fetch_index("KOSDAQ150", "KOSDAQ150", KOSDAQ150_CACHE)
 
     changed_files = []
 
@@ -249,7 +254,7 @@ def run() -> None:
         else:
             logger.error("[종목업데이트] KOSDAQ150 업데이트 실패 + 캐시 없음")
 
-    # API 실패여도 캐시가 있으면 정상 종료 (분기 업데이트 특성상 이전 캐시로 운영 가능)
+    # API 실패해도 캐시 있으면 정상 종료 (분기 업데이트 특성)
     if not kospi200 and not CACHE_PATH.exists():
         logger.error("[종목업데이트] KOSPI200 데이터 없음 — 캐시도 없어 종료")
         sys.exit(1)
@@ -264,15 +269,15 @@ def run() -> None:
             f"(KOSPI200:{len(kospi200)} KOSDAQ150:{len(kosdaq150)}종목)",
         )
     else:
-        logger.info("[종목업데이트] 변경 없음 (API 실패) — 기존 캐시로 운영 계속")
+        logger.info("[종목업데이트] 변경 없음 (스크레이핑 실패) — 기존 캐시로 운영 계속")
 
-    logger.info(f"══════════════════════════════════════════")
-    logger.info(f" 완료")
-    logger.info(f"══════════════════════════════════════════")
+    logger.info("══════════════════════════════════════════")
+    logger.info(" 완료")
+    logger.info("══════════════════════════════════════════")
 
 
 if __name__ == "__main__":
     settings = get_settings()
     setup_logger(settings.log_level)
-    logger.info("=== KOSPI200+KOSDAQ150 종목 업데이트 (NAVER Finance) ===")
+    logger.info("=== KOSPI200+KOSDAQ150 종목 업데이트 (NAVER Finance 스크레이핑) ===")
     run()
