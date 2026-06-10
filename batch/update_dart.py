@@ -35,7 +35,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from loguru import logger
 
-from config.settings import get_settings
 from utils.logger import setup_logger
 from data.dart_client import DARTClient, REPRT_Q1, REPRT_H1, REPRT_Q3, REPRT_ANN
 from data.watchlist import get_s2_watchlist
@@ -232,10 +231,9 @@ def _filter_ca(corps_out: dict, today: str) -> list:
 
 
 if __name__ == "__main__":
-    settings = get_settings()
-    setup_logger(settings.log_level)
-
     import os
+    setup_logger(os.environ.get("LOG_LEVEL", "INFO"))
+
     dart_key = os.environ.get("DART_API_KEY", "")
     if not dart_key:
         logger.error("[DART배치] DART_API_KEY 환경변수 없음 — 종료")
