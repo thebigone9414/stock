@@ -24,13 +24,12 @@ from loguru import logger
 import data.ma_store as ma_store
 from data.shared_slots import count_shared
 from data.canslim_store import (
-    get_buy_candidates,
     load_positions,
     add_position,
     remove_position,
-    update_position_peak,
     load_data as load_canslim_data,
-    load_ca_screened,
+    get_entry_pending,
+    set_entry_pending,
 )
 
 KST              = pytz.timezone("Asia/Seoul")
@@ -81,7 +80,7 @@ class CANSLIMStrategy:
 
         logger.info("[S3 CANSLIM] 실행 완료")
 
-    # ── 매도 처리 ─────────────────────────────────────────────────────
+    # ── 매도 처리 (저녁 배치 플래그 실행) ────────────────────────────
     def _process_exits(self) -> None:
         positions = load_positions()
         if not positions:
@@ -96,100 +95,67 @@ class CANSLIMStrategy:
             entry_date  = pos.get("entry_date", today_str)
             quantity    = pos.get("quantity", 0)
             early_trig  = pos.get("early_gain_triggered", False)
+            peak_price  = pos.get("peak_price", entry_price)
+            peak_gain   = (peak_price - entry_price) / entry_price if entry_price else 0.0
 
             if not entry_price or not quantity:
                 continue
 
+            # 매도 사유 — 저녁 배치가 설정한 플래그 기반 (우선순위 순)
+            if pos.get("stop_loss_pending"):
+                reason = "손절(-7%)"
+            elif pos.get("ma_exit_pending"):
+                reason = f"MA이탈(고점{peak_gain:+.1%})"
+            elif pos.get("trail_stop_pending"):
+                reason = f"트레일링스탑(고점-{TRAIL_STOP_PCT:.0%})"
+            elif pos.get("take_profit_pending"):
+                target = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
+                reason = f"익절(+{target:.0%}" + (" 확장목표)" if early_trig else ")")
+            else:
+                # 플래그 없음 → 보유
+                try:
+                    days_held = (
+                        datetime.strptime(today_str, "%Y-%m-%d")
+                        - datetime.strptime(entry_date, "%Y-%m-%d")
+                    ).days
+                except ValueError:
+                    days_held = 0
+                target = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
+                logger.info(
+                    f"[S3 보유] [{code}] {name}  "
+                    f"매수:{entry_price:,}  고점:{peak_gain:+.2%}  "
+                    f"목표:{target:+.0%}  보유:{days_held}일"
+                )
+                continue
+
+            # 시장가 매도 실행 (현재가는 PnL 로깅용)
             try:
-                quote       = self.market.get_quote(code)
-                current     = quote.price
-                gain        = (current - entry_price) / entry_price
-                days_held   = (
-                    datetime.strptime(today_str, "%Y-%m-%d")
-                    - datetime.strptime(entry_date, "%Y-%m-%d")
-                ).days
-            except Exception as e:
-                logger.warning(f"[S3] [{code}] {name} 현재가 조회 실패: {e}")
-                continue
+                current = self.market.get_quote(code).price
+            except Exception:
+                current = entry_price
+            self._sell_market(code, name, quantity, entry_price, current, reason)
 
-            # 고점 갱신
-            update_position_peak(code, current, today_str)
-            peak_price = max(pos.get("peak_price", entry_price), current)
-            peak_gain  = (peak_price - entry_price) / entry_price
-
-            # 목표가 결정
-            target = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
-
-            # ── 손절 ───────────────────────────────────────────────
-            if gain <= -STOP_LOSS:
-                logger.warning(
-                    f"[S3 손절] [{code}] {name}  "
-                    f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}"
-                )
-                self._sell_market(code, name, quantity, entry_price, current, "손절(-7%)")
-                continue
-
-            # ── 러너 모드: 고점 +20% 이상 → MA이탈 시 청산 ──────────
-            # MA이탈 판정은 전날 저녁 CANSLIM 배치에서 설정 (ma_exit_pending 플래그)
-            if peak_gain >= RUNNER_THRESHOLD:
-                if pos.get("ma_exit_pending"):
-                    label = f"MA이탈(고점{peak_gain:+.1%})"
-                    logger.info(
-                        f"[S3 MA이탈] [{code}] {name}  "
-                        f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  {label}"
-                    )
-                    self._sell_market(code, name, quantity, entry_price, current, label)
-                else:
-                    logger.info(
-                        f"[S3 러너보유] [{code}] {name}  "
-                        f"현재:{gain:+.2%}  고점:{peak_gain:+.2%}  보유:{days_held}일"
-                    )
-                continue
-
-            # ── +20% 미달 구간: 트레일링스탑 / 익절 ───────────────
-            if peak_gain >= TRAIL_STOP_MIN and current < peak_price * (1 - TRAIL_STOP_PCT):
-                logger.info(
-                    f"[S3 트레일링스탑] [{code}] {name}  "
-                    f"고점:{peak_price:,}(+{peak_gain:.2%}) → 현재:{current:,}({gain:+.2%})"
-                )
-                self._sell_market(
-                    code, name, quantity, entry_price, current,
-                    f"트레일링스탑(고점-{TRAIL_STOP_PCT:.0%})",
-                )
-                continue
-
-            if gain >= target:
-                label = f"익절(+{target:.0%}" + (" 확장목표)" if early_trig else ")")
-                logger.info(
-                    f"[S3 익절] [{code}] {name}  "
-                    f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  {label}"
-                )
-                self._sell_market(code, name, quantity, entry_price, current, label)
-                continue
-
-            logger.info(
-                f"[S3 보유] [{code}] {name}  "
-                f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  "
-                f"목표:{target:+.0%}  보유:{days_held}일"
-            )
-
-    # ── 매수 처리 ─────────────────────────────────────────────────────
+    # ── 매수 처리 (저녁 배치 entry_pending 실행) ─────────────────────
     def _process_entries(self) -> None:
-        canslim_data    = load_canslim_data()
-        market_uptrend  = canslim_data.get("market_uptrend", False)
-        updated_at      = canslim_data.get("updated_at", "")
-        today_str       = datetime.now(KST).strftime("%Y-%m-%d")
+        entry_pending = get_entry_pending()
+        today_str     = datetime.now(KST).strftime("%Y-%m-%d")
 
-        if not market_uptrend:
-            logger.info("[S3] 시장 하락장(M=False) — 신규 매수 보류")
+        if not entry_pending:
+            logger.info("[S3] 매수 대기 종목 없음 (전날 저녁 후보 없음)")
             return
 
-        # S2+S3+S4 공유 슬롯 계산
+        # 시장 추세 재확인 (안전장치)
+        canslim_data   = load_canslim_data()
+        market_uptrend = canslim_data.get("market_uptrend", False)
+        if not market_uptrend:
+            logger.info("[S3] 시장 하락장 — 저녁 결정 취소")
+            set_entry_pending([])
+            return
+
+        # 슬롯 계산
         s2_n, s3_n, s4_n = count_shared()
         total_shared = s2_n + s3_n + s4_n
-        s3_positions = load_positions()
 
-        # 슬롯 확장: 자산 증가(수익 + 추가 입금)마다 슬롯 추가
         try:
             bal      = self.account.get_balance()
             base_cap = ma_store.get_base_capital()
@@ -206,66 +172,30 @@ class CANSLIMStrategy:
                 f"[S3] 공유슬롯 만석 ({total_shared}/{max_shared}, "
                 f"S2:{s2_n} S3:{s3_n} S4:{s4_n}) — 매수 보류"
             )
+            set_entry_pending([])
             return
 
-        # 스크리닝 데이터가 오늘 것인지 확인 (오래된 데이터로 매수 방지)
-        if updated_at < today_str:
-            logger.warning(
-                f"[S3] canslim_data가 오늘 업데이트 안됨 (업데이트:{updated_at}, 오늘:{today_str}) "
-                f"— 신규 매수 보류"
-            )
-            return
-
-        # A 사전 필터 로드 (DART 스크리닝 결과 — A 조건만 적용)
-        # C 조건은 2025Q1 데이터 수집 후(8월 Q2 배치) C AND A 로 전환 예정
-        ca_data     = load_ca_screened()
-        ca_screened = ca_data.get("screened", [])
-        ca_codes    = {s["code"] for s in ca_screened if s.get("A")}  # A 통과 종목만
-        ca_updated  = ca_data.get("updated_at", "")
-        use_ca      = bool(ca_codes)
-
-        if use_ca:
-            logger.info(
-                f"[S3] A 필터 적용 — {len(ca_codes)}종목 (갱신:{ca_updated})"
-                f" ※C 조건은 8월 Q2 배치 후 AND 조건으로 전환 예정"
-            )
-        else:
-            logger.warning("[S3] A 스크리닝 데이터 없음 — A 필터 미적용 (전체 후보 사용)")
-
-        positions  = s3_positions
-        raw_cands  = [(code, info) for code, info in get_buy_candidates()
-                      if code not in positions]
-        candidates = [(code, info) for code, info in raw_cands
-                      if not use_ca or code in ca_codes]
-
-        if not candidates:
-            if use_ca and raw_cands:
-                logger.info(
-                    f"[S3] 매수 후보 없음 — N·S·L·M 통과 {len(raw_cands)}종목이 "
-                    f"A 필터 미통과 (연간 EPS CAGR +15% 미달)"
-                )
-            else:
-                logger.info("[S3] 매수 후보 없음 (all_pass 종목 없음 또는 이미 보유)")
-            return
-
-        # 슬롯당 예산: 총자산의 20%
-        cash     = bal.cash
         per_slot = int(bal.total_eval * 0.20)
-        if per_slot > cash:
-            per_slot = cash  # 현금 초과 방지
-
+        if per_slot > bal.cash:
+            per_slot = bal.cash
         if per_slot < 10_000:
             logger.info(f"[S3] 가용 예산 부족 (슬롯당 {per_slot:,}원) — 매수 건너뜀")
+            set_entry_pending([])
             return
 
+        s3_positions = load_positions()
+        candidates   = [e for e in entry_pending if e["code"] not in s3_positions]
+
         logger.info(
-            f"[S3] 매수 후보 {len(candidates)}종목  "
+            f"[S3] 매수 대기 {len(candidates)}종목  "
             f"잔여슬롯 {slots_free}개  슬롯당 예산 {per_slot:,}원 (총자산 20%)"
         )
 
         bought = 0
-        for code, info in candidates[:slots_free]:
-            name = info.get("name", code)
+        for entry in candidates[:slots_free]:
+            code   = entry["code"]
+            name   = entry.get("name", code)
+            ca_tag = entry.get("ca_tag", "")
             try:
                 quote = self.market.get_quote(code)
                 price = quote.price
@@ -276,13 +206,9 @@ class CANSLIMStrategy:
                     logger.info(f"[S3] [{code}] {name}  주가({price:,}) > 슬롯예산 → 건너뜀")
                     continue
 
-                ca_info = next((s for s in ca_screened if s["code"] == code), None)
-                ca_tag  = ""
-                if ca_info:
-                    ca_tag = " C+A" if (ca_info.get("C") and ca_info.get("A")) else (" C" if ca_info.get("C") else " A")
                 logger.info(
                     f"[S3 매수] [{code}] {name}  현재가:{price:,}  수량:{qty}주  "
-                    f"금액:{price*qty:,}원  (score={info.get('score',0)}/5{ca_tag})"
+                    f"금액:{price*qty:,}원{ca_tag}"
                 )
 
                 if not self.is_paper:
@@ -297,12 +223,13 @@ class CANSLIMStrategy:
                 if self.notifier:
                     self.notifier.notify(
                         f"[S3 매수] [{code}] {name}\n"
-                        f"현재가:{price:,}원  수량:{qty}주  금액:{price*qty:,}원\n"
-                        f"CANSLIM score={info.get('score',0)}/5{ca_tag}"
+                        f"현재가:{price:,}원  수량:{qty}주  금액:{price*qty:,}원{ca_tag}"
                     )
 
             except Exception as e:
                 logger.error(f"[S3] [{code}] {name} 매수 실패: {e}")
+
+        set_entry_pending([])  # 처리 완료 후 초기화
 
         if bought == 0:
             logger.info("[S3] 실제 매수 없음")

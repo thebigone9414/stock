@@ -57,8 +57,16 @@ def load_positions() -> dict:
 
 def save_positions(positions: dict) -> None:
     SEPA_POS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    existing: dict = {}
+    if SEPA_POS_PATH.exists():
+        with open(SEPA_POS_PATH, "r", encoding="utf-8") as f:
+            try:
+                existing = json.load(f)
+            except json.JSONDecodeError:
+                existing = {}
+    existing["positions"] = positions
     with open(SEPA_POS_PATH, "w", encoding="utf-8") as f:
-        json.dump({"positions": positions}, f, ensure_ascii=False, indent=2)
+        json.dump(existing, f, ensure_ascii=False, indent=2)
 
 
 def add_position(
@@ -101,8 +109,8 @@ def remove_position(code: str) -> None:
     git_commit_push([str(SEPA_POS_PATH)], f"chore: S4 포지션 제거 {code}")
 
 
-def set_ma_exit_pending(code: str, flag: bool = True) -> None:
-    """MA이탈 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
+def _set_pos_flag(code: str, key: str, flag: bool, msg: str) -> None:
+    """포지션 단일 플래그 설정 공통 헬퍼"""
     if not SEPA_POS_PATH.exists():
         return
     with open(SEPA_POS_PATH, "r", encoding="utf-8") as f:
@@ -110,12 +118,67 @@ def set_ma_exit_pending(code: str, flag: bool = True) -> None:
     pos = data.get("positions", {}).get(code)
     if pos is None:
         return
-    pos["ma_exit_pending"] = flag
+    pos[key] = flag
     with open(SEPA_POS_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    git_commit_push([str(SEPA_POS_PATH)], msg)
+
+
+def set_stop_loss_pending(code: str, flag: bool = True) -> None:
+    """손절 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
+    _set_pos_flag(code, "stop_loss_pending", flag,
+                  f"chore: S4 손절플래그 {code}={'ON' if flag else 'OFF'}")
+
+
+def set_trail_stop_pending(code: str, flag: bool = True) -> None:
+    """트레일링스탑 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
+    _set_pos_flag(code, "trail_stop_pending", flag,
+                  f"chore: S4 트레일링스탑플래그 {code}={'ON' if flag else 'OFF'}")
+
+
+def set_take_profit_pending(code: str, flag: bool = True) -> None:
+    """익절 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
+    _set_pos_flag(code, "take_profit_pending", flag,
+                  f"chore: S4 익절플래그 {code}={'ON' if flag else 'OFF'}")
+
+
+def set_ma_exit_pending(code: str, flag: bool = True) -> None:
+    """MA이탈 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
+    _set_pos_flag(code, "ma_exit_pending", flag,
+                  f"chore: S4 MA이탈플래그 {code}={'ON' if flag else 'OFF'}")
+
+
+# ── 매수 대기 목록 (저녁 배치에서 결정 → 아침에 실행) ──────────────────────
+
+def get_entry_pending() -> list:
+    """저녁 배치에서 결정한 매수 후보 목록 반환"""
+    if not SEPA_POS_PATH.exists():
+        return []
+    with open(SEPA_POS_PATH, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f).get("entry_pending", [])
+        except json.JSONDecodeError:
+            return []
+
+
+def set_entry_pending(entries: list) -> None:
+    """매수 후보 목록 저장 (저녁 배치 호출)"""
+    SEPA_POS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    existing: dict = {}
+    if SEPA_POS_PATH.exists():
+        with open(SEPA_POS_PATH, "r", encoding="utf-8") as f:
+            try:
+                existing = json.load(f)
+            except json.JSONDecodeError:
+                existing = {}
+    existing["entry_pending"] = entries
+    with open(SEPA_POS_PATH, "w", encoding="utf-8") as f:
+        json.dump(existing, f, ensure_ascii=False, indent=2)
+    n     = len(entries)
+    codes = " ".join(e["code"] for e in entries[:3]) + ("..." if n > 3 else "")
     git_commit_push(
         [str(SEPA_POS_PATH)],
-        f"chore: S4 MA이탈플래그 {code}={'ON' if flag else 'OFF'}",
+        f"chore: S4 매수대기 {n}종목" + (f" {codes}" if n else ""),
     )
 
 

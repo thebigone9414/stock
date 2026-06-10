@@ -65,6 +65,11 @@ INCREMENTAL_DAYS         = 30
 
 KODEX200_CODE    = "069500"   # 시장 추세·RS 기준
 RUNNER_THRESHOLD = 0.20       # 러너 기준 고점 수익률
+STOP_LOSS        = 0.07       # 손절 -7%
+TRAIL_STOP_PCT   = 0.10       # 트레일링스탑 폭 -10%
+TRAIL_STOP_MIN   = 0.10       # 트레일링스탑 활성화 최소 고점 수익률
+TAKE_PROFIT      = 0.20       # 기본 익절 +20%
+TAKE_PROFIT_EXT  = 0.25       # 조기익절 확장 +25%
 
 # VCP 파라미터
 VCP_BASE_DAYS    = 60    # 전체 base 구간 (3구간 × 20일)
@@ -228,55 +233,180 @@ def _check_market(kodex200_closes: list) -> bool:
     return ma50 > ma150
 
 
-# ── S4 포지션 MA이탈 조건 점검 (저녁 배치) ────────────────────────────
+# ── S4 포지션 매도 조건 점검 (저녁 배치 — 모든 청산 결정) ─────────────────
 
-def _check_s4_exits(notifier: Notifier = None) -> None:
-    """S4 러너 포지션(고점 +20% 이상)의 MA이탈 조건 확인 → ma_exit_pending 플래그 설정."""
+def _check_s4_exits(today_str: str, notifier: Notifier = None) -> None:
+    """S4 모든 포지션의 청산 조건을 저녁에 판정 → 각 pending 플래그 설정."""
     positions = sepa_store.load_positions()
     if not positions:
         return
 
-    today_str = datetime.now(KST).strftime("%Y-%m-%d")
-    flagged: list = []
+    flagged_stop   = []
+    flagged_ma     = []
+    flagged_trail  = []
+    flagged_profit = []
 
     for code, pos in list(positions.items()):
         name        = pos.get("name", code)
         entry_price = pos.get("entry_price", 0)
+        early_trig  = pos.get("early_gain_triggered", False)
         if not entry_price:
             continue
 
         stock_ma = ma_store.get_stock(code)
         if not stock_ma:
+            logger.warning(f"[S4 청산체크] [{code}] {name} — MA데이터 없음, 건너뜀")
             continue
 
         close = int(stock_ma.get("close", 0))
-        if close > 0:
-            sepa_store.update_position_peak(code, close, today_str)
-            pos = sepa_store.load_positions().get(code, pos)
-
-        peak_price = pos.get("peak_price", entry_price)
-        peak_gain  = (peak_price - entry_price) / entry_price
-
-        if peak_gain < RUNNER_THRESHOLD:
+        if close <= 0:
             continue
 
-        if stock_ma.get("ma21_below_ma62") and stock_ma.get("ma62_declining_5d"):
-            if not pos.get("ma_exit_pending"):
-                sepa_store.set_ma_exit_pending(code, True)
-                flagged.append((code, name, peak_gain))
-                logger.info(
-                    f"[S4 MA이탈플래그] [{code}] {name}  "
-                    f"고점:{peak_gain:+.1%}  MA이탈 → 내일 09:00 청산 예정"
-                )
-        elif pos.get("ma_exit_pending"):
-            sepa_store.set_ma_exit_pending(code, False)
-            logger.info(f"[S4 MA이탈플래그 해제] [{code}] {name}  MA 조건 미충족")
+        sepa_store.update_position_peak(code, close, today_str)
+        pos        = sepa_store.load_positions().get(code, pos)
+        peak_price = pos.get("peak_price", entry_price)
+        peak_gain  = (peak_price - entry_price) / entry_price
+        gain       = (close - entry_price) / entry_price
+        target     = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
 
-    if flagged and notifier:
-        lines = ["[S4 MA이탈] 내일 09:00 청산 예정:"]
-        for c, n, pg in flagged:
-            lines.append(f"  [{c}] {n}  고점:{pg:+.1%}")
+        # ① 손절 -7%
+        if gain <= -STOP_LOSS:
+            if not pos.get("stop_loss_pending"):
+                sepa_store.set_stop_loss_pending(code, True)
+                flagged_stop.append((code, name, entry_price, close, gain))
+                logger.warning(
+                    f"[S4 손절플래그] [{code}] {name}  "
+                    f"매수:{entry_price:,} → 마감:{close:,}  {gain:+.2%} ≤ -{STOP_LOSS:.0%}"
+                )
+            else:
+                logger.info(f"[S4 손절대기중] [{code}] {name}  {gain:+.2%}")
+            continue
+
+        # ② 러너 (+20% 이상): MA이탈 시 청산
+        if peak_gain >= RUNNER_THRESHOLD:
+            if stock_ma.get("ma21_below_ma62") and stock_ma.get("ma62_declining_5d"):
+                if not pos.get("ma_exit_pending"):
+                    sepa_store.set_ma_exit_pending(code, True)
+                    flagged_ma.append((code, name, peak_gain, gain))
+                    logger.info(
+                        f"[S4 MA이탈플래그] [{code}] {name}  "
+                        f"고점:{peak_gain:+.1%}  현재:{gain:+.2%} → 내일 09:00 청산"
+                    )
+                else:
+                    logger.info(f"[S4 MA이탈대기중] [{code}] {name}  고점:{peak_gain:+.1%}")
+            elif pos.get("ma_exit_pending"):
+                sepa_store.set_ma_exit_pending(code, False)
+                logger.info(f"[S4 MA이탈플래그 해제] [{code}] {name}  MA 조건 미충족")
+            else:
+                logger.info(
+                    f"[S4 러너보유] [{code}] {name}  "
+                    f"현재:{gain:+.2%}  고점:{peak_gain:+.2%}"
+                )
+            continue
+
+        # ③ 트레일링스탑
+        if peak_gain >= TRAIL_STOP_MIN and close < peak_price * (1 - TRAIL_STOP_PCT):
+            if not pos.get("trail_stop_pending"):
+                sepa_store.set_trail_stop_pending(code, True)
+                flagged_trail.append((code, name, peak_price, close, peak_gain, gain))
+                logger.info(
+                    f"[S4 트레일링스탑플래그] [{code}] {name}  "
+                    f"고점:{peak_price:,}(+{peak_gain:.1%}) → 마감:{close:,}({gain:+.2%})"
+                )
+            else:
+                logger.info(f"[S4 트레일링스탑대기중] [{code}] {name}  {gain:+.2%}")
+            continue
+
+        # ④ 익절
+        if gain >= target:
+            if not pos.get("take_profit_pending"):
+                sepa_store.set_take_profit_pending(code, True)
+                flagged_profit.append((code, name, entry_price, close, gain, target))
+                logger.info(
+                    f"[S4 익절플래그] [{code}] {name}  "
+                    f"마감:{close:,}  {gain:+.2%} ≥ {target:+.0%}"
+                )
+            else:
+                logger.info(f"[S4 익절대기중] [{code}] {name}  {gain:+.2%}")
+            continue
+
+        logger.info(
+            f"[S4 보유중] [{code}] {name}  "
+            f"마감:{close:,}  {gain:+.2%}  목표:{target:+.0%}  고점:{peak_gain:+.2%}"
+        )
+
+    if flagged_stop and notifier:
+        lines = [f"[S4 손절] 내일 09:00 청산 {len(flagged_stop)}종목:"]
+        for c, n, ep, cp, r in flagged_stop:
+            lines.append(f"  [{c}] {n}  매수:{ep:,} → 마감:{cp:,}  {r:+.2%}")
         notifier.notify("\n".join(lines))
+
+    if flagged_ma and notifier:
+        lines = [f"[S4 MA이탈] 내일 09:00 청산 {len(flagged_ma)}종목:"]
+        for c, n, pg, g in flagged_ma:
+            lines.append(f"  [{c}] {n}  고점:{pg:+.1%}  현재:{g:+.2%}")
+        notifier.notify("\n".join(lines))
+
+    if flagged_trail and notifier:
+        lines = [f"[S4 트레일링스탑] 내일 09:00 청산 {len(flagged_trail)}종목:"]
+        for c, n, pp, cp, pg, g in flagged_trail:
+            lines.append(f"  [{c}] {n}  고점:{pp:,}(+{pg:.1%}) → 마감:{cp:,}({g:+.2%})")
+        notifier.notify("\n".join(lines))
+
+    if flagged_profit and notifier:
+        lines = [f"[S4 익절] 내일 09:00 청산 {len(flagged_profit)}종목:"]
+        for c, n, ep, cp, g, t in flagged_profit:
+            lines.append(f"  [{c}] {n}  마감:{cp:,}  {g:+.2%} ≥ {t:+.0%}")
+        notifier.notify("\n".join(lines))
+
+
+# ── S4 매수 후보 결정 (저녁 배치) ──────────────────────────────────────────
+
+def _check_s4_entries(
+    stocks_out: dict, market_uptrend: bool, today_str: str,
+    notifier: Notifier = None,
+) -> None:
+    """S4 매수 후보를 저녁에 결정 → entry_pending 기록."""
+    if not market_uptrend:
+        sepa_store.set_entry_pending([])
+        logger.info("[S4 매수결정] 시장 하락장 → 매수 후보 없음")
+        return
+
+    positions  = sepa_store.load_positions()
+    candidates = []
+
+    for code, info in sorted(
+        [(c, i) for c, i in stocks_out.items()
+         if i.get("breakout_confirmed") and i.get("trend_template")],
+        key=lambda x: x[1].get("rs_score", 0),
+        reverse=True,
+    ):
+        if code in positions:
+            continue
+        candidates.append({
+            "code":             code,
+            "name":             info["name"],
+            "rs_score":         info.get("rs_score", 0),
+            "pivot":            info.get("pivot", 0),
+            "tight_range_pct":  info.get("tight_range_pct", 0),
+        })
+
+    sepa_store.set_entry_pending(candidates)
+
+    if candidates:
+        logger.info(f"[S4 매수결정] {len(candidates)}종목 → entry_pending 설정")
+        for c in candidates[:3]:
+            logger.info(f"  [{c['code']}] {c['name']}  RS={c['rs_score']:.0f}  pivot={c['pivot']:,}")
+        if notifier:
+            lines = [f"[S4 매수대기] 내일 09:00 매수 예정 {len(candidates)}종목:"]
+            for c in candidates[:3]:
+                lines.append(
+                    f"  [{c['code']}] {c['name']}  "
+                    f"RS={c['rs_score']:.0f}  pivot={c['pivot']:,}"
+                )
+            notifier.notify("\n".join(lines))
+    else:
+        logger.info("[S4 매수결정] 후보 없음")
 
 
 # ── 메인 배치 ────────────────────────────────────────────────────────
@@ -485,7 +615,8 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     if notifier:
         _notify(stocks_out, market_uptrend, pass_breakout, notifier)
 
-    _check_s4_exits(notifier)
+    _check_s4_exits(today, notifier)
+    _check_s4_entries(stocks_out, market_uptrend, today, notifier)
 
 
 def _notify(stocks_out: dict, market_uptrend: bool, n_breakout: int, notifier: Notifier) -> None:
