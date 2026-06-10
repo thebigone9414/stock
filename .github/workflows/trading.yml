@@ -19,6 +19,7 @@ on:
           - sepa-morning     # 전략4 SEPA (cron-job.org 트리거)
           - sepa-batch       # SEPA 트렌드템플릿+VCP 배치 (17:00 KST)
           - update-watchlist # KOSPI200+KOSDAQ150 구성 종목 갱신 (월 1회 자동)
+          - update-dart      # DART EPS 배치 (분기 1회 수동)
           - balance          # 잔고 조회
           - check-watchlist  # 종목 수급 API 테스트
           - debug-investor   # 단일 종목 raw JSON 덤프
@@ -43,10 +44,11 @@ concurrency:
   # → S1 실행 중에도 S2/S3/S4가 별도 큐에서 즉시 실행 가능
   group: >-
     ${{
-      (github.event.inputs.mode == 'ma-batch'      ||
-       github.event.inputs.mode == 'canslim-batch' ||
-       github.event.inputs.mode == 'sepa-batch'    ||
-       github.event.inputs.mode == 'update-watchlist')
+      (github.event.inputs.mode == 'ma-batch'        ||
+       github.event.inputs.mode == 'canslim-batch'  ||
+       github.event.inputs.mode == 'sepa-batch'     ||
+       github.event.inputs.mode == 'update-watchlist' ||
+       github.event.inputs.mode == 'update-dart')
       && 'okdongja-batch'
       || github.event.inputs.mode == 'morning'
       && 'okdongja-s1'
@@ -172,7 +174,8 @@ jobs:
       github.event.inputs.mode != 'canslim-batch'   &&
       github.event.inputs.mode != 'sepa-morning'    &&
       github.event.inputs.mode != 'sepa-batch'      &&
-      github.event.inputs.mode != 'update-watchlist'
+      github.event.inputs.mode != 'update-watchlist' &&
+      github.event.inputs.mode != 'update-dart'
 
     steps:
       - name: 소스 체크아웃
@@ -605,3 +608,65 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Job J: DART 재무 데이터 배치 (분기 1회 수동 트리거)
+# 실행 시기: 분기 보고서 공시 완료 후
+#   Q1(1분기):  5월 중순   Q2(반기): 8월 중순
+#   Q3(3분기): 11월 중순   Annual:  다음해 3월 말
+# DART_API_KEY Secret 필요 (https://opendart.fss.or.kr)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  update-dart:
+    name: DART EPS 배치 (분기)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120      # ~405종목 × 평균 3call × 0.11s ≈ 40분 + 여유
+
+    permissions:
+      contents: write           # dart_data.json / dart_ca_screened.json git push
+
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'update-dart'
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: DART EPS 배치 실행
+        env:
+          DART_API_KEY:         ${{ secrets.DART_API_KEY }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOG_LEVEL:            INFO
+        run: python batch/update_dart.py
+
+      - name: 배치 실패 텔레그램 알림
+        if: failure() || cancelled()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          NOW=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')
+          MSG="[DART배치] 미완료 — ${NOW}"$'\n'"원인: ${{ job.status }}"$'\n'"→ update-dart 수동 재실행 필요"
+          curl -s -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}"
+
+      - name: 로그 저장
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dart-batch-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 90
+          if-no-files-found: ignore
