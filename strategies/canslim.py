@@ -162,8 +162,8 @@ class CANSLIMStrategy:
             return
 
         # S2+S3+S4 공유 슬롯 계산
-        s2_n, s3_n, s4_n, s5_n, s6_n = count_shared()
-        total_shared = s2_n + s3_n + s4_n + s5_n + s6_n
+        s2_n, s3_n, s4_n = count_shared()
+        total_shared = s2_n + s3_n + s4_n
         s3_positions = load_positions()
 
         # 슬롯 확장: 자산 증가(수익 + 추가 입금)마다 슬롯 추가
@@ -181,7 +181,7 @@ class CANSLIMStrategy:
         if slots_free <= 0:
             logger.info(
                 f"[S3] 공유슬롯 만석 ({total_shared}/{max_shared}, "
-                f"S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n} S6:{s6_n}) — 매수 보류"
+                f"S2:{s2_n} S3:{s3_n} S4:{s4_n}) — 매수 보류"
             )
             return
 
