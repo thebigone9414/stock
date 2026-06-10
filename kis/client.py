@@ -10,7 +10,21 @@ from tenacity import (retry, stop_after_attempt, wait_exponential,
                       retry_if_exception_type)
 from requests.exceptions import ConnectionError as ReqConnError, Timeout as ReqTimeout
 
+_RATE_LIMIT_CD = "EGW00201"
+
 from .auth import KISAuth
+
+
+class KISRateLimitError(Exception):
+    """KIS API 초당 거래건수 초과 (EGW00201) — 재시도 대상"""
+    pass
+
+
+class KISAPIError(Exception):
+    def __init__(self, rt_cd: str, message: str, raw: dict):
+        super().__init__(f"[{rt_cd}] {message}")
+        self.rt_cd = rt_cd
+        self.raw = raw
 
 
 class KISClient:
@@ -35,9 +49,9 @@ class KISClient:
         return headers
 
     @retry(
-        retry=retry_if_exception_type((ReqConnError, ReqTimeout)),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((ReqConnError, ReqTimeout, KISRateLimitError)),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1.5, min=2, max=15),
     )
     def get(self, path: str, tr_id: str, params: Optional[Dict] = None) -> Dict[str, Any]:
         url = f"{self.base_url}{path}"
@@ -47,9 +61,9 @@ class KISClient:
         return self._handle_response(resp)
 
     @retry(
-        retry=retry_if_exception_type((ReqConnError, ReqTimeout)),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((ReqConnError, ReqTimeout, KISRateLimitError)),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1.5, min=2, max=15),
     )
     def post(self, path: str, tr_id: str, body: Optional[Dict] = None) -> Dict[str, Any]:
         url = f"{self.base_url}{path}"
@@ -60,19 +74,27 @@ class KISClient:
 
     def _handle_response(self, resp: requests.Response) -> Dict[str, Any]:
         if not resp.ok:
+            # HTTP 500 본문에서 EGW00201(초당 건수 초과) 먼저 감지
+            try:
+                body = resp.json()
+                if body.get("msg_cd") == _RATE_LIMIT_CD:
+                    logger.warning("KIS 초당 거래건수 초과 (EGW00201) — 재시도 대기")
+                    raise KISRateLimitError()
+            except (ValueError, KISRateLimitError):
+                raise
+            except Exception:
+                pass
             logger.error(f"HTTP {resp.status_code} {resp.reason}: {resp.text[:500]}")
-        resp.raise_for_status()
+            resp.raise_for_status()
         data = resp.json()
         rt_cd = data.get("rt_cd", "0")
         if rt_cd != "0":
             msg = data.get("msg1", "알 수 없는 오류")
+            if data.get("msg_cd") == _RATE_LIMIT_CD:
+                logger.warning("KIS 초당 거래건수 초과 (EGW00201) — 재시도 대기")
+                raise KISRateLimitError()
             logger.error(f"KIS API 오류 [rt_cd={rt_cd}]: {msg}")
             raise KISAPIError(rt_cd, msg, data)
         return data
 
 
-class KISAPIError(Exception):
-    def __init__(self, rt_cd: str, message: str, raw: dict):
-        super().__init__(f"[{rt_cd}] {message}")
-        self.rt_cd = rt_cd
-        self.raw = raw
