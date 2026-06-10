@@ -7,8 +7,7 @@ S4 SEPA 전략 백테스트 (Mark Minervini VCP 브레이크아웃)
 데이터: data/ohlcv_cache.json (820일, closes+opens)
         data/canslim_ohlcv_cache.json (최대 300일, volumes — 후반 300일 정렬)
 
-※ 유니버스: KOSPI200+ETF (ohlcv_cache 기준)
-   KOSDAQ150 전용 종목 제외 — 장기 ohlcv+opens 데이터 없음
+※ 유니버스: KOSPI200+KOSDAQ150+ETF (ohlcv_cache 기준, 820일 이상 종목)
 ※ 거래량 데이터: 후반 ~300일만 유효. 앞 구간은 가격 기반 VCP만 검증
 
 Usage:
@@ -382,7 +381,7 @@ def _report(trades: list, port_hist: list, initial_capital: int) -> None:
     else:
         print("    없음")
     print("=" * W)
-    print("  ※ 유니버스: KOSPI200+ETF (~239종목, KOSDAQ150 제외)")
+    print("  ※ 유니버스: KOSPI200+KOSDAQ150+ETF (820일 이상 종목, ~405종목)")
     print("  ※ 거래량: 후반 ~300일만 유효 — 앞 구간은 가격 기반 VCP만 적용")
     print(f"  ※ 타임스탑 {TIME_STOP_DAYS}영업일 ≈ 56 캘린더일")
     print("  ※ 실제 전략은 S2/S3와 슬롯 공유 → 실매매와 결과 차이 있음")
