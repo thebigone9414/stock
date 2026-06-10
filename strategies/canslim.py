@@ -31,6 +31,7 @@ from data.canslim_store import (
     remove_position,
     update_position_peak,
     load_data as load_canslim_data,
+    load_ca_screened,
 )
 
 KST              = pytz.timezone("Asia/Seoul")
@@ -193,15 +194,34 @@ class CANSLIMStrategy:
             )
             return
 
-        positions = s3_positions
-        candidates = [
-            (code, info)
-            for code, info in get_buy_candidates()
-            if code not in positions
-        ]
+        # C·A 사전 필터 로드 (DART 스크리닝 결과)
+        ca_data     = load_ca_screened()
+        ca_screened = ca_data.get("screened", [])
+        ca_codes    = {s["code"] for s in ca_screened}  # C 또는 A 통과 종목
+        ca_updated  = ca_data.get("updated_at", "")
+        use_ca      = bool(ca_codes)
+
+        if use_ca:
+            logger.info(
+                f"[S3] C·A 필터 적용 — {len(ca_codes)}종목 (갱신:{ca_updated})"
+            )
+        else:
+            logger.warning("[S3] C·A 스크리닝 데이터 없음 — C·A 필터 미적용 (전체 후보 사용)")
+
+        positions  = s3_positions
+        raw_cands  = [(code, info) for code, info in get_buy_candidates()
+                      if code not in positions]
+        candidates = [(code, info) for code, info in raw_cands
+                      if not use_ca or code in ca_codes]
 
         if not candidates:
-            logger.info("[S3] 매수 후보 없음 (all_pass 종목 없음 또는 이미 보유)")
+            if use_ca and raw_cands:
+                logger.info(
+                    f"[S3] 매수 후보 없음 — N·S·L·M 통과 {len(raw_cands)}종목이 "
+                    f"C·A 필터 미통과 (C·A 통과 종목 대기 중)"
+                )
+            else:
+                logger.info("[S3] 매수 후보 없음 (all_pass 종목 없음 또는 이미 보유)")
             return
 
         # 슬롯당 예산: 총자산의 20%
@@ -232,9 +252,13 @@ class CANSLIMStrategy:
                     logger.info(f"[S3] [{code}] {name}  주가({price:,}) > 슬롯예산 → 건너뜀")
                     continue
 
+                ca_info = next((s for s in ca_screened if s["code"] == code), None)
+                ca_tag  = ""
+                if ca_info:
+                    ca_tag = " C+A" if (ca_info.get("C") and ca_info.get("A")) else (" C" if ca_info.get("C") else " A")
                 logger.info(
                     f"[S3 매수] [{code}] {name}  현재가:{price:,}  수량:{qty}주  "
-                    f"금액:{price*qty:,}원  (score={info.get('score',0)}/5)"
+                    f"금액:{price*qty:,}원  (score={info.get('score',0)}/5{ca_tag})"
                 )
 
                 if not self.is_paper:
@@ -250,7 +274,7 @@ class CANSLIMStrategy:
                     self.notifier.notify(
                         f"[S3 매수] [{code}] {name}\n"
                         f"현재가:{price:,}원  수량:{qty}주  금액:{price*qty:,}원\n"
-                        f"CANSLIM score={info.get('score',0)}/5"
+                        f"CANSLIM score={info.get('score',0)}/5{ca_tag}"
                     )
 
             except Exception as e:
