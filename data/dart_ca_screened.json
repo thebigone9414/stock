@@ -1,4 +1,2246 @@
 {
-  "updated_at": "2026-06-07",
-  "screened": []
+  "updated_at": "2026-06-10",
+  "screened": [
+    {
+      "code": "190650",
+      "name": "코리아에셋투자증권",
+      "sector": "기타",
+      "C": true,
+      "A": true,
+      "latest_q_eps": 7731258329,
+      "latest_a_eps": 7731258329
+    },
+    {
+      "code": "003610",
+      "name": "방림",
+      "sector": "기타",
+      "C": true,
+      "A": true,
+      "latest_q_eps": 6511313189,
+      "latest_a_eps": 6511313189
+    },
+    {
+      "code": "311060",
+      "name": "엘에이티",
+      "sector": "기타",
+      "C": true,
+      "A": true,
+      "latest_q_eps": 480344754,
+      "latest_a_eps": 480344754
+    },
+    {
+      "code": "900290",
+      "name": "GRT",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 495934973,
+      "latest_a_eps": 495934973
+    },
+    {
+      "code": "011420",
+      "name": "갤럭시아에스엠",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 68584715,
+      "latest_a_eps": 3719919877
+    },
+    {
+      "code": "217500",
+      "name": "러셀",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -405232730,
+      "latest_a_eps": -5080779930
+    },
+    {
+      "code": "006910",
+      "name": "보성파워텍",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 4920377536,
+      "latest_a_eps": 20314421488
+    },
+    {
+      "code": "015860",
+      "name": "일진홀딩스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 39092358183,
+      "latest_a_eps": 89603639629
+    },
+    {
+      "code": "189300",
+      "name": "인텔리안테크",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 13471917071,
+      "latest_a_eps": 7463933868
+    },
+    {
+      "code": "332370",
+      "name": "아이디피",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2895411916,
+      "latest_a_eps": 10315001841
+    },
+    {
+      "code": "032040",
+      "name": "씨앤에스자산관리",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2325516219,
+      "latest_a_eps": 6999360216
+    },
+    {
+      "code": "109860",
+      "name": "동일금속",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1382233420,
+      "latest_a_eps": 5048337819
+    },
+    {
+      "code": "083930",
+      "name": "아바코",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1448048707,
+      "latest_a_eps": 28650217594
+    },
+    {
+      "code": "060850",
+      "name": "영림원소프트랩",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1938990756,
+      "latest_a_eps": 6376701835
+    },
+    {
+      "code": "241710",
+      "name": "코스메카코리아",
+      "sector": "유통/소비재",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 19620335955,
+      "latest_a_eps": 57838465093
+    },
+    {
+      "code": "149950",
+      "name": "아바텍",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 919678409,
+      "latest_a_eps": 6918864452
+    },
+    {
+      "code": "013520",
+      "name": "화승코퍼레이션",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 24775234383,
+      "latest_a_eps": 103147000577
+    },
+    {
+      "code": "100120",
+      "name": "뷰웍스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 9316120150,
+      "latest_a_eps": 20911268823
+    },
+    {
+      "code": "019180",
+      "name": "티에이치엔",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 15752179936,
+      "latest_a_eps": 68654027715
+    },
+    {
+      "code": "014970",
+      "name": "삼륭물산",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 543801346,
+      "latest_a_eps": 6044698736
+    },
+    {
+      "code": "042000",
+      "name": "카페24",
+      "sector": "플랫폼/게임",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6357219506,
+      "latest_a_eps": 39063119745
+    },
+    {
+      "code": "097870",
+      "name": "효성오앤비",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2894458281,
+      "latest_a_eps": 2894458281
+    },
+    {
+      "code": "030960",
+      "name": "양지사",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -1594939332,
+      "latest_a_eps": -1594939332
+    },
+    {
+      "code": "018120",
+      "name": "진로발효",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2992041471,
+      "latest_a_eps": 12534904154
+    },
+    {
+      "code": "000950",
+      "name": "전방",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 841210393,
+      "latest_a_eps": 29808576772
+    },
+    {
+      "code": "053260",
+      "name": "금강철강",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1866295347,
+      "latest_a_eps": -175082249
+    },
+    {
+      "code": "025820",
+      "name": "이구산업",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 14600795293,
+      "latest_a_eps": 10919844141
+    },
+    {
+      "code": "000050",
+      "name": "경방",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 20489404632,
+      "latest_a_eps": 47379145951
+    },
+    {
+      "code": "071280",
+      "name": "로체시스템즈",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3445077981,
+      "latest_a_eps": 12257535043
+    },
+    {
+      "code": "182360",
+      "name": "큐브엔터",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2236053177,
+      "latest_a_eps": -5858853002
+    },
+    {
+      "code": "002760",
+      "name": "보락",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 542935275,
+      "latest_a_eps": 2339631891
+    },
+    {
+      "code": "003010",
+      "name": "혜인",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 415946812,
+      "latest_a_eps": 14236946120
+    },
+    {
+      "code": "035900",
+      "name": "JYP Ent.",
+      "sector": "엔터테인먼트",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 31904529664,
+      "latest_a_eps": 160563476080
+    },
+    {
+      "code": "109080",
+      "name": "옵티시스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1591122471,
+      "latest_a_eps": 4422657240
+    },
+    {
+      "code": "236200",
+      "name": "슈프리마",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 9995550955,
+      "latest_a_eps": 32376990226
+    },
+    {
+      "code": "194370",
+      "name": "제이에스코퍼레이션",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 12177378300,
+      "latest_a_eps": 85754295315
+    },
+    {
+      "code": "042420",
+      "name": "네오위즈홀딩스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 8849266574,
+      "latest_a_eps": 61767925488
+    },
+    {
+      "code": "004910",
+      "name": "조광페인트",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -4585728808,
+      "latest_a_eps": -10338701427
+    },
+    {
+      "code": "001770",
+      "name": "SHD",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -75198560,
+      "latest_a_eps": 1968600075
+    },
+    {
+      "code": "108380",
+      "name": "대양전기공업",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 7268324921,
+      "latest_a_eps": 24789386379
+    },
+    {
+      "code": "177830",
+      "name": "파버나인",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -312271515,
+      "latest_a_eps": -4184118253
+    },
+    {
+      "code": "136480",
+      "name": "하림",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3478199000,
+      "latest_a_eps": 38738196000
+    },
+    {
+      "code": "083500",
+      "name": "에프엔에스테크",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3203810525,
+      "latest_a_eps": 9159013551
+    },
+    {
+      "code": "003200",
+      "name": "일신방직",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 4048363778,
+      "latest_a_eps": 33915658428
+    },
+    {
+      "code": "024120",
+      "name": "KB오토시스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2186408907,
+      "latest_a_eps": 3898066071
+    },
+    {
+      "code": "007540",
+      "name": "샘표",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 9144170418,
+      "latest_a_eps": 18805730606
+    },
+    {
+      "code": "031330",
+      "name": "에스에이엠티",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 242008530056,
+      "latest_a_eps": 75829307017
+    },
+    {
+      "code": "100030",
+      "name": "인지소프트",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 10171710830,
+      "latest_a_eps": 21388023078
+    },
+    {
+      "code": "196700",
+      "name": "웹스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 873952216,
+      "latest_a_eps": 4104554464
+    },
+    {
+      "code": "053610",
+      "name": "프로텍",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 18976866834,
+      "latest_a_eps": 35376620336
+    },
+    {
+      "code": "003350",
+      "name": "한국화장품제조",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 7528420429,
+      "latest_a_eps": 27372880025
+    },
+    {
+      "code": "046940",
+      "name": "우원개발",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1851292167,
+      "latest_a_eps": 47967126385
+    },
+    {
+      "code": "084690",
+      "name": "대상홀딩스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 45350199249,
+      "latest_a_eps": -293172577001
+    },
+    {
+      "code": "044960",
+      "name": "이글벳",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1448284858,
+      "latest_a_eps": 3945607362
+    },
+    {
+      "code": "376290",
+      "name": "씨유테크",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 4042334717,
+      "latest_a_eps": 1363685620
+    },
+    {
+      "code": "204610",
+      "name": "티쓰리",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6374266606,
+      "latest_a_eps": 20562096960
+    },
+    {
+      "code": "037350",
+      "name": "성도이엔지",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 9988318128,
+      "latest_a_eps": 28154275616
+    },
+    {
+      "code": "010820",
+      "name": "퍼스텍",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1683547212,
+      "latest_a_eps": 14726828528
+    },
+    {
+      "code": "093190",
+      "name": "빅솔론",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6627122543,
+      "latest_a_eps": 18319924872
+    },
+    {
+      "code": "001550",
+      "name": "조비",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3689317686,
+      "latest_a_eps": 1972991291
+    },
+    {
+      "code": "025540",
+      "name": "한국단자공업",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 35246272000,
+      "latest_a_eps": 106155718000
+    },
+    {
+      "code": "037030",
+      "name": "파워넷",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1575734759,
+      "latest_a_eps": 21335464443
+    },
+    {
+      "code": "059100",
+      "name": "아이컴포넌트",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1960231527,
+      "latest_a_eps": 6006632805
+    },
+    {
+      "code": "004100",
+      "name": "태양금속공업",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3823763826,
+      "latest_a_eps": 3051036268
+    },
+    {
+      "code": "265560",
+      "name": "영화테크",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 7741298386,
+      "latest_a_eps": 19041489175
+    },
+    {
+      "code": "010400",
+      "name": "우진아이엔에스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -2170172895,
+      "latest_a_eps": 7593754874
+    },
+    {
+      "code": "399720",
+      "name": "가온칩스",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -1539643256,
+      "latest_a_eps": -14369143365
+    },
+    {
+      "code": "009150",
+      "name": "삼성전기",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 252687583556,
+      "latest_a_eps": 730989517218
+    },
+    {
+      "code": "093050",
+      "name": "LF",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 31632972869,
+      "latest_a_eps": 117526580469
+    },
+    {
+      "code": "072130",
+      "name": "유엔젤",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1718616191,
+      "latest_a_eps": 4365449120
+    },
+    {
+      "code": "094480",
+      "name": "갤럭시아머니트리",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2273626966,
+      "latest_a_eps": 8197880274
+    },
+    {
+      "code": "045300",
+      "name": "성우테크론",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1586020262,
+      "latest_a_eps": 4751848876
+    },
+    {
+      "code": "043650",
+      "name": "국순당",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1052736170,
+      "latest_a_eps": 6249698082
+    },
+    {
+      "code": "002290",
+      "name": "삼일기업공사",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1671495086,
+      "latest_a_eps": 6838447857
+    },
+    {
+      "code": "353200",
+      "name": "대덕전자",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 45502474083,
+      "latest_a_eps": 47605327690
+    },
+    {
+      "code": "052600",
+      "name": "한네트",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1014512397,
+      "latest_a_eps": 3649227185
+    },
+    {
+      "code": "049430",
+      "name": "코메론",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 5276489482,
+      "latest_a_eps": 22562908297
+    },
+    {
+      "code": "104830",
+      "name": "원익머트리얼즈",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 14442508454,
+      "latest_a_eps": 48701056719
+    },
+    {
+      "code": "052860",
+      "name": "아이앤씨",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1034025678,
+      "latest_a_eps": 4284956489
+    },
+    {
+      "code": "161890",
+      "name": "한국콜마",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 59954328251,
+      "latest_a_eps": 168220449431
+    },
+    {
+      "code": "066130",
+      "name": "하츠",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 876692343,
+      "latest_a_eps": 9065170328
+    },
+    {
+      "code": "009470",
+      "name": "삼화전기",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1832366689,
+      "latest_a_eps": 11125404924
+    },
+    {
+      "code": "063760",
+      "name": "이엘피",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1213728103,
+      "latest_a_eps": 2599109411
+    },
+    {
+      "code": "038620",
+      "name": "위즈코프",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 4301475380,
+      "latest_a_eps": 4669088030
+    },
+    {
+      "code": "049520",
+      "name": "유아이엘",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6902183062,
+      "latest_a_eps": 22493717133
+    },
+    {
+      "code": "054340",
+      "name": "피앤텔",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -589419504,
+      "latest_a_eps": -1726864042
+    },
+    {
+      "code": "140520",
+      "name": "대창스틸",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 414592902,
+      "latest_a_eps": 2856401397
+    },
+    {
+      "code": "082920",
+      "name": "비츠로셀",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 20229358825,
+      "latest_a_eps": 56924763449
+    },
+    {
+      "code": "008490",
+      "name": "서흥",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 14520860796,
+      "latest_a_eps": 47142445014
+    },
+    {
+      "code": "072870",
+      "name": "메가스터디",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 5751496396,
+      "latest_a_eps": 29483242953
+    },
+    {
+      "code": "068930",
+      "name": "디지털대성",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 7118919110,
+      "latest_a_eps": 25625100101
+    },
+    {
+      "code": "057540",
+      "name": "옴니시스템",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 968616093,
+      "latest_a_eps": -154257056
+    },
+    {
+      "code": "001200",
+      "name": "유진증권",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 52712837542,
+      "latest_a_eps": 64538264177
+    },
+    {
+      "code": "056360",
+      "name": "코위버",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -1708171376,
+      "latest_a_eps": 3470240657
+    },
+    {
+      "code": "024940",
+      "name": "PN풍년",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 777729659,
+      "latest_a_eps": 2876155212
+    },
+    {
+      "code": "014940",
+      "name": "오리엔탈정공",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6155758290,
+      "latest_a_eps": 19142498885
+    },
+    {
+      "code": "059120",
+      "name": "아진엑스텍",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 211513139,
+      "latest_a_eps": 837150932
+    },
+    {
+      "code": "049830",
+      "name": "승일",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1200582315,
+      "latest_a_eps": 2515267980
+    },
+    {
+      "code": "086060",
+      "name": "진바이오텍",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 564988769,
+      "latest_a_eps": 3788812150
+    },
+    {
+      "code": "054800",
+      "name": "아이디스홀딩스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 29371581645,
+      "latest_a_eps": 77964928908
+    },
+    {
+      "code": "000100",
+      "name": "유한양행",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 23367403399,
+      "latest_a_eps": 185318996567
+    },
+    {
+      "code": "170920",
+      "name": "엘티씨",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 17120960376,
+      "latest_a_eps": 18189648458
+    },
+    {
+      "code": "052330",
+      "name": "코텍",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 15724685369,
+      "latest_a_eps": 28330257869
+    },
+    {
+      "code": "017370",
+      "name": "우신시스템",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1355239237,
+      "latest_a_eps": 15007580438
+    },
+    {
+      "code": "003160",
+      "name": "디아이",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 14964022867,
+      "latest_a_eps": 13517288709
+    },
+    {
+      "code": "044780",
+      "name": "에이치케이",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 866282401,
+      "latest_a_eps": 4572314524
+    },
+    {
+      "code": "030610",
+      "name": "교보증권",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 68411373000,
+      "latest_a_eps": 142910816000
+    },
+    {
+      "code": "053620",
+      "name": "태양",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 8619309862,
+      "latest_a_eps": 11852137502
+    },
+    {
+      "code": "078600",
+      "name": "대주전자재료",
+      "sector": "2차전지",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -3522803478,
+      "latest_a_eps": 20899443380
+    },
+    {
+      "code": "036620",
+      "name": "감성코퍼레이션",
+      "sector": "유통/소비재",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 8504010396,
+      "latest_a_eps": 35417260132
+    },
+    {
+      "code": "223250",
+      "name": "드림씨아이에스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -257690130,
+      "latest_a_eps": 7508007182
+    },
+    {
+      "code": "039030",
+      "name": "이오테크닉스",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 31212893556,
+      "latest_a_eps": 57564773290
+    },
+    {
+      "code": "071050",
+      "name": "한국금융지주",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 916654000000,
+      "latest_a_eps": 2024352000000
+    },
+    {
+      "code": "058470",
+      "name": "리노공업",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 40395613639,
+      "latest_a_eps": 151960670406
+    },
+    {
+      "code": "030520",
+      "name": "한글과컴퓨터",
+      "sector": "플랫폼/게임",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6838974511,
+      "latest_a_eps": 24577732451
+    },
+    {
+      "code": "037070",
+      "name": "파세코",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -2874662445,
+      "latest_a_eps": 3701214003
+    },
+    {
+      "code": "035460",
+      "name": "기산텔레콤",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 4057533620,
+      "latest_a_eps": 5795563458
+    },
+    {
+      "code": "094820",
+      "name": "일진파워",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6601102791,
+      "latest_a_eps": 19553746567
+    },
+    {
+      "code": "038390",
+      "name": "레드캡투어",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 10865055816,
+      "latest_a_eps": 23682586713
+    },
+    {
+      "code": "033130",
+      "name": "디지틀조선",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2180349946,
+      "latest_a_eps": 5413837419
+    },
+    {
+      "code": "425420",
+      "name": "티에프이",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3444085273,
+      "latest_a_eps": 18106528316
+    },
+    {
+      "code": "003380",
+      "name": "하림지주",
+      "sector": "유통/소비재",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 141147000000,
+      "latest_a_eps": 513760000000
+    },
+    {
+      "code": "183300",
+      "name": "코미코",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 17157170231,
+      "latest_a_eps": 77237204024
+    },
+    {
+      "code": "214430",
+      "name": "아이쓰리시스템",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 4892655379,
+      "latest_a_eps": 18783320910
+    },
+    {
+      "code": "079170",
+      "name": "한창산업",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1333878557,
+      "latest_a_eps": 6583407733
+    },
+    {
+      "code": "352940",
+      "name": "인바이오",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2206009898,
+      "latest_a_eps": 1007310092
+    },
+    {
+      "code": "012280",
+      "name": "영화금속",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3474224316,
+      "latest_a_eps": 12160896284
+    },
+    {
+      "code": "417500",
+      "name": "제이아이테크",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3806452865,
+      "latest_a_eps": 6672564923
+    },
+    {
+      "code": "023590",
+      "name": "다우기술",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 487163711096,
+      "latest_a_eps": 1156018987903
+    },
+    {
+      "code": "146060",
+      "name": "율촌",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 897579148,
+      "latest_a_eps": 3673875784
+    },
+    {
+      "code": "044450",
+      "name": "KSS해운",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 63508101344,
+      "latest_a_eps": 36561603783
+    },
+    {
+      "code": "330730",
+      "name": "스톤브릿지벤처스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 13434663803,
+      "latest_a_eps": 11111516329
+    },
+    {
+      "code": "006800",
+      "name": "미래에셋증권",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1001943000000,
+      "latest_a_eps": 1582916000000
+    },
+    {
+      "code": "009770",
+      "name": "삼정펄프",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -15971279067,
+      "latest_a_eps": 31390588901
+    },
+    {
+      "code": "348210",
+      "name": "넥스틴",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -2477181877,
+      "latest_a_eps": -2645744570
+    },
+    {
+      "code": "049130",
+      "name": "하우리",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 10176050211,
+      "latest_a_eps": 11706542982
+    },
+    {
+      "code": "034310",
+      "name": "NICE",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 34802370714,
+      "latest_a_eps": 76572424408
+    },
+    {
+      "code": "090430",
+      "name": "아모레퍼시픽",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 112997747830,
+      "latest_a_eps": 247316269750
+    },
+    {
+      "code": "077970",
+      "name": "STX엔진",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 16667605198,
+      "latest_a_eps": 68948215486
+    },
+    {
+      "code": "056700",
+      "name": "신화인터텍",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -296622563,
+      "latest_a_eps": 3359544726
+    },
+    {
+      "code": "101240",
+      "name": "씨큐브",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2409558229,
+      "latest_a_eps": 9450565420
+    },
+    {
+      "code": "017510",
+      "name": "세명전기",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2845313742,
+      "latest_a_eps": 12764239500
+    },
+    {
+      "code": "012860",
+      "name": "모베이스전자",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6009969966,
+      "latest_a_eps": 20793712795
+    },
+    {
+      "code": "068790",
+      "name": "DMS",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3128762238,
+      "latest_a_eps": 142187632100
+    },
+    {
+      "code": "002990",
+      "name": "금호건설",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 10794714981,
+      "latest_a_eps": 62380067861
+    },
+    {
+      "code": "051360",
+      "name": "토비스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 16782231169,
+      "latest_a_eps": 44730791654
+    },
+    {
+      "code": "089890",
+      "name": "코세스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2503159168,
+      "latest_a_eps": 13203597556
+    },
+    {
+      "code": "033250",
+      "name": "체시스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2185113967,
+      "latest_a_eps": 6301318303
+    },
+    {
+      "code": "081970",
+      "name": "케이엑스넥스지",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 873079036,
+      "latest_a_eps": 3052838767
+    },
+    {
+      "code": "005930",
+      "name": "삼성전자",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 47225272000000,
+      "latest_a_eps": 45206805000000
+    },
+    {
+      "code": "000660",
+      "name": "SK하이닉스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 40345909000000,
+      "latest_a_eps": 42947902000000
+    },
+    {
+      "code": "402340",
+      "name": "SK스퀘어",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 8374748000000,
+      "latest_a_eps": 8818695000000
+    },
+    {
+      "code": "329180",
+      "name": "HD현대중공업",
+      "sector": "중공업/기계",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 773812345000,
+      "latest_a_eps": 1415484565000
+    },
+    {
+      "code": "028260",
+      "name": "삼성물산",
+      "sector": "금융/지주",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1085870070733,
+      "latest_a_eps": 3906652564846
+    },
+    {
+      "code": "207940",
+      "name": "삼성바이오로직스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 469245424673,
+      "latest_a_eps": 1784352060593
+    },
+    {
+      "code": "012450",
+      "name": "한화에어로스페이스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 526260028000,
+      "latest_a_eps": 2201983086000
+    },
+    {
+      "code": "034730",
+      "name": "SK",
+      "sector": "금융/지주",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 9906258000000,
+      "latest_a_eps": 3555246000000
+    },
+    {
+      "code": "267260",
+      "name": "HD현대일렉트릭",
+      "sector": "AI전력/설비",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 207689008143,
+      "latest_a_eps": 731816191305
+    },
+    {
+      "code": "035420",
+      "name": "NAVER",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 291021648791,
+      "latest_a_eps": 1818746310015
+    },
+    {
+      "code": "068270",
+      "name": "셀트리온",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 349844178705,
+      "latest_a_eps": 1031483789240
+    },
+    {
+      "code": "010120",
+      "name": "LS ELECTRIC",
+      "sector": "AI전력/설비",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 118980033015,
+      "latest_a_eps": 284256733172
+    },
+    {
+      "code": "042660",
+      "name": "한화오션",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 500036727442,
+      "latest_a_eps": 1245921538208
+    },
+    {
+      "code": "298040",
+      "name": "효성중공업",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 91327767428,
+      "latest_a_eps": 502837667965
+    },
+    {
+      "code": "009540",
+      "name": "HD한국조선해양",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 1141412052000,
+      "latest_a_eps": 2928395265000
+    },
+    {
+      "code": "010130",
+      "name": "고려아연",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 354041248312,
+      "latest_a_eps": 770249337092
+    },
+    {
+      "code": "015760",
+      "name": "한국전력",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2519007000000,
+      "latest_a_eps": 8666656000000
+    },
+    {
+      "code": "010140",
+      "name": "삼성중공업",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 100039045873,
+      "latest_a_eps": 535753735212
+    },
+    {
+      "code": "064350",
+      "name": "현대로템",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 202670462000,
+      "latest_a_eps": 770492199000
+    },
+    {
+      "code": "307950",
+      "name": "현대오토에버",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 18602754000,
+      "latest_a_eps": 186789322000
+    },
+    {
+      "code": "267250",
+      "name": "HD현대",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2023048340000,
+      "latest_a_eps": 3675482625000
+    },
+    {
+      "code": "011200",
+      "name": "HMM",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 353610000000,
+      "latest_a_eps": 1878732000000
+    },
+    {
+      "code": "003670",
+      "name": "포스코퓨처엠",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6283039998,
+      "latest_a_eps": 36521891144
+    },
+    {
+      "code": "079550",
+      "name": "LIG디펜스앤에어로스페이스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 135397864233,
+      "latest_a_eps": 237479536396
+    },
+    {
+      "code": "278470",
+      "name": "에이피알",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 117263942770,
+      "latest_a_eps": 289654813287
+    },
+    {
+      "code": "086280",
+      "name": "현대글로비스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 340989798263,
+      "latest_a_eps": 1734697253045
+    },
+    {
+      "code": "030200",
+      "name": "KT",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 388321000000,
+      "latest_a_eps": 1836770000000
+    },
+    {
+      "code": "323410",
+      "name": "카카오뱅크",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 187296000000,
+      "latest_a_eps": 480280000000
+    },
+    {
+      "code": "005940",
+      "name": "NH투자증권",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 475686000000,
+      "latest_a_eps": 1031501000000
+    },
+    {
+      "code": "016360",
+      "name": "삼성증권",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 450856069096,
+      "latest_a_eps": 1007226734146
+    },
+    {
+      "code": "443060",
+      "name": "HD현대마린솔루션",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 98138711763,
+      "latest_a_eps": 269571288127
+    },
+    {
+      "code": "039490",
+      "name": "키움증권",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 477398960175,
+      "latest_a_eps": 1114974212697
+    },
+    {
+      "code": "161390",
+      "name": "한국타이어앤테크놀로지",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 372404358951,
+      "latest_a_eps": 971594538868
+    },
+    {
+      "code": "003230",
+      "name": "삼양식품",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 144515643100,
+      "latest_a_eps": 388673674725
+    },
+    {
+      "code": "007660",
+      "name": "이수페타시스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 50443435649,
+      "latest_a_eps": 160482561697
+    },
+    {
+      "code": "062040",
+      "name": "산일전기",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 45908124445,
+      "latest_a_eps": 148921775330
+    },
+    {
+      "code": "036570",
+      "name": "NC",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 152428278053,
+      "latest_a_eps": 347421554268
+    },
+    {
+      "code": "052690",
+      "name": "한전기술",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 14101904168,
+      "latest_a_eps": 85367742275
+    },
+    {
+      "code": "082740",
+      "name": "한화엔진",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 52853335685,
+      "latest_a_eps": 173753426631
+    },
+    {
+      "code": "002380",
+      "name": "KCC",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 216956898424,
+      "latest_a_eps": 1538496275573
+    },
+    {
+      "code": "450080",
+      "name": "에코프로머티",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 24618146241,
+      "latest_a_eps": 24103738371
+    },
+    {
+      "code": "051900",
+      "name": "LG생활건강",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 88748514992,
+      "latest_a_eps": -85778983809
+    },
+    {
+      "code": "251270",
+      "name": "넷마블",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 210937629764,
+      "latest_a_eps": 230818642770
+    },
+    {
+      "code": "001450",
+      "name": "현대해상",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 236446287868,
+      "latest_a_eps": 1019820047983
+    },
+    {
+      "code": "014680",
+      "name": "한솔케미칼",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 42534735832,
+      "latest_a_eps": 148134823618
+    },
+    {
+      "code": "375500",
+      "name": "DL이앤씨",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 160136020541,
+      "latest_a_eps": 370189019489
+    },
+    {
+      "code": "000240",
+      "name": "한국앤컴퍼니",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 124688108722,
+      "latest_a_eps": 347229288109
+    },
+    {
+      "code": "071970",
+      "name": "HD현대마린엔진",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 28147853866,
+      "latest_a_eps": 165101642055
+    },
+    {
+      "code": "081660",
+      "name": "미스토홀딩스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 146083563926,
+      "latest_a_eps": 348617792581
+    },
+    {
+      "code": "011210",
+      "name": "현대위아",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 35402000000,
+      "latest_a_eps": 116932000000
+    },
+    {
+      "code": "007070",
+      "name": "GS리테일",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 42502982754,
+      "latest_a_eps": 50239032621
+    },
+    {
+      "code": "192820",
+      "name": "코스맥스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 43806479288,
+      "latest_a_eps": 131076173228
+    },
+    {
+      "code": "112610",
+      "name": "씨에스윈드",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 43857048488,
+      "latest_a_eps": 40133098937
+    },
+    {
+      "code": "017960",
+      "name": "한국카본",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 15523068123,
+      "latest_a_eps": 101743537476
+    },
+    {
+      "code": "006040",
+      "name": "동원산업",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 112900452362,
+      "latest_a_eps": 387148699085
+    },
+    {
+      "code": "034230",
+      "name": "파라다이스",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 18667463381,
+      "latest_a_eps": 144781456677
+    },
+    {
+      "code": "069620",
+      "name": "대웅제약",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 25512264186,
+      "latest_a_eps": 192908919078
+    },
+    {
+      "code": "073240",
+      "name": "금호타이어",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 103424236689,
+      "latest_a_eps": 376772981397
+    },
+    {
+      "code": "071320",
+      "name": "지역난방공사",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 216312000000,
+      "latest_a_eps": 338886000000
+    },
+    {
+      "code": "001680",
+      "name": "대상",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 32627919850,
+      "latest_a_eps": -303088987280
+    },
+    {
+      "code": "268280",
+      "name": "미원에스씨",
+      "sector": "기타",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 21518131079,
+      "latest_a_eps": 61302751052
+    },
+    {
+      "code": "196170",
+      "name": "알테오젠",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 71344275231,
+      "latest_a_eps": 145172981930
+    },
+    {
+      "code": "214450",
+      "name": "파마리서치",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 48748490607,
+      "latest_a_eps": 168255434874
+    },
+    {
+      "code": "214150",
+      "name": "클래시스",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 33156119496,
+      "latest_a_eps": 131970250448
+    },
+    {
+      "code": "145020",
+      "name": "휴젤",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 40606657391,
+      "latest_a_eps": 146974291500
+    },
+    {
+      "code": "237690",
+      "name": "에스티팜",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 15200643419,
+      "latest_a_eps": 54561944733
+    },
+    {
+      "code": "068760",
+      "name": "셀트리온제약",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 8818317578,
+      "latest_a_eps": 38751698960
+    },
+    {
+      "code": "290650",
+      "name": "엘앤씨바이오",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 2725519792,
+      "latest_a_eps": -138246706187
+    },
+    {
+      "code": "195940",
+      "name": "HK이노엔",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 25944476611,
+      "latest_a_eps": 75699812628
+    },
+    {
+      "code": "096530",
+      "name": "씨젠",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 34746746139,
+      "latest_a_eps": 48445344295
+    },
+    {
+      "code": "086900",
+      "name": "메디톡스",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 7879118807,
+      "latest_a_eps": 15658989552
+    },
+    {
+      "code": "086450",
+      "name": "동국제약",
+      "sector": "바이오/제약",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 26309059438,
+      "latest_a_eps": 73932783976
+    },
+    {
+      "code": "247540",
+      "name": "에코프로비엠",
+      "sector": "2차전지",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 12156221655,
+      "latest_a_eps": 91587534892
+    },
+    {
+      "code": "240810",
+      "name": "원익IPS",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 22053737339,
+      "latest_a_eps": 84028556164
+    },
+    {
+      "code": "095340",
+      "name": "ISC",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 20599736754,
+      "latest_a_eps": 56343270511
+    },
+    {
+      "code": "178320",
+      "name": "서진시스템",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -20494412308,
+      "latest_a_eps": -102420702080
+    },
+    {
+      "code": "084370",
+      "name": "유진테크",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 22815621574,
+      "latest_a_eps": 44481997780
+    },
+    {
+      "code": "067310",
+      "name": "하나마이크론",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 72812951189,
+      "latest_a_eps": 65578519945
+    },
+    {
+      "code": "140860",
+      "name": "파크시스템스",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 5126656142,
+      "latest_a_eps": 34475725850
+    },
+    {
+      "code": "101490",
+      "name": "에스앤에스텍",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 13792874165,
+      "latest_a_eps": 58092807910
+    },
+    {
+      "code": "031980",
+      "name": "피에스케이홀딩스",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 20058481603,
+      "latest_a_eps": 91684937183
+    },
+    {
+      "code": "232140",
+      "name": "와이씨",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 6461727505,
+      "latest_a_eps": 28984367217
+    },
+    {
+      "code": "319400",
+      "name": "피에스케이",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -180653905,
+      "latest_a_eps": 11293835158
+    },
+    {
+      "code": "080220",
+      "name": "제주반도체",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 78063910987,
+      "latest_a_eps": 39499088944
+    },
+    {
+      "code": "095610",
+      "name": "테스",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 24575509317,
+      "latest_a_eps": 56917796576
+    },
+    {
+      "code": "218410",
+      "name": "RFHIC",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 8655310200,
+      "latest_a_eps": 35505822915
+    },
+    {
+      "code": "213420",
+      "name": "덕산네오룩스",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 16807300037,
+      "latest_a_eps": 53957306202
+    },
+    {
+      "code": "036830",
+      "name": "솔브레인홀딩스",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 23573130523,
+      "latest_a_eps": 495558016939
+    },
+    {
+      "code": "272290",
+      "name": "이녹스첨단소재",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 14388997659,
+      "latest_a_eps": 55945968405
+    },
+    {
+      "code": "079370",
+      "name": "제우스",
+      "sector": "반도체/IT",
+      "C": false,
+      "A": true,
+      "latest_q_eps": -4775597472,
+      "latest_a_eps": -14135985014
+    },
+    {
+      "code": "083650",
+      "name": "비에이치아이",
+      "sector": "중공업/기계",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 5098911590,
+      "latest_a_eps": 65196402061
+    },
+    {
+      "code": "041510",
+      "name": "에스엠",
+      "sector": "엔터테인먼트",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 36709153563,
+      "latest_a_eps": 359364113602
+    },
+    {
+      "code": "263750",
+      "name": "펄어비스",
+      "sector": "플랫폼/게임",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 157968989814,
+      "latest_a_eps": -8414919237
+    },
+    {
+      "code": "067160",
+      "name": "SOOP",
+      "sector": "플랫폼/게임",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 22480835370,
+      "latest_a_eps": 103744269375
+    },
+    {
+      "code": "032190",
+      "name": "다우데이타",
+      "sector": "플랫폼/게임",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 482609159355,
+      "latest_a_eps": 1199682970007
+    },
+    {
+      "code": "052400",
+      "name": "코나아이",
+      "sector": "플랫폼/게임",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 23424134355,
+      "latest_a_eps": 74542589031
+    },
+    {
+      "code": "053800",
+      "name": "안랩",
+      "sector": "플랫폼/게임",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 3971485438,
+      "latest_a_eps": 51495359406
+    },
+    {
+      "code": "257720",
+      "name": "실리콘투",
+      "sector": "유통/소비재",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 54346030385,
+      "latest_a_eps": 168584659656
+    },
+    {
+      "code": "018290",
+      "name": "브이티",
+      "sector": "유통/소비재",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 18404226841,
+      "latest_a_eps": 64205441522
+    },
+    {
+      "code": "211050",
+      "name": "인카금융서비스",
+      "sector": "금융/지주",
+      "C": false,
+      "A": true,
+      "latest_q_eps": 22518746000,
+      "latest_a_eps": 70953247000
+    }
+  ]
 }
