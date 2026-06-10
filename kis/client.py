@@ -6,7 +6,9 @@ from typing import Any, Dict, Optional
 
 import requests
 from loguru import logger
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import (retry, stop_after_attempt, wait_exponential,
+                      retry_if_exception_type)
+from requests.exceptions import ConnectionError as ReqConnError, Timeout as ReqTimeout
 
 from .auth import KISAuth
 
@@ -33,7 +35,7 @@ class KISClient:
         return headers
 
     @retry(
-        retry=retry_if_exception_type(requests.RequestException),
+        retry=retry_if_exception_type((ReqConnError, ReqTimeout)),
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
     )
@@ -45,7 +47,7 @@ class KISClient:
         return self._handle_response(resp)
 
     @retry(
-        retry=retry_if_exception_type(requests.RequestException),
+        retry=retry_if_exception_type((ReqConnError, ReqTimeout)),
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
     )
@@ -57,6 +59,8 @@ class KISClient:
         return self._handle_response(resp)
 
     def _handle_response(self, resp: requests.Response) -> Dict[str, Any]:
+        if not resp.ok:
+            logger.error(f"HTTP {resp.status_code} {resp.reason}: {resp.text[:500]}")
         resp.raise_for_status()
         data = resp.json()
         rt_cd = data.get("rt_cd", "0")
