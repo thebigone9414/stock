@@ -14,4 +14,3 @@ loguru==0.7.2
 httpx==0.26.0
 tenacity==8.2.3
 holidays>=0.46
-finance-datareader>=0.9.50
