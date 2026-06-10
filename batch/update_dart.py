@@ -46,28 +46,37 @@ DART_RATE_SLEEP = 0.11   # 초당 ~9건 (공식 한도 10건/초 + 여유)
 
 
 def _current_quarters(n_years: int = 2) -> list:
-    """현재 시점에서 수집 가능한 분기 목록 [(year, quarter_num, reprt_code)]"""
+    """현재 시점에서 수집 가능한 분기 목록 [(year, quarter_num, reprt_code)]
+
+    C 조건(분기 EPS YoY) 계산을 위해 최근 4분기 + 그 직전 연도 동분기 포함.
+    예) 2026-06: 2026Q1·2025Q4·Q3·Q2 + 2025Q1·2024Q4·Q3·Q2
+    """
     now   = datetime.now(KST)
     year  = now.year
     month = now.month
 
     if month >= 11:
-        base = [(year, 3, REPRT_Q3), (year, 2, REPRT_H1),
-                (year, 1, REPRT_Q1), (year - 1, 4, REPRT_ANN)]
+        recent = [(year, 3, REPRT_Q3), (year, 2, REPRT_H1),
+                  (year, 1, REPRT_Q1), (year - 1, 4, REPRT_ANN)]
     elif month >= 8:
-        base = [(year, 2, REPRT_H1), (year, 1, REPRT_Q1),
-                (year - 1, 4, REPRT_ANN), (year - 1, 3, REPRT_Q3)]
+        recent = [(year, 2, REPRT_H1), (year, 1, REPRT_Q1),
+                  (year - 1, 4, REPRT_ANN), (year - 1, 3, REPRT_Q3)]
     elif month >= 5:
-        base = [(year, 1, REPRT_Q1), (year - 1, 4, REPRT_ANN),
-                (year - 1, 3, REPRT_Q3), (year - 1, 2, REPRT_H1)]
+        recent = [(year, 1, REPRT_Q1), (year - 1, 4, REPRT_ANN),
+                  (year - 1, 3, REPRT_Q3), (year - 1, 2, REPRT_H1)]
     else:
-        base = [(year - 1, 4, REPRT_ANN), (year - 1, 3, REPRT_Q3),
-                (year - 1, 2, REPRT_H1), (year - 1, 1, REPRT_Q1)]
+        recent = [(year - 1, 4, REPRT_ANN), (year - 1, 3, REPRT_Q3),
+                  (year - 1, 2, REPRT_H1), (year - 1, 1, REPRT_Q1)]
 
-    result    = list(base)
-    prev_year = base[-1][0] - 1
-    result   += [(prev_year, 4, REPRT_ANN), (prev_year, 3, REPRT_Q3),
-                 (prev_year, 2, REPRT_H1), (prev_year, 1, REPRT_Q1)]
+    # YoY 비교용: 최근 4분기의 전년도 동분기 추가
+    year_ago = [(y - 1, q, rc) for y, q, rc in recent]
+
+    seen, result = set(), []
+    for item in recent + year_ago:
+        key = (item[0], item[1])
+        if key not in seen:
+            seen.add(key)
+            result.append(item)
     return result[:8]
 
 

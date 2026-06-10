@@ -306,9 +306,9 @@ def _print_comparison(results: list[tuple[str, str, dict]], initial_capital: int
 
     print("\n" + "=" * W)
     print("  ※ Scenario 2·3 = Look-ahead bias 있음 (현재 DART 데이터 소급 적용)")
-    print("  ※ C 조건 현재 통과 종목 극히 적음 (2026 상반기 실적 발표 전)")
-    print("  ※ DART 데이터가 구 유니버스(255종목)로 수집 → 교집합 제한적")
-    print("  ※ 신뢰도 높은 비교를 위해 새 유니버스로 DART 배치 재실행 권장")
+    print("  ※ C 조건(분기 EPS YoY +25%) = 현재 0종목 — 2025Q1 미수집이 원인")
+    print("    → update_dart.py 수집 범위 수정 완료, 8월 Q2 배치 재실행 시 C 활성화")
+    print("  ※ A 조건(연간 EPS CAGR +15%) = OHLCV 교집합 120종목 정상 적용")
     print("=" * W + "\n")
 
 
