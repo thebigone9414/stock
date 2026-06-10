@@ -96,7 +96,9 @@ def _precompute_mas(stocks: dict) -> None:
     for data in stocks.values():
         c = pd.Series(data["closes"])
         data["mas"] = {
+            "ma21":  c.rolling(21).mean().values,
             "ma50":  c.rolling(50).mean().values,
+            "ma62":  c.rolling(62).mean().values,
             "ma150": c.rolling(150).mean().values,
             "ma200": c.rolling(200).mean().values,
         }
@@ -183,7 +185,8 @@ def _check_vcp_breakout(closes: np.ndarray, volumes: np.ndarray,
 
 # ── 포트폴리오 시뮬레이션 ─────────────────────────────────────────────
 def run_backtest(initial_capital: int = 10_000_000,
-                 use_trail: bool = False) -> tuple[list, list]:
+                 use_trail: bool = False,
+                 use_ma_exit: bool = False) -> tuple[list, list]:
     print("데이터 로딩 중...")
     stocks = _load_data()
     print(f"  → {len(stocks)}종목 로드")
@@ -204,7 +207,12 @@ def run_backtest(initial_capital: int = 10_000_000,
     start = 221
     end   = OHLCV_DAYS - 1   # opens[i+1] 접근 가능한 마지막
 
-    mode_str = "트레일링스탑" if use_trail else f"타임스탑({TIME_STOP_DAYS}영업일)"
+    if use_ma_exit:
+        mode_str = "MA이탈(+20%이상) + 트레일링(미만)"
+    elif use_trail:
+        mode_str = "트레일링스탑"
+    else:
+        mode_str = f"타임스탑({TIME_STOP_DAYS}영업일)"
     print(f"시뮬레이션 시작 (구간: {end - start}영업일 ≈ {(end - start) / 252:.1f}년, 모드: {mode_str})\n")
 
     for i in range(start, end):
@@ -238,15 +246,25 @@ def run_backtest(initial_capital: int = 10_000_000,
 
             target = TAKE_PROFIT_EXT if pos["early_triggered"] else TAKE_PROFIT
 
-            reason = None
+            reason    = None
             peak_gain = (pos["peak"] - entry) / entry
+
             if gain <= -STOP_LOSS:
                 reason = "손절"
-            elif gain >= target:
+            elif use_ma_exit and peak_gain >= TAKE_PROFIT:
+                # +20% 이상 도달한 종목: MA21 < MA62 이고 MA62 5일 하락 시 청산
+                mas   = stocks[code]["mas"]
+                ma21  = mas["ma21"][i]
+                ma62  = mas["ma62"][i]
+                ma62p = mas["ma62"][i - 5] if i >= 5 else ma62
+                if (not np.isnan(ma21) and not np.isnan(ma62) and not np.isnan(ma62p)
+                        and ma21 < ma62 and ma62 < ma62p):
+                    reason = "MA이탈"
+            elif not use_ma_exit and gain >= target:
                 reason = "익절"
-            elif use_trail and peak_gain >= TRAIL_STOP_MIN and cur < pos["peak"] * (1 - TRAIL_STOP_PCT):
+            elif not use_ma_exit and use_trail and peak_gain >= TRAIL_STOP_MIN and cur < pos["peak"] * (1 - TRAIL_STOP_PCT):
                 reason = "트레일링스탑"
-            elif not use_trail and days >= TIME_STOP_DAYS:
+            elif not use_ma_exit and not use_trail and days >= TIME_STOP_DAYS:
                 reason = "타임스탑"
 
             if reason:
@@ -366,41 +384,54 @@ def _stats(trades: list, port_hist: list, initial_capital: int) -> dict:
     }
 
 
-def _print_comparison(s_orig: dict, s_trail: dict, initial_capital: int) -> None:
-    W = 60
+def _print_comparison(scenarios: list[tuple[str, dict]], initial_capital: int) -> None:
+    W = 72
     print("\n" + "=" * W)
-    print("  S4 SEPA 전략 백테스트 — 타임스탑 vs 트레일링스탑 비교")
+    print("  S4 SEPA 전략 백테스트 — 3가지 매도 전략 비교")
     print("=" * W)
-    print(f"  {'':30s}{'원본(타임스탑)':>12s}  {'신규(트레일링)':>12s}")
+    labels = [s[0] for s in scenarios]
+    stats  = [s[1] for s in scenarios]
+    header = f"  {'':28s}"
+    for l in labels:
+        header += f"  {l:>12s}"
+    print(header)
     print("-" * W)
 
-    def row(name, orig, trail):
-        print(f"  {name:30s}{orig:>12s}  {trail:>12s}")
+    def row(name, vals):
+        s = f"  {name:28s}"
+        for v in vals:
+            s += f"  {v:>12s}"
+        print(s)
 
-    row("초기자본",     f"{initial_capital/1e6:.0f}백만",  f"{initial_capital/1e6:.0f}백만")
-    row("최종자산",     f"{s_orig['final']/1e6:.2f}M",     f"{s_trail['final']/1e6:.2f}M")
-    row("총 수익률",    f"{s_orig['total_r']:+.1%}",        f"{s_trail['total_r']:+.1%}")
-    row("CAGR",        f"{s_orig['cagr']:+.1%}",           f"{s_trail['cagr']:+.1%}")
-    row("MDD",         f"{s_orig['mdd']:+.1%}",            f"{s_trail['mdd']:+.1%}")
+    row("최종자산",     [f"{s['final']/1e6:.2f}M"    for s in stats])
+    row("총 수익률",    [f"{s['total_r']:+.1%}"       for s in stats])
+    row("CAGR",        [f"{s['cagr']:+.1%}"           for s in stats])
+    row("MDD",         [f"{s['mdd']:+.1%}"            for s in stats])
     print("-" * W)
-    row("매매 횟수",    f"{s_orig['n_trades']}회",          f"{s_trail['n_trades']}회")
-    row("승률",         f"{s_orig['wr']:.1f}%",             f"{s_trail['wr']:.1f}%")
-    row("평균수익(승)", f"{s_orig['avg_win']:+.1%}",        f"{s_trail['avg_win']:+.1%}")
-    row("평균손실(패)", f"{s_orig['avg_loss']:+.1%}",       f"{s_trail['avg_loss']:+.1%}")
-    row("평균 보유일",  f"{s_orig['avg_days']:.1f}d",       f"{s_trail['avg_days']:.1f}d")
+    row("매매 횟수",    [f"{s['n_trades']}회"          for s in stats])
+    row("승률",         [f"{s['wr']:.1f}%"             for s in stats])
+    row("평균수익(승)", [f"{s['avg_win']:+.1%}"        for s in stats])
+    row("평균손실(패)", [f"{s['avg_loss']:+.1%}"       for s in stats])
+    row("평균 보유일",  [f"{s['avg_days']:.1f}d"       for s in stats])
     print("=" * W)
 
-    print("\n  매도 사유별 (원본):")
-    for reason, (cnt, avg) in sorted(s_orig["by_reason"].items(), key=lambda x: -x[1][0]):
-        print(f"    {reason:12s}: {cnt:3d}회  평균 {avg:+.2%}")
-
-    print("\n  매도 사유별 (트레일링):")
-    for reason, (cnt, avg) in sorted(s_trail["by_reason"].items(), key=lambda x: -x[1][0]):
-        print(f"    {reason:12s}: {cnt:3d}회  평균 {avg:+.2%}")
+    print("\n  매도 사유별:")
+    all_reasons = sorted(set(r for s in stats for r in s.get("by_reason", {})))
+    hdr = f"  {'사유':12s}"
+    for l in labels:
+        hdr += f"  {l:>16s}"
+    print(hdr)
+    for reason in all_reasons:
+        line = f"  {reason:12s}"
+        for s in stats:
+            br = s.get("by_reason", {}).get(reason)
+            line += f"  {f'{br[0]}회 {br[1]:+.1%}' if br else '—':>16s}"
+        print(line)
 
     print("\n" + "=" * W)
-    print("  ※ 원본: 손절(-7%) + 타임스탑(40영업일) + 익절(+20/25%)")
-    print(f"  ※ 신규: 손절(-7%) + 트레일링스탑(고점-{TRAIL_STOP_PCT:.0%}, >{TRAIL_STOP_MIN:.0%}활성) + 익절(+20/25%)")
+    print("  ※ 타임스탑:   손절(-7%) + 타임스탑(40영업일) + 익절(+20/25%)")
+    print(f"  ※ 트레일링:   손절(-7%) + 트레일링(고점-{TRAIL_STOP_PCT:.0%}, >{TRAIL_STOP_MIN:.0%}활성) + 익절(+20/25%)")
+    print("  ※ MA이탈:     손절(-7%) + [<+20%] 트레일링 / [≥+20%] MA21<MA62+MA62하락")
     print("  ※ 유니버스: KOSPI200+KOSDAQ150+ETF (~405종목, 820일 이상)")
     print("=" * W + "\n")
 
@@ -411,14 +442,21 @@ def main():
                         help="초기자본 (기본: 1,000만원)")
     args = parser.parse_args()
 
-    print("\n[원본] 타임스탑(40영업일) 시뮬레이션...")
-    t_orig,  ph_orig  = run_backtest(args.capital, use_trail=False)
-    print("\n[신규] 트레일링스탑(고점-10%) 시뮬레이션...")
-    t_trail, ph_trail = run_backtest(args.capital, use_trail=True)
+    runs = [
+        ("타임스탑",  dict(use_trail=False, use_ma_exit=False)),
+        ("트레일링",  dict(use_trail=True,  use_ma_exit=False)),
+        ("MA이탈",    dict(use_trail=True,  use_ma_exit=True)),
+    ]
 
-    s_orig  = _stats(t_orig,  ph_orig,  args.capital)
-    s_trail = _stats(t_trail, ph_trail, args.capital)
-    _print_comparison(s_orig, s_trail, args.capital)
+    results = []
+    for label, kwargs in runs:
+        print(f"\n[{label}] 시뮬레이션...")
+        trades, port_hist = run_backtest(args.capital, **kwargs)
+        s = _stats(trades, port_hist, args.capital)
+        results.append((label, s))
+        print(f"  완료: {s['n_trades']}회 매매, 수익률 {s['total_r']:+.1%}")
+
+    _print_comparison(results, args.capital)
 
 
 if __name__ == "__main__":

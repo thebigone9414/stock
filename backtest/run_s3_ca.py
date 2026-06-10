@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -43,6 +44,14 @@ SELL_FEE = 0.00015 + 0.002
 
 KODEX200_CODE = "069500"
 MIN_DATA_DAYS = 65
+
+
+def _precompute_mas(stocks: dict) -> None:
+    """MA21·MA62 사전 계산 (MA이탈 매도 조건용)"""
+    for data in stocks.values():
+        c = pd.Series(data["closes"])
+        data["ma21"] = c.rolling(21).mean().values
+        data["ma62"] = c.rolling(62).mean().values
 
 
 def _load_ohlcv() -> dict:
@@ -116,7 +125,7 @@ def _check_M(kodex_closes, i):
 
 # ── 시뮬레이션 ───────────────────────────────────────────────────────
 def _simulate(stocks: dict, allowed_codes: set | None, label: str, initial_capital: int,
-              use_trail: bool = False) -> tuple:
+              use_trail: bool = False, use_ma_exit: bool = False) -> tuple:
     """allowed_codes=None 이면 전체 유니버스 사용"""
     kodex_closes = stocks[KODEX200_CODE]["closes"]
     total_days   = len(kodex_closes)
@@ -161,14 +170,24 @@ def _simulate(stocks: dict, allowed_codes: set | None, label: str, initial_capit
 
             target    = TAKE_PROFIT_EXT if pos["early_triggered"] else TAKE_PROFIT
             peak_gain = (pos["peak"] - entry) / entry
-            reason = None
+            reason    = None
+
             if gain <= -STOP_LOSS:
                 reason = "손절"
-            elif gain >= target:
+            elif use_ma_exit and peak_gain >= TAKE_PROFIT:
+                # +20% 이상 도달한 종목: MA21 < MA62 이고 MA62 5일 하락 시 청산
+                ma21  = stocks[code].get("ma21")
+                ma62  = stocks[code].get("ma62")
+                if ma21 is not None and ma62 is not None and i >= 5:
+                    v21, v62, v62p = ma21[i], ma62[i], ma62[i - 5]
+                    if (not np.isnan(v21) and not np.isnan(v62) and not np.isnan(v62p)
+                            and v21 < v62 and v62 < v62p):
+                        reason = "MA이탈"
+            elif not use_ma_exit and gain >= target:
                 reason = "익절"
-            elif use_trail and peak_gain >= TRAIL_STOP_MIN and cur < pos["peak"] * (1 - TRAIL_STOP_PCT):
+            elif not use_ma_exit and use_trail and peak_gain >= TRAIL_STOP_MIN and cur < pos["peak"] * (1 - TRAIL_STOP_PCT):
                 reason = "트레일링스탑"
-            elif not use_trail and days >= TIME_STOP_DAYS:
+            elif not use_ma_exit and not use_trail and days >= TIME_STOP_DAYS:
                 reason = "타임스탑"
 
             if reason:
@@ -260,23 +279,29 @@ def _print_comparison(results: list[tuple[str, str, dict]], initial_capital: int
     print("\n" + "=" * W)
     print("  S3 CANSLIM 전략 비교 백테스트")
     print("=" * W)
-    print(f"  {'':28s}{'Baseline':>10s}  {'DART sub':>9s}  {'A-filter':>9s}  {'Trail(전체)':>10s}")
-    print(f"  {'유니버스':28s}{'전체(타임)':>10s}  {'DART(타임)':>9s}  {'A통과(타임)':>9s}  {'전체(트레일)':>10s}")
-    print("-" * W)
 
+    labels = [r[0] for r in results]
     descs  = [r[1] for r in results]
     stats  = [r[2] for r in results]
 
+    W2 = 10
+    header = f"  {'':26s}"
+    for l in labels:
+        header += f"  {l:>{W2}s}"
+    print(header)
+    sub = f"  {'':26s}"
+    for d in descs:
+        sub += f"  {d:>{W2}s}"
+    print(sub)
+    print("-" * W)
+
     def row(name, vals):
-        s = f"  {name:28s}"
-        for i, v in enumerate(vals):
-            w = 10 if i == 0 else 9
-            s += f"  {v:>{w}s}"
+        s = f"  {name:26s}"
+        for v in vals:
+            s += f"  {v:>{W2}s}"
         print(s)
 
-    row("종목수",        descs)
     row("기간(영업일)",  [f"{s.get('n_days','?')}d" for s in stats])
-    print("-" * W)
     row("최종자산",      [f"{s.get('final',0)/1e6:.2f}M" for s in stats])
     row("총 수익률",     [f"{s.get('total_r',0):+.1%}" for s in stats])
     row("CAGR",         [f"{s.get('cagr',0):+.1%}" for s in stats])
@@ -291,26 +316,22 @@ def _print_comparison(results: list[tuple[str, str, dict]], initial_capital: int
 
     print("\n  매도 사유별:")
     all_reasons = sorted(set(r for s in stats for r in s.get("by_reason", {})))
-    header = f"  {'사유':10s}"
-    labels = ["Baseline", "DART sub", "A-filter", "Trail(전체)"]
+    hdr = f"  {'사유':10s}"
     for l in labels:
-        header += f"  {l:>14s}"
-    print(header)
+        hdr += f"  {l:>14s}"
+    print(hdr)
     for reason in all_reasons:
         line = f"  {reason:10s}"
         for s in stats:
             br = s.get("by_reason", {}).get(reason)
-            if br:
-                line += f"  {br[0]:3d}회 {br[1]:+.1%}"
-            else:
-                line += f"  {'—':>14s}"
+            line += f"  {f'{br[0]}회 {br[1]:+.1%}' if br else '—':>14s}"
         print(line)
 
     print("\n" + "=" * W)
-    print("  ※ Baseline/DART sub/A-filter: 타임스탑(40영업일)")
-    print(f"  ※ Trail(전체): 트레일링스탑(고점-{TRAIL_STOP_PCT:.0%}, >{TRAIL_STOP_MIN:.0%} 활성화)")
-    print("  ※ Scenario 2·3 = Look-ahead bias 있음 (현재 DART 데이터 소급 적용)")
-    print("  ※ C 조건 현재 0종목 — 8월 Q2 배치 후 활성화 예정")
+    print("  ※ baseline: 타임스탑(40영업일) + 익절(+20/25%)")
+    print("  ※ A-filter: baseline + A조건(연간EPS CAGR+15%) 필터  [look-ahead bias]")
+    print(f"  ※ trail:    트레일링스탑(고점-{TRAIL_STOP_PCT:.0%}, >{TRAIL_STOP_MIN:.0%}활성) + 익절(+20/25%)")
+    print("  ※ MA이탈:   [<+20%] 트레일링  /  [≥+20%] MA21<MA62+MA62 5일 하락 시 청산")
     print("=" * W + "\n")
 
 
@@ -321,6 +342,7 @@ def main():
 
     print("데이터 로딩 중...")
     stocks = _load_ohlcv()
+    _precompute_mas(stocks)
     print(f"  → OHLCV {len(stocks)}종목 (KODEX200 포함)")
 
     if KODEX200_CODE not in stocks:
@@ -336,17 +358,20 @@ def main():
     print(f"  → A 조건 통과: {len(a_codes)}종목 (OHLCV 교집합: {len(a_in_ohlcv)})")
     print(f"  → C+A 모두 통과: {len(ca_codes)}종목 (OHLCV 교집합: {len(ca_in_ohlcv)})")
 
+    # (label, desc, allowed_codes, use_trail, use_ma_exit)
     scenarios = [
-        ("baseline",  f"{len(ohlcv_codes)}종목", None,            False),
-        ("dart_sub",  f"{len(dart_in_ohlcv)}종목", dart_in_ohlcv if dart_in_ohlcv else None, False),
-        ("ca_filter", f"{len(a_in_ohlcv)}종목",  a_in_ohlcv    if a_in_ohlcv    else None, False),
-        ("trail",     f"{len(ohlcv_codes)}종목", None,            True),
+        ("baseline",  f"{len(ohlcv_codes)}종목",  None,            False, False),
+        ("A-filter",  f"{len(a_in_ohlcv)}종목",   a_in_ohlcv or None, False, False),
+        ("trail",     f"{len(ohlcv_codes)}종목",  None,            True,  False),
+        ("MA이탈",    f"{len(ohlcv_codes)}종목",  None,            True,  True),
     ]
 
     results = []
-    for label, desc, allowed, use_trail in scenarios:
-        print(f"\n[{label}] 시뮬레이션 ({desc}, {'트레일링' if use_trail else '타임스탑'}) ...")
-        trades, port_hist = _simulate(stocks, allowed, label, args.capital, use_trail=use_trail)
+    for label, desc, allowed, use_trail, use_ma_exit in scenarios:
+        mode = "MA이탈" if use_ma_exit else ("트레일링" if use_trail else "타임스탑")
+        print(f"\n[{label}] 시뮬레이션 ({desc}, {mode}) ...")
+        trades, port_hist = _simulate(stocks, allowed, label, args.capital,
+                                      use_trail=use_trail, use_ma_exit=use_ma_exit)
         s = _stats(trades, port_hist, args.capital)
         results.append((label, desc, s))
         print(f"  완료: {s.get('n_trades',0)}회 매매, 수익률 {s.get('total_r',0):+.1%}")
