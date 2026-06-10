@@ -3,17 +3,20 @@
 
 [공통 유니버스 — KOSPI200 + KOSDAQ150 + ETF (채권·금리 ETF 제외)]
   S1(오전 단기), S2(MA 이평선), S3(CANSLIM N·S·L·I·M) 모두 동일
-  → KOSPI200: data/kospi200_cache.json (update_watchlist.py 갱신)
-  → KOSDAQ150: data/kosdaq150_cache.json (update_watchlist.py 갱신)
+  → KOSPI200:  data/kospi200_cache.json  (update_watchlist.py 분기 갱신)
+  → KOSDAQ150: data/kosdaq150_cache.json (update_watchlist.py 분기 갱신)
+  → ETF:       data/etf_cache.json       (update_watchlist.py 분기 갱신)
+               캐시 없으면 data/etf_watchlist.py 정적 목록 폴백
 """
 import json
 from pathlib import Path
 from typing import List, Dict
 
-from data.etf_watchlist import ETF_LIST
+from data.etf_watchlist import ETF_LIST  # 폴백용
 
 _CACHE_PATH      = Path(__file__).parent / "kospi200_cache.json"
 _KOSDAQ150_CACHE = Path(__file__).parent / "kosdaq150_cache.json"
+_ETF_CACHE       = Path(__file__).parent / "etf_cache.json"
 
 # ── KOSPI200 빌트인 폴백 (149종목) ───────────────────────────────────────────
 _BUILTIN: List[Dict[str, str]] = [
@@ -260,6 +263,17 @@ def _load_kosdaq150() -> List[Dict[str, str]]:
     return _KOSDAQ150_BUILTIN
 
 
+def _load_etf() -> List[Dict[str, str]]:
+    """ETF 캐시(etf_cache.json) 로드. 없으면 etf_watchlist.py 정적 목록 폴백."""
+    try:
+        data = json.loads(_ETF_CACHE.read_text(encoding="utf-8"))
+        etfs = data.get("etfs", [])
+        if len(etfs) >= 10:
+            return etfs
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return ETF_LIST
+
 
 def get_active_watchlist() -> List[Dict[str, str]]:
     """S1/S2/S3 공통 유니버스: KOSPI200 + KOSDAQ150 + ETF (code 중복 제거)"""
@@ -270,7 +284,7 @@ def get_s2_watchlist() -> List[Dict[str, str]]:
     """S2(MA전략) + S3(CANSLIM) + DART배치용: KOSPI200 + KOSDAQ150 + ETF 통합 (code 중복 제거)"""
     seen: set = set()
     merged: List[Dict[str, str]] = []
-    for item in _load_kospi200() + _load_kosdaq150() + ETF_LIST:
+    for item in _load_kospi200() + _load_kosdaq150() + _load_etf():
         if item["code"] not in seen:
             seen.add(item["code"])
             merged.append(item)
