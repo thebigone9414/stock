@@ -176,14 +176,15 @@ def _fetch_index(index_code: str, label: str, old_cache_path: Path) -> list:
             break
 
         # href="/item/main.naver?code=XXXXXX">종목명</a> 패턴
+        # 종목명 링크만 매칭 (네비게이션 등 다른 링크 제외)
         matches = re.findall(
-            r'href="/item/main\.naver\?code=(\d{6})"[^>]*>([^<\n\r]+)</a>',
+            r'href="/item/main\.naver\?code=(\d{6})"[^>]*>\s*([^\s<][^<]*?)\s*</a>',
             html,
         )
         new = []
         for code, raw_name in matches:
             name = raw_name.strip()
-            if not name or code in seen:
+            if not name or len(name) > 20 or code in seen:
                 continue
             seen.add(code)
             # 기존 캐시 섹터 우선, 없으면 코드 오버라이드, 없으면 기타
@@ -221,8 +222,9 @@ def run() -> None:
     logger.info(f" KOSPI200 + KOSDAQ150 구성 종목 업데이트 [{today}]")
     logger.info("══════════════════════════════════════════")
 
-    kospi200  = _fetch_index("KOSPI200",  "KOSPI200",  CACHE_PATH)
-    kosdaq150 = _fetch_index("KOSDAQ150", "KOSDAQ150", KOSDAQ150_CACHE)
+    # NAVER Finance 내부 코드: KOSPI200 → KPI200, KOSDAQ150 → KDAQ150
+    kospi200  = _fetch_index("KPI200",  "KOSPI200",  CACHE_PATH)
+    kosdaq150 = _fetch_index("KDAQ150", "KOSDAQ150", KOSDAQ150_CACHE)
 
     changed_files = []
 
