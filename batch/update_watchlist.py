@@ -32,20 +32,10 @@ KOSDAQ150_TICKER   = "2203"   # 코스닥 150
 MIN_STOCKS         = 100
 
 _KRX_URL = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
+# pykrx 소스(website/comm/webio.py)와 동일한 헤더
 _KRX_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Referer": (
-        "https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/"
-        "index.cmd?menuId=MDC0201020506"
-    ),
-    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-    "Accept": "application/json, text/javascript, */*; q=0.01",
-    "Accept-Language": "ko-KR,ko;q=0.9",
-    "Origin": "https://data.krx.co.kr",
+    "User-Agent": "Mozilla/5.0",
+    "Referer": "https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd",
     "X-Requested-With": "XMLHttpRequest",
 }
 
@@ -157,7 +147,7 @@ def _recent_trading_date() -> str:
     return d.strftime("%Y%m%d")
 
 
-def _fetch_index(ticker: str, label: str) -> list:
+def _fetch_index(ticker: str, label: str, session: requests.Session) -> list:
     """KRX data.krx.co.kr 직접 호출로 지수 구성 종목 조회.
     bld=MDCSTAT00601, params: trdDd / indIdx / indIdx2
     """
@@ -167,14 +157,15 @@ def _fetch_index(ticker: str, label: str) -> list:
 
     payload = {
         "bld":     "dbms/MDC/STAT/standard/MDCSTAT00601",
-        "locale":  "ko_KR",
         "trdDd":   trd_dd,
         "indIdx":  ind_idx,
         "indIdx2": ind_idx2,
     }
 
     try:
-        resp = requests.post(_KRX_URL, headers=_KRX_HEADERS, data=payload, timeout=30)
+        resp = session.post(_KRX_URL, data=payload, timeout=30)
+        if not resp.ok:
+            logger.error(f"[종목업데이트] {label} HTTP {resp.status_code}: {resp.text[:400]}")
         resp.raise_for_status()
         rows = resp.json().get("output", [])
     except Exception as e:
@@ -212,8 +203,17 @@ def run() -> None:
     logger.info(f" KOSPI200 + KOSDAQ150 구성 종목 업데이트 [{today}]")
     logger.info(f"══════════════════════════════════════════")
 
-    kospi200  = _fetch_index(KOSPI200_TICKER,  "KOSPI200")
-    kosdaq150 = _fetch_index(KOSDAQ150_TICKER, "KOSDAQ150")
+    # 세션 유지 + KRX 메인 접속으로 쿠키 초기화
+    session = requests.Session()
+    session.headers.update(_KRX_HEADERS)
+    try:
+        session.get("https://data.krx.co.kr/", timeout=10)
+        logger.debug("[종목업데이트] KRX 세션 초기화 완료")
+    except Exception as e:
+        logger.warning(f"[종목업데이트] KRX 세션 초기화 실패 (무시): {e}")
+
+    kospi200  = _fetch_index(KOSPI200_TICKER,  "KOSPI200",  session)
+    kosdaq150 = _fetch_index(KOSDAQ150_TICKER, "KOSDAQ150", session)
 
     changed_files = []
 
