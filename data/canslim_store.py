@@ -197,6 +197,24 @@ def remove_position(code: str) -> None:
     git_commit_push([str(CANSLIM_POS_PATH)], f"chore: S3 포지션 제거 {code}")
 
 
+def set_ma_exit_pending(code: str, flag: bool = True) -> None:
+    """MA이탈 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
+    if not CANSLIM_POS_PATH.exists():
+        return
+    with open(CANSLIM_POS_PATH, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    pos = data.get("positions", {}).get(code)
+    if pos is None:
+        return
+    pos["ma_exit_pending"] = flag
+    with open(CANSLIM_POS_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    git_commit_push(
+        [str(CANSLIM_POS_PATH)],
+        f"chore: S3 MA이탈플래그 {code}={'ON' if flag else 'OFF'}",
+    )
+
+
 def update_position_peak(code: str, current_price: int, current_date: str) -> None:
     """고점 가격·수익률 갱신 + 조기익절 트리거 체크"""
     positions = load_positions()

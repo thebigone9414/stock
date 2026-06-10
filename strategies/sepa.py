@@ -129,11 +129,9 @@ class SEPAStrategy:
                 continue
 
             # 러너 모드: 고점 +20% 이상 → MA이탈 시 청산
+            # MA이탈 판정은 전날 저녁 SEPA 배치에서 설정 (ma_exit_pending 플래그)
             if peak_gain >= RUNNER_THRESHOLD:
-                stock_ma = ma_store.get_stock(code)
-                if (stock_ma
-                        and stock_ma.get("ma21_below_ma62")
-                        and stock_ma.get("ma62_declining_5d")):
+                if pos.get("ma_exit_pending"):
                     label = f"MA이탈(고점{peak_gain:+.1%})"
                     logger.info(
                         f"[S4 MA이탈] [{code}] {name}  "

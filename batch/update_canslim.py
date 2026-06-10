@@ -38,6 +38,7 @@ from utils.notifier import Notifier
 from utils.throttler import RateThrottler
 from kis.factory import KIS
 import data.canslim_store as canslim_store
+import data.ma_store as ma_store
 from data.watchlist import get_s2_watchlist
 
 KST = pytz.timezone("Asia/Seoul")
@@ -47,7 +48,8 @@ CANSLIM_OHLCV_CACHE_PATH = Path("data/canslim_ohlcv_cache.json")
 CANSLIM_OHLCV_DAYS       = 300   # 약 210 거래일 (52주 신고가 계산에 충분)
 INCREMENTAL_DAYS         = 30
 
-KODEX200_CODE = "069500"          # KOSPI 프록시
+KODEX200_CODE    = "069500"          # KOSPI 프록시
+RUNNER_THRESHOLD = 0.20              # 러너 기준 고점 수익률
 
 
 # ── OHLCV 캐시 I/O ────────────────────────────────────────────────────
@@ -118,6 +120,57 @@ def _check_I(market, code: str, throttler: RateThrottler) -> bool:
     except Exception as e:
         logger.debug(f"[CANSLIM] [{code}] I 조건 조회 실패: {e}")
         return False
+
+
+# ── S3 포지션 MA이탈 조건 점검 (저녁 배치) ────────────────────────────
+
+def _check_s3_exits(notifier: Notifier = None) -> None:
+    """S3 러너 포지션(고점 +20% 이상)의 MA이탈 조건 확인 → ma_exit_pending 플래그 설정."""
+    positions = canslim_store.load_positions()
+    if not positions:
+        return
+
+    today_str = datetime.now(KST).strftime("%Y-%m-%d")
+    flagged: list = []
+
+    for code, pos in list(positions.items()):
+        name        = pos.get("name", code)
+        entry_price = pos.get("entry_price", 0)
+        if not entry_price:
+            continue
+
+        stock_ma = ma_store.get_stock(code)
+        if not stock_ma:
+            continue
+
+        close = int(stock_ma.get("close", 0))
+        if close > 0:
+            canslim_store.update_position_peak(code, close, today_str)
+            pos = canslim_store.load_positions().get(code, pos)
+
+        peak_price = pos.get("peak_price", entry_price)
+        peak_gain  = (peak_price - entry_price) / entry_price
+
+        if peak_gain < RUNNER_THRESHOLD:
+            continue
+
+        if stock_ma.get("ma21_below_ma62") and stock_ma.get("ma62_declining_5d"):
+            if not pos.get("ma_exit_pending"):
+                canslim_store.set_ma_exit_pending(code, True)
+                flagged.append((code, name, peak_gain))
+                logger.info(
+                    f"[S3 MA이탈플래그] [{code}] {name}  "
+                    f"고점:{peak_gain:+.1%}  MA이탈 → 내일 09:00 청산 예정"
+                )
+        elif pos.get("ma_exit_pending"):
+            canslim_store.set_ma_exit_pending(code, False)
+            logger.info(f"[S3 MA이탈플래그 해제] [{code}] {name}  MA 조건 미충족")
+
+    if flagged and notifier:
+        lines = ["[S3 MA이탈] 내일 09:00 청산 예정:"]
+        for c, n, pg in flagged:
+            lines.append(f"  [{c}] {n}  고점:{pg:+.1%}")
+        notifier.notify("\n".join(lines))
 
 
 # ── 메인 배치 ─────────────────────────────────────────────────────────
@@ -311,6 +364,8 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
 
     if notifier:
         _notify(all_pass_list, M_global, ok, fail, notifier)
+
+    _check_s3_exits(notifier)
 
 
 def _notify(

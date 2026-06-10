@@ -52,6 +52,7 @@ from utils.notifier import Notifier
 from utils.throttler import RateThrottler
 from kis.factory import KIS
 import data.sepa_store as sepa_store
+import data.ma_store as ma_store
 from data.watchlist import get_s2_watchlist
 
 KST = pytz.timezone("Asia/Seoul")
@@ -62,7 +63,8 @@ SEPA_OHLCV_CACHE_PATH    = Path("data/sepa_ohlcv_cache.json")
 OHLCV_DAYS               = 300    # MA200 계산에 충분
 INCREMENTAL_DAYS         = 30
 
-KODEX200_CODE = "069500"   # 시장 추세·RS 기준
+KODEX200_CODE    = "069500"   # 시장 추세·RS 기준
+RUNNER_THRESHOLD = 0.20       # 러너 기준 고점 수익률
 
 # VCP 파라미터
 VCP_BASE_DAYS    = 60    # 전체 base 구간 (3구간 × 20일)
@@ -224,6 +226,57 @@ def _check_market(kodex200_closes: list) -> bool:
     ma50  = sum(kodex200_closes[-50:])  / 50
     ma150 = sum(kodex200_closes[-150:]) / 150
     return ma50 > ma150
+
+
+# ── S4 포지션 MA이탈 조건 점검 (저녁 배치) ────────────────────────────
+
+def _check_s4_exits(notifier: Notifier = None) -> None:
+    """S4 러너 포지션(고점 +20% 이상)의 MA이탈 조건 확인 → ma_exit_pending 플래그 설정."""
+    positions = sepa_store.load_positions()
+    if not positions:
+        return
+
+    today_str = datetime.now(KST).strftime("%Y-%m-%d")
+    flagged: list = []
+
+    for code, pos in list(positions.items()):
+        name        = pos.get("name", code)
+        entry_price = pos.get("entry_price", 0)
+        if not entry_price:
+            continue
+
+        stock_ma = ma_store.get_stock(code)
+        if not stock_ma:
+            continue
+
+        close = int(stock_ma.get("close", 0))
+        if close > 0:
+            sepa_store.update_position_peak(code, close, today_str)
+            pos = sepa_store.load_positions().get(code, pos)
+
+        peak_price = pos.get("peak_price", entry_price)
+        peak_gain  = (peak_price - entry_price) / entry_price
+
+        if peak_gain < RUNNER_THRESHOLD:
+            continue
+
+        if stock_ma.get("ma21_below_ma62") and stock_ma.get("ma62_declining_5d"):
+            if not pos.get("ma_exit_pending"):
+                sepa_store.set_ma_exit_pending(code, True)
+                flagged.append((code, name, peak_gain))
+                logger.info(
+                    f"[S4 MA이탈플래그] [{code}] {name}  "
+                    f"고점:{peak_gain:+.1%}  MA이탈 → 내일 09:00 청산 예정"
+                )
+        elif pos.get("ma_exit_pending"):
+            sepa_store.set_ma_exit_pending(code, False)
+            logger.info(f"[S4 MA이탈플래그 해제] [{code}] {name}  MA 조건 미충족")
+
+    if flagged and notifier:
+        lines = ["[S4 MA이탈] 내일 09:00 청산 예정:"]
+        for c, n, pg in flagged:
+            lines.append(f"  [{c}] {n}  고점:{pg:+.1%}")
+        notifier.notify("\n".join(lines))
 
 
 # ── 메인 배치 ────────────────────────────────────────────────────────
@@ -431,6 +484,8 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
 
     if notifier:
         _notify(stocks_out, market_uptrend, pass_breakout, notifier)
+
+    _check_s4_exits(notifier)
 
 
 def _notify(stocks_out: dict, market_uptrend: bool, n_breakout: int, notifier: Notifier) -> None:
