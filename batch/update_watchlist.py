@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-KOSPI200 구성 종목 자동 업데이트
-KIS API로 현재 KOSPI200 구성 종목을 가져와 data/kospi200_cache.json에 저장.
-분기 리밸런싱(6월·12월) 후 자동 반영되도록 매월 1회 cron 실행.
+KOSPI200 + KOSDAQ150 구성 종목 자동 업데이트
+KRX 공개 데이터(pykrx)로 구성 종목을 가져와 data/kospi200_cache.json 등에 저장.
+분기 리밸런싱(3·6·9·12월) 후 자동 반영되도록 매월 1회 cron 실행.
 
 Usage:
     python batch/update_watchlist.py
 """
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, date as dt_date
 from pathlib import Path
 
 import pytz
+from pykrx import stock as krx
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -20,15 +21,15 @@ from loguru import logger
 
 from config.settings import get_settings
 from utils.logger import setup_logger
-from kis.factory import KIS
 import data.ma_store as ma_store
 
 KST                = pytz.timezone("Asia/Seoul")
 CACHE_PATH         = Path(__file__).parent.parent / "data" / "kospi200_cache.json"
 KOSDAQ150_CACHE    = Path(__file__).parent.parent / "data" / "kosdaq150_cache.json"
-KOSPI200_IDX       = "0028"
-KOSDAQ150_IDX      = "1028"
-MIN_STOCKS         = 100   # 이 수 미만이면 API 오류로 간주하고 저장하지 않음
+# pykrx 지수 티커 코드 (get_index_ticker_list(market='KOSPI/KOSDAQ') 로 확인 가능)
+KOSPI200_TICKER    = "1028"   # 코스피 200
+KOSDAQ150_TICKER   = "2203"   # 코스닥 150
+MIN_STOCKS         = 100   # 이 수 미만이면 조회 오류로 간주하고 저장하지 않음
 
 # ── KIS업종명 → 우리 섹터명 매핑 ─────────────────────────────────────────────
 # 앞에 있을수록 우선순위 높음 (키워드 포함 여부로 체크)
@@ -130,27 +131,39 @@ def _map_sector(bstp_name: str, code: str) -> str:
     return "기타"
 
 
-def _fetch_index(market, index_code: str, label: str) -> list:
-    """지수 구성 종목 조회 → [{"code", "name", "sector"}] 반환. 실패 시 빈 리스트."""
+def _fetch_index(index_ticker: str, krx_market: str, label: str) -> list:
+    """pykrx로 KRX에서 지수 구성 종목 직접 조회 → [{"code", "name", "sector"}] 반환."""
+    today = dt_date.today().strftime("%Y%m%d")
+
     try:
-        components = market.get_index_components(index_code)
+        codes = krx.get_index_portfolio_deposit_file(index_ticker)
     except Exception as e:
-        logger.error(f"[종목업데이트] {label} KIS API 오류: {e}")
+        logger.error(f"[종목업데이트] {label} KRX 지수 구성 종목 조회 오류: {e}")
         return []
 
-    if len(components) < MIN_STOCKS:
+    if len(codes) < MIN_STOCKS:
         logger.error(
-            f"[종목업데이트] {label} 조회 결과 {len(components)}종목 — "
-            f"최소 {MIN_STOCKS}개 미달, 업데이트 중단 (API 오류 의심)"
+            f"[종목업데이트] {label} 조회 결과 {len(codes)}종목 — "
+            f"최소 {MIN_STOCKS}개 미달, 업데이트 중단"
         )
         return []
 
+    # 업종명(섹터 분류용) + 종목명 일괄 조회
+    sector_df = None
+    try:
+        sector_df = krx.get_market_sector_classifications(today, market=krx_market)
+    except Exception as e:
+        logger.warning(f"[종목업데이트] {label} 업종 정보 조회 실패 — 섹터 '기타' 적용: {e}")
+
     stocks = []
     sector_count: dict[str, int] = {}
-    for c in components:
-        code   = c["code"]
-        name   = c["name"]
-        bstp   = c.get("bstp_name", "")
+    for code in codes:
+        name = code
+        bstp = ""
+        if sector_df is not None and code in sector_df.index:
+            row  = sector_df.loc[code]
+            name = str(row.get("종목명", code)).strip() or code
+            bstp = str(row.get("업종명", "")).strip()
         sector = _map_sector(bstp, code)
         stocks.append({"code": code, "name": name, "sector": sector})
         sector_count[sector] = sector_count.get(sector, 0) + 1
@@ -161,14 +174,14 @@ def _fetch_index(market, index_code: str, label: str) -> list:
     return stocks
 
 
-def run(market) -> None:
+def run() -> None:
     today = datetime.now(KST).strftime("%Y-%m-%d")
     logger.info(f"══════════════════════════════════════════")
     logger.info(f" KOSPI200 + KOSDAQ150 구성 종목 업데이트 [{today}]")
     logger.info(f"══════════════════════════════════════════")
 
-    kospi200 = _fetch_index(market, KOSPI200_IDX, "KOSPI200")
-    kosdaq150 = _fetch_index(market, KOSDAQ150_IDX, "KOSDAQ150")
+    kospi200  = _fetch_index(KOSPI200_TICKER,  "KOSPI",  "KOSPI200")
+    kosdaq150 = _fetch_index(KOSDAQ150_TICKER, "KOSDAQ", "KOSDAQ150")
 
     changed_files = []
 
@@ -194,16 +207,7 @@ def run(market) -> None:
         logger.warning("[종목업데이트] KOSDAQ150 업데이트 실패 — 기존 캐시 유지")
 
     if not changed_files:
-        now_kst = datetime.now(KST)
-        if now_kst.hour >= 15 and now_kst.minute >= 30 or now_kst.hour >= 16 or now_kst.hour < 9:
-            logger.warning(
-                "[종목업데이트] 양쪽 모두 실패 — "
-                f"현재 {now_kst.strftime('%H:%M')} KST, "
-                "FHPUP02100000 API는 장중(09:00~15:20)에만 응답합니다. "
-                "장중에 재실행하세요."
-            )
-        else:
-            logger.error("[종목업데이트] 양쪽 모두 실패")
+        logger.error("[종목업데이트] 양쪽 모두 실패")
         sys.exit(1)
 
     ma_store.git_commit_push(
@@ -219,9 +223,5 @@ def run(market) -> None:
 if __name__ == "__main__":
     settings = get_settings()
     setup_logger(settings.log_level)
-    logger.info(
-        f"=== KOSPI200 종목 업데이트 "
-        f"[{'모의' if settings.kis_is_paper_trading else '실전'}투자] ==="
-    )
-    kis = KIS(settings)
-    run(kis.market)
+    logger.info("=== KOSPI200+KOSDAQ150 종목 업데이트 (KRX pykrx) ===")
+    run()
