@@ -3,10 +3,9 @@
 
 매수 조건: canslim_data.json 의 all_pass=True 종목 (N·S·L·I·M 5개 조건 모두 충족)
 매도 조건:
-  - 손절: 매수가 대비 -7% (O'Neil 기본 룰)
-  - 트레일링스탑: 고점 대비 -10% (고점수익률 +10% 이상일 때만 활성화)
-  - 익절(기본): +20%
-  - 익절(확장): 진입 후 21 캘린더일 이내 +15% 달성 시 → 목표 +25%로 상향
+  - 손절: 매수가 대비 -7%
+  - [고점 +20% 미달] 트레일링스탑: 고점 대비 -10% (고점 +10% 이상일 때 활성화)
+  - [고점 +20% 이상] MA이탈: MA21 < MA62 && MA62 5일 하락 → 청산 (익절 천장 제거, 러너 보유)
 
 포지션 관리:
   - S2+S3 공유 슬롯: 기본 4개 (S1=1 고정, 총 5개)
@@ -38,10 +37,11 @@ KST              = pytz.timezone("Asia/Seoul")
 S2_S3_BASE_SLOTS = 4     # S2+S3 공유 슬롯 기본값 (총 5: S1=1 고정, S2+S3=4)
 MAX_POSITIONS    = S2_S3_BASE_SLOTS   # 하위 호환 유지
 STOP_LOSS        = 0.07   # -7%
-TRAIL_STOP_PCT   = 0.10   # 고점 대비 -10% 트레일링 스탑
-TRAIL_STOP_MIN   = 0.10   # 트레일링 스탑 활성화 최소 고점 수익률
-TAKE_PROFIT      = 0.20   # +20%
-TAKE_PROFIT_EXT  = 0.25   # +25% (조기 +15% 달성 시)
+RUNNER_THRESHOLD = 0.20   # 고점이 이 수준 이상이면 MA이탈 청산으로 전환
+TRAIL_STOP_PCT   = 0.10   # 고점 대비 -10% (러너 미달 구간 적용)
+TRAIL_STOP_MIN   = 0.10   # 트레일링스탑 활성화 최소 고점 수익률
+TAKE_PROFIT      = 0.20   # +20% (러너 미달 구간 고정 익절선)
+TAKE_PROFIT_EXT  = 0.25   # +25% (21일 이내 +15% 달성 시)
 
 
 class CANSLIMStrategy:
@@ -124,22 +124,31 @@ class CANSLIMStrategy:
             if gain <= -STOP_LOSS:
                 logger.warning(
                     f"[S3 손절] [{code}] {name}  "
-                    f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  시장가 매도"
+                    f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}"
                 )
                 self._sell_market(code, name, quantity, entry_price, current, "손절(-7%)")
                 continue
 
-            # ── 익절 ───────────────────────────────────────────────
-            if gain >= target:
-                label = f"익절(+{target:.0%}" + (" 확장목표)" if early_trig else ")")
-                logger.info(
-                    f"[S3 익절] [{code}] {name}  "
-                    f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  {label}"
-                )
-                self._sell_market(code, name, quantity, entry_price, current, label)
+            # ── 러너 모드: 고점 +20% 이상 → MA이탈 시 청산 ──────────
+            if peak_gain >= RUNNER_THRESHOLD:
+                stock_ma = ma_store.get_stock(code)
+                if (stock_ma
+                        and stock_ma.get("ma21_below_ma62")
+                        and stock_ma.get("ma62_declining_5d")):
+                    label = f"MA이탈(고점{peak_gain:+.1%})"
+                    logger.info(
+                        f"[S3 MA이탈] [{code}] {name}  "
+                        f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  {label}"
+                    )
+                    self._sell_market(code, name, quantity, entry_price, current, label)
+                else:
+                    logger.info(
+                        f"[S3 러너보유] [{code}] {name}  "
+                        f"현재:{gain:+.2%}  고점:{peak_gain:+.2%}  보유:{days_held}일"
+                    )
                 continue
 
-            # ── 트레일링스탑 ────────────────────────────────────────
+            # ── +20% 미달 구간: 트레일링스탑 / 익절 ───────────────
             if peak_gain >= TRAIL_STOP_MIN and current < peak_price * (1 - TRAIL_STOP_PCT):
                 logger.info(
                     f"[S3 트레일링스탑] [{code}] {name}  "
@@ -149,6 +158,15 @@ class CANSLIMStrategy:
                     code, name, quantity, entry_price, current,
                     f"트레일링스탑(고점-{TRAIL_STOP_PCT:.0%})",
                 )
+                continue
+
+            if gain >= target:
+                label = f"익절(+{target:.0%}" + (" 확장목표)" if early_trig else ")")
+                logger.info(
+                    f"[S3 익절] [{code}] {name}  "
+                    f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  {label}"
+                )
+                self._sell_market(code, name, quantity, entry_price, current, label)
                 continue
 
             logger.info(
