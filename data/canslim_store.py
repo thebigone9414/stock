@@ -13,9 +13,12 @@ from typing import Optional
 
 from loguru import logger
 
-CANSLIM_DATA_PATH     = Path("data/canslim_data.json")
-CANSLIM_POS_PATH      = Path("data/canslim_positions.json")
+CANSLIM_DATA_PATH        = Path("data/canslim_data.json")
+CANSLIM_POS_PATH         = Path("data/canslim_positions.json")
 CANSLIM_CA_SCREENED_PATH = Path("data/dart_ca_screened.json")
+CANSLIM_STOP_BL_PATH     = Path("data/canslim_stop_blacklist.json")
+
+STOP_BLACKLIST_DAYS = 90  # 손절 후 재진입 금지 일수
 
 _EMPTY_DATA = {"updated_at": "", "market_uptrend": False, "stocks": {}}
 _EMPTY_POS  = {"positions": {}}
@@ -114,6 +117,29 @@ def check_A(corp: dict) -> bool:
     if years <= 0:
         return False
     return (latest / oldest["eps"]) ** (1 / years) - 1 >= 0.15
+
+
+# ── 손절 블랙리스트 (재진입 금지) ────────────────────────────────────────
+
+def get_stop_blacklist() -> dict:
+    """{code: stop_date} 반환 — 파일 없으면 빈 dict"""
+    if not CANSLIM_STOP_BL_PATH.exists():
+        return {}
+    with open(CANSLIM_STOP_BL_PATH, "r", encoding="utf-8") as f:
+        return json.load(f).get("stop_blacklist", {})
+
+
+def add_to_stop_blacklist(code: str, stop_date: str) -> None:
+    """손절 종목을 블랙리스트에 추가 (STOP_BLACKLIST_DAYS 동안 재진입 금지)"""
+    bl = get_stop_blacklist()
+    bl[code] = stop_date
+    CANSLIM_STOP_BL_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CANSLIM_STOP_BL_PATH, "w", encoding="utf-8") as f:
+        json.dump({"stop_blacklist": bl}, f, ensure_ascii=False, indent=2)
+    git_commit_push(
+        [str(CANSLIM_STOP_BL_PATH)],
+        f"chore: S3 손절 블랙리스트 추가 {code} ({stop_date})",
+    )
 
 
 # ── canslim_positions (포지션) ──────────────────────────────────────────

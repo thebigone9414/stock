@@ -6,11 +6,12 @@
   - RS (상대강도) ≥ 70 (유니버스 내 상위 30%)
   - VCP 패턴 감지 + 당일 피벗 브레이크아웃 + 거래량 급증
 
-매도 조건 (S3/CANSLIM과 동일):
+매도 조건:
   - 손절: 매수가 대비 -7%
   - 익절(기본): +20%
   - 익절(확장): 진입 후 21 캘린더일 이내 +15% 달성 시 → 목표 +25%로 상향
-  - 타임스탑: 8주(56 캘린더일) 경과 후 청산
+  - 트레일링스탑: 고점 대비 -10% (고점수익률 +10% 이상일 때만 활성화)
+  - 타임스탑: 12주(84 캘린더일) 경과 후 청산
 
 포지션 관리:
   - S2+S3+S4 공유 슬롯: 기본 4개 (S1=1 고정, 총 5개)
@@ -40,9 +41,11 @@ KST              = pytz.timezone("Asia/Seoul")
 S2_S3_S4_BASE    = 4      # S2+S3+S4 공유 슬롯 기본값
 SLOT_RATIO       = 0.20   # 슬롯당 총자산 비율
 STOP_LOSS        = 0.07   # -7%
+TRAIL_STOP_PCT   = 0.10   # 고점 대비 -10% 트레일링 스탑
+TRAIL_STOP_MIN   = 0.10   # 트레일링 스탑 활성화 최소 고점 수익률
 TAKE_PROFIT      = 0.20   # +20%
 TAKE_PROFIT_EXT  = 0.25   # +25% (조기 트리거)
-TIME_STOP_DAYS   = 56     # 8주
+TIME_STOP_DAYS   = 84     # 12주 (이전 56일→84일: 타임스탑 연장)
 
 
 class SEPAStrategy:
@@ -114,7 +117,9 @@ class SEPAStrategy:
                 continue
 
             update_position_peak(code, current, today_str)
-            target = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
+            peak_price = max(pos.get("peak_price", entry_price), current)
+            peak_gain  = (peak_price - entry_price) / entry_price
+            target     = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
 
             # 손절 -7%
             if gain <= -STOP_LOSS:
@@ -125,15 +130,6 @@ class SEPAStrategy:
                 self._sell_market(code, name, quantity, entry_price, current, "손절(-7%)")
                 continue
 
-            # 타임스탑 56일
-            if days_held >= TIME_STOP_DAYS:
-                logger.info(
-                    f"[S4 타임스탑] [{code}] {name}  "
-                    f"{days_held}일 경과 ({gain:+.2%}) — 청산"
-                )
-                self._sell_market(code, name, quantity, entry_price, current, f"타임스탑({days_held}일)")
-                continue
-
             # 익절
             if gain >= target:
                 label = f"익절(+{target:.0%}" + (" 확장목표)" if early_trig else ")")
@@ -142,6 +138,27 @@ class SEPAStrategy:
                     f"매수:{entry_price:,} → 현재:{current:,}  {gain:+.2%}  {label}"
                 )
                 self._sell_market(code, name, quantity, entry_price, current, label)
+                continue
+
+            # 트레일링스탑 (고점 대비 -10%, 고점수익률 +10% 이상일 때만)
+            if peak_gain >= TRAIL_STOP_MIN and current < peak_price * (1 - TRAIL_STOP_PCT):
+                logger.info(
+                    f"[S4 트레일링스탑] [{code}] {name}  "
+                    f"고점:{peak_price:,}(+{peak_gain:.2%}) → 현재:{current:,}({gain:+.2%})"
+                )
+                self._sell_market(
+                    code, name, quantity, entry_price, current,
+                    f"트레일링스탑(고점-{TRAIL_STOP_PCT:.0%})",
+                )
+                continue
+
+            # 타임스탑 84일
+            if days_held >= TIME_STOP_DAYS:
+                logger.info(
+                    f"[S4 타임스탑] [{code}] {name}  "
+                    f"{days_held}일 경과 ({gain:+.2%}) — 청산"
+                )
+                self._sell_market(code, name, quantity, entry_price, current, f"타임스탑({days_held}일)")
                 continue
 
             logger.info(
