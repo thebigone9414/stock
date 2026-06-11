@@ -38,6 +38,11 @@ KODEX200_CODE      = "069500"  # ★ 시장 필터용
 MARKET_MA_FAST     = 20        # ★ 시장 필터: MA20 > MA60
 MARKET_MA_SLOW     = 60
 
+# ★ v3 (S3/S4 통일 매도): 트레일링스탑 + MA이탈 러너 (타임스탑 없음)
+RUNNER_THRESHOLD   = 0.20   # 고점 +20% 이상 → 러너 모드 (MA이탈 청산)
+TRAIL_STOP_PCT     = 0.10   # 트레일링스탑 폭: 고점 대비 -10%
+TRAIL_STOP_MIN     = 0.10   # 트레일링스탑 활성화 최소 고점 수익률
+
 BUY_FEE  = 0.00015
 SELL_FEE = 0.00015 + 0.002
 
@@ -355,6 +360,150 @@ def _report(trades: list, port_hist: list, initial_capital: int,
             "n_trades": len(trades), "total_r": total_r}
 
 
+def run_backtest_v3(initial_capital: int = 10_000_000) -> tuple[list, list]:
+    """v3: S3/S4 통일 매도 전략 (타임스탑 제거, 트레일링스탑 + MA이탈 러너)
+
+    매도 조건 (S3/S4와 동일):
+      ① 손절: 진입가 대비 -7%
+      ② 러너(고점+20% 이상): MA21 < MA62 && MA62 5일 하락 → MA이탈 청산
+      ③ 비러너(고점+10% 이상): 고점 대비 -10% 트레일링스탑
+      ④ 비러너 익절: +20% (조기 +15%/15일 달성 시 +25%)
+    매수 조건: v1과 동일 (정배열 첫날 + RS 우선순위)
+    """
+    print("데이터 로딩 중...")
+    stocks = _load_data()
+    print(f"  → {len(stocks)}종목 로드")
+    print("MA 계산 중...")
+    _precompute_mas(stocks)
+
+    capital   = float(initial_capital)
+    positions = {}
+    trades    = []
+    port_hist = []
+
+    start = 248 + MA_TREND_LOOKBACK + 1
+    end   = MIN_DATA_DAYS - 1
+
+    print(f"시뮬레이션 시작 (구간: {end - start}영업일 ≈ {(end - start) / 252:.1f}년)\n")
+
+    for i in range(start, end):
+        pos_val    = sum(stocks[c]["closes"][i] * p["qty"]
+                         for c, p in positions.items() if c in stocks)
+        total_eval = capital + pos_val
+
+        # ── 매도 (S3/S4 통일 매도 전략) ──────────────────────────────
+        for code in list(positions):
+            if code not in stocks:
+                del positions[code]
+                continue
+            pos   = positions[code]
+            cur   = stocks[code]["closes"][i]
+            entry = pos["entry_price"]
+            gain  = (cur - entry) / entry
+            days  = pos["days_held"]
+
+            # 고점 갱신
+            if cur > pos["peak"]:
+                pos["peak"] = cur
+            peak      = pos["peak"]
+            peak_gain = (peak - entry) / entry
+
+            # 조기익절 트리거 (15영업일 이내 +15%)
+            if (not pos["early_triggered"]
+                    and gain >= EARLY_GAIN_TRIGGER
+                    and days <= EARLY_GAIN_DAYS):
+                pos["early_triggered"] = True
+
+            target = TAKE_PROFIT_EXT if pos["early_triggered"] else TAKE_PROFIT
+            mas    = stocks[code]["mas"]
+
+            reason = None
+            # ① 손절 -7%
+            if gain <= -STOP_LOSS:
+                reason = "손절"
+            # ② 러너(고점+20% 이상): MA이탈 청산
+            elif peak_gain >= RUNNER_THRESHOLD:
+                if _is_deadcross(mas, i):
+                    reason = "MA이탈(러너)"
+            # ③ 비러너: 트레일링스탑 (고점+10% 이상일 때 활성화)
+            elif peak_gain >= TRAIL_STOP_MIN and cur < peak * (1 - TRAIL_STOP_PCT):
+                reason = "트레일링스탑"
+            # ④ 비러너: 익절
+            elif gain >= target:
+                reason = "익절"
+
+            if reason:
+                sell_px  = stocks[code]["opens"][i + 1]
+                received = sell_px * pos["qty"] * (1 - SELL_FEE)
+                capital += received
+                trades.append({
+                    "code":        code,
+                    "entry_i":     pos["entry_i"],
+                    "exit_i":      i + 1,
+                    "entry_price": entry,
+                    "exit_price":  sell_px,
+                    "qty":         pos["qty"],
+                    "pnl_pct":     (sell_px - entry) / entry,
+                    "reason":      reason,
+                    "days_held":   days,
+                })
+                del positions[code]
+
+        # ── 매수: RS 높은 순 슬롯 배정 (v1과 동일) ───────────────────
+        if len(positions) < MAX_SLOTS:
+            slot_budget = total_eval * SLOT_RATIO
+            candidates  = []
+            for code, data in stocks.items():
+                if code in positions:
+                    continue
+                mas = data["mas"]
+                if not _is_first_golden_day(mas, i):
+                    continue
+                if data["closes"][i] <= data["opens"][i]:
+                    continue
+                if not _is_trending_up(mas, i):
+                    continue
+                buy_px = data["opens"][i + 1]
+                if buy_px <= 0:
+                    continue
+                candidates.append((code, _rs_score(data["closes"], i)))
+
+            candidates.sort(key=lambda x: x[1], reverse=True)
+
+            for code, _rs in candidates:
+                if len(positions) >= MAX_SLOTS:
+                    break
+                data   = stocks[code]
+                buy_px = data["opens"][i + 1]
+                qty    = int(slot_budget / (buy_px * (1 + BUY_FEE)))
+                if qty <= 0:
+                    continue
+                cost = buy_px * qty * (1 + BUY_FEE)
+                if cost > capital:
+                    qty  = int(capital / (buy_px * (1 + BUY_FEE)))
+                    cost = buy_px * qty * (1 + BUY_FEE)
+                if qty <= 0:
+                    continue
+                capital -= cost
+                positions[code] = {
+                    "entry_i":         i + 1,
+                    "entry_price":     buy_px,
+                    "qty":             qty,
+                    "peak":            buy_px,
+                    "days_held":       0,
+                    "early_triggered": False,
+                }
+
+        for pos in positions.values():
+            pos["days_held"] += 1
+
+        pos_val = sum(stocks[c]["closes"][i] * p["qty"]
+                      for c, p in positions.items() if c in stocks)
+        port_hist.append(capital + pos_val)
+
+    return trades, port_hist
+
+
 def _run_orig(capital: int) -> dict:
     """원본 run_s2.py 를 직접 실행해서 통계 반환"""
     import backtest.run_s2 as orig
@@ -398,6 +547,12 @@ def main():
     trades_v2, hist_v2 = run_backtest(cap, use_market_exit=True)
     s_v2 = _report(trades_v2, hist_v2, cap, label="[v2: +시장필터]")
 
+    # ── 개선 v3: S3/S4 통일 매도 (타임스탑 없음, 트레일링+MA이탈) ────
+    print("\n─" * 28)
+    print("  [4] v3 (S3/S4 통일 매도: 트레일링스탑+MA이탈 러너, 타임스탑 없음)")
+    trades_v3, hist_v3 = run_backtest_v3(cap)
+    s_v3 = _report(trades_v3, hist_v3, cap, label="[v3: 트레일링+MA이탈(S3/S4 동일)]")
+
     # ── 비교 테이블 ───────────────────────────────────────────────────
     # 원본 통계 직접 계산
     if hist_o:
@@ -411,19 +566,29 @@ def main():
     else:
         cagr_o=mdd_o=wr_o=tr_o=0; trades_o=[]
 
-    W = 61
+    W = 72
     print("\n" + "=" * W)
-    print(f"  {'':20s} {'원본':>12s} {'v1(타임+RS)':>12s} {'v2(+시장필터)':>12s}")
+    print(f"  {'':16s} {'원본':>11s} {'v1(타임+RS)':>12s} {'v2(+시장필터)':>13s} {'v3(통일매도)':>13s}")
     print("-" * W)
     rows = [
-        ("총 수익률",   f"{tr_o:>+11.2%}",  f"{s_v1['total_r']:>+11.2%}", f"{s_v2['total_r']:>+11.2%}"),
-        ("CAGR",        f"{cagr_o:>+11.2%}", f"{s_v1['cagr']:>+11.2%}",   f"{s_v2['cagr']:>+11.2%}"),
-        ("MDD",         f"{mdd_o:>+11.2%}",  f"{s_v1['mdd']:>+11.2%}",    f"{s_v2['mdd']:>+11.2%}"),
-        ("승률",        f"{wr_o:>10.1f} %",  f"{s_v1['wr']*100:>10.1f} %",f"{s_v2['wr']*100:>10.1f} %"),
-        ("매매 횟수",   f"{len(trades_o):>11}회", f"{s_v1['n_trades']:>11}회", f"{s_v2['n_trades']:>11}회"),
+        ("총 수익률",
+         f"{tr_o:>+10.2%}", f"{s_v1['total_r']:>+11.2%}",
+         f"{s_v2['total_r']:>+12.2%}", f"{s_v3['total_r']:>+12.2%}"),
+        ("CAGR",
+         f"{cagr_o:>+10.2%}", f"{s_v1['cagr']:>+11.2%}",
+         f"{s_v2['cagr']:>+12.2%}", f"{s_v3['cagr']:>+12.2%}"),
+        ("MDD",
+         f"{mdd_o:>+10.2%}", f"{s_v1['mdd']:>+11.2%}",
+         f"{s_v2['mdd']:>+12.2%}", f"{s_v3['mdd']:>+12.2%}"),
+        ("승률",
+         f"{wr_o:>9.1f} %", f"{s_v1['wr']*100:>10.1f} %",
+         f"{s_v2['wr']*100:>11.1f} %", f"{s_v3['wr']*100:>11.1f} %"),
+        ("매매 횟수",
+         f"{len(trades_o):>10}회", f"{s_v1['n_trades']:>11}회",
+         f"{s_v2['n_trades']:>12}회", f"{s_v3['n_trades']:>12}회"),
     ]
-    for label, o, v1, v2 in rows:
-        print(f"  {label:12s}  {o}  {v1}  {v2}")
+    for lbl, o, v1, v2, v3 in rows:
+        print(f"  {lbl:10s}  {o}  {v1}  {v2}  {v3}")
     print("=" * W + "\n")
 
 
