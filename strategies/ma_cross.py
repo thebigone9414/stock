@@ -12,8 +12,11 @@
   조건 2: MA62, MA248 이평선 모두 상승 추세
   조건 3: 정배열 첫날 양봉 (당일 종가 > 시가)
 
-[매도 조건]
-  ma21이 ma62 아래로 이동한 다음날 아침 시장가 매도
+[매도 조건 — S3/S4 통일 전략 (저녁 배치에서 결정 → 아침 시초가 실행)]
+  ① 손절: 진입가 대비 -7%
+  ② 러너(고점+20% 이상): MA21 < MA62 && MA62 5일 하락 → MA이탈 청산 (러너 보유)
+  ③ 비러너(고점+10% 이상): 고점 대비 -10% 트레일링스탑
+  타임스탑 없음
 
 [포지션 관리]
   총계좌의 20%씩, 최대 4포지션 동시 보유
@@ -39,13 +42,15 @@ from kis.order import KISOrder, OrderType
 from kis.account import KISAccount
 from utils.notifier import Notifier
 
-KST                = pytz.timezone("Asia/Seoul")
-S2_S3_BASE_SLOTS   = 4     # S2+S3 공유 슬롯 기본값 (총 5: S1=1 고정, S2+S3=4)
-MAX_POSITIONS      = S2_S3_BASE_SLOTS   # 하위 호환 유지
-SLOT_RATIO         = 0.20
-S2_STOP_LOSS       = 0.07   # 손절 -7%
-S2_TAKE_PROFIT     = 0.20   # 익절 기본 +20%
-S2_TAKE_PROFIT_EXT = 0.25   # 익절 확장 +25% (21일 이내 +15% 달성 시)
+KST                 = pytz.timezone("Asia/Seoul")
+S2_S3_BASE_SLOTS    = 4     # S2+S3 공유 슬롯 기본값 (총 5: S1=1 고정, S2+S3=4)
+MAX_POSITIONS       = S2_S3_BASE_SLOTS   # 하위 호환 유지
+SLOT_RATIO          = 0.20
+S2_STOP_LOSS        = 0.07   # 손절 -7%
+S2_TAKE_PROFIT      = 0.20   # 익절 기본 +20% (러너 모드에서 사실상 도달 불가)
+S2_TAKE_PROFIT_EXT  = 0.25   # 익절 확장 +25%
+S2_RUNNER_THRESHOLD = 0.20   # 고점 +20% 이상 → 러너 모드 (MA이탈 청산)
+S2_TRAIL_STOP_PCT   = 0.10   # 트레일링스탑 폭: 고점 대비 -10%
 
 
 class MACrossStrategy:
@@ -167,14 +172,12 @@ class MACrossStrategy:
             candidates = all_candidates
 
         # ── 오늘 할 일 없으면 조기 종료 (Actions 분 절약) ────────────────
-        any_stop_loss  = any(p.get("stop_loss_pending") for p in positions.values())
-        any_take_profit = any(p.get("take_profit_pending") for p in positions.values())
-        any_time_stop  = any(p.get("time_stop_pending") for p in positions.values())
-        any_sell_sig   = any(
-            stocks.get(c, {}).get("ma21_below_ma62") and stocks.get(c, {}).get("ma62_declining_5d")
-            for c in positions
+        any_sell = any(
+            p.get("stop_loss_pending") or p.get("trail_stop_pending")
+            or p.get("ma_exit_pending") or p.get("take_profit_pending")
+            for p in positions.values()
         )
-        if not any_stop_loss and not any_take_profit and not any_time_stop and not any_sell_sig and not candidates:
+        if not any_sell and not candidates:
             msg = "[MA전략] 오늘 매수·매도 신호 없음 — 조기 종료"
             logger.info(msg)
             self.notifier.notify(msg)
@@ -191,55 +194,44 @@ class MACrossStrategy:
         # ── 손절 매도 ────────────────────────────────────────────────────
         for code in list(positions):
             if positions[code].get("stop_loss_pending"):
-                pos  = positions[code]
-                logger.info(
-                    f"[MA전략 손절매도] [{code}] {pos['name']} "
-                    f"— 매수가 대비 -{S2_STOP_LOSS:.0%} 이하 손절 플래그"
-                )
-                self._sell(code, pos, reason=f"손절 매수가대비 -{S2_STOP_LOSS:.0%} 이하")
+                pos = positions[code]
+                logger.info(f"[MA전략 손절매도] [{code}] {pos['name']}  -{S2_STOP_LOSS:.0%} 손절 플래그")
+                self._sell(code, pos, reason=f"손절 -{S2_STOP_LOSS:.0%}")
                 del positions[code]
                 ma_store.remove_position(code)
                 _sold += 1
 
-        # ── 익절 매도 ────────────────────────────────────────────────────
+        # ── MA이탈 매도 (러너 고점+20% 이상, MA21<MA62 && MA62 5일 하락) ─
+        for code in list(positions):
+            if positions[code].get("ma_exit_pending"):
+                pos       = positions[code]
+                peak_gain = (pos.get("peak_price", pos.get("entry_price", 0)) - pos.get("entry_price", 0)) / pos.get("entry_price", 1)
+                logger.info(f"[MA전략 MA이탈매도] [{code}] {pos['name']}  고점{peak_gain:+.1%} 러너 MA이탈 플래그")
+                self._sell(code, pos, reason=f"MA이탈(러너 고점{peak_gain:+.1%})")
+                del positions[code]
+                ma_store.remove_position(code)
+                _sold += 1
+
+        # ── 트레일링스탑 매도 (고점 대비 -{S2_TRAIL_STOP_PCT:.0%}) ────────
+        for code in list(positions):
+            if positions[code].get("trail_stop_pending"):
+                pos       = positions[code]
+                peak_gain = (pos.get("peak_price", pos.get("entry_price", 0)) - pos.get("entry_price", 0)) / pos.get("entry_price", 1)
+                logger.info(f"[MA전략 트레일링스탑매도] [{code}] {pos['name']}  고점{peak_gain:+.1%} → 트레일링스탑 플래그")
+                self._sell(code, pos, reason=f"트레일링스탑(고점{peak_gain:+.1%} → 고점-{S2_TRAIL_STOP_PCT:.0%})")
+                del positions[code]
+                ma_store.remove_position(code)
+                _sold += 1
+
+        # ── 익절 매도 (안전망 — 실질적으로 러너 모드에서 처리됨) ──────────
         for code in list(positions):
             if positions[code].get("take_profit_pending"):
                 pos       = positions[code]
                 early_trig = pos.get("early_gain_triggered", False)
                 target    = S2_TAKE_PROFIT_EXT if early_trig else S2_TAKE_PROFIT
                 ext_note  = " (조기확장목표)" if early_trig else ""
-                logger.info(
-                    f"[MA전략 익절매도] [{code}] {pos['name']} "
-                    f"— +{target:.0%}{ext_note} 익절 플래그"
-                )
+                logger.info(f"[MA전략 익절매도] [{code}] {pos['name']}  +{target:.0%}{ext_note} 익절 플래그")
                 self._sell(code, pos, reason=f"익절 +{target:.0%}{ext_note}")
-                del positions[code]
-                ma_store.remove_position(code)
-                _sold += 1
-
-        # ── 타임스탑 매도 (56일 경과) ────────────────────────────────────
-        for code in list(positions):
-            if positions[code].get("time_stop_pending"):
-                pos = positions[code]
-                logger.info(
-                    f"[MA전략 타임스탑매도] [{code}] {pos['name']} "
-                    f"— 56일(8주) 경과 타임스탑 플래그"
-                )
-                self._sell(code, pos, reason="타임스탑 56일(8주) 경과")
-                del positions[code]
-                ma_store.remove_position(code)
-                _sold += 1
-
-        # ── 데드크로스 매도 ──────────────────────────────────────────────
-        for code in list(positions):
-            s = stocks.get(code, {})
-            if s.get("ma21_below_ma62") and s.get("ma62_declining_5d"):
-                logger.info(
-                    f"[MA전략 매도신호] [{code}] {positions[code]['name']} "
-                    f"— ma21({s.get('ma21',0):,.0f}) < ma62({s.get('ma62',0):,.0f})  "
-                    f"& ma62 5일 하락추세"
-                )
-                self._sell(code, positions[code], reason="ma21<ma62 & ma62 5일 하락추세")
                 del positions[code]
                 ma_store.remove_position(code)
                 _sold += 1

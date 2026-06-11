@@ -41,10 +41,12 @@ OHLCV_DAYS         = 820   # 캐시 없을 때 풀 로딩 일수
 INCREMENTAL_DAYS   = 30    # 캐시 있을 때 증분 로딩 일수
 MIN_DAYS_FULL      = 750   # MA744 계산 최소 일수
 MIN_DAYS_PARTIAL   = 250   # MA248 계산 최소 일수 (부분 정배열)
-S2_STOP_LOSS       = 0.07  # 손절 -7%
-S2_TAKE_PROFIT     = 0.20  # 익절 기본 +20%
-S2_TAKE_PROFIT_EXT = 0.25  # 익절 확장 +25% (21일 이내 +15% 달성 시)
-S2_TIME_STOP_DAYS  = 56    # 타임스탑 8주
+S2_STOP_LOSS        = 0.07  # 손절 -7%
+S2_TAKE_PROFIT      = 0.20  # 익절 기본 +20% (러너 모드에서 사실상 도달 불가 — 안전망)
+S2_TAKE_PROFIT_EXT  = 0.25  # 익절 확장 +25% (21일 이내 +15% 달성 시)
+S2_RUNNER_THRESHOLD = 0.20  # 고점 +20% 이상 → 러너 모드 (MA이탈 청산)
+S2_TRAIL_STOP_PCT   = 0.10  # 트레일링스탑 폭: 고점 대비 -10%
+S2_TRAIL_STOP_MIN   = 0.10  # 트레일링스탑 활성화 최소 고점 수익률
 
 S2_WATCHLIST = get_s2_watchlist()   # KOSPI200 + KOSDAQ150
 
@@ -361,9 +363,10 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
         reverse=True,
     )
     sell_signals = [
-        (c, s["name"])
-        for c, s in stocks_out.items()
-        if c in positions_now and s["ma21_below_ma62"] and s.get("ma62_declining_5d")
+        (c, positions_now[c].get("name", c))
+        for c in positions_now
+        if any(positions_now[c].get(f) for f in
+               ["stop_loss_pending", "trail_stop_pending", "ma_exit_pending", "take_profit_pending"])
     ]
 
     logger.info("══════════════════════════════════════════")
@@ -407,106 +410,133 @@ def _is_buy_signal(s: dict) -> bool:
         return s.get("partial_aligned") and not s.get("prev_partial_aligned")
 
 
-# ── S2 매도 플래그 체크 (손절·익절·타임스탑) ──────────────────────────────
+# ── S2 매도 플래그 체크 (S3/S4 통일 매도 전략) ────────────────────────────
+# 손절(-7%) / 러너(고점+20%↑ → MA이탈) / 트레일링스탑(고점+10%↑ → 고점-10%)
+# 타임스탑 없음 — 러너는 MA이탈까지 보유
 
 def _check_s2_exits(stocks_out: dict, notifier: Notifier = None) -> None:
     positions = ma_store.get_positions()
     if not positions:
         return
 
-    today_str           = datetime.now(KST).strftime("%Y-%m-%d")
-    stop_loss_flagged   = []
-    take_profit_flagged = []
-    time_stop_flagged   = []
+    today_str          = datetime.now(KST).strftime("%Y-%m-%d")
+    stop_loss_flagged  = []
+    ma_exit_flagged    = []
+    trail_stop_flagged = []
 
-    for code, pos in positions.items():
+    for code, pos in list(positions.items()):
         entry_price = pos.get("entry_price", 0)
-        entry_date  = pos.get("entry_date", today_str)
         name        = pos.get("name", code)
         if not entry_price:
             continue
+
         stock       = stocks_out.get(code)
         close_price = stock.get("close", 0) if stock else 0
         if not close_price:
-            logger.warning(f"[S2 익절체크] [{code}] {name} — MA배치 데이터 없음, 건너뜀")
+            logger.warning(f"[S2 청산체크] [{code}] {name} — MA배치 데이터 없음, 건너뜀")
             continue
-
-        pnl_rate  = (close_price - entry_price) / entry_price
-        try:
-            days_held = (
-                datetime.strptime(today_str, "%Y-%m-%d")
-                - datetime.strptime(entry_date, "%Y-%m-%d")
-            ).days
-        except ValueError:
-            days_held = 0
 
         # 고점 갱신 + 조기익절 트리거 체크
         ma_store.update_position_peak(code, close_price, today_str)
-        pos         = ma_store.get_positions().get(code, pos)
-        early_trig  = pos.get("early_gain_triggered", False)
-        target      = S2_TAKE_PROFIT_EXT if early_trig else S2_TAKE_PROFIT
+        pos        = ma_store.get_positions().get(code, pos)
+        early_trig = pos.get("early_gain_triggered", False)
+        peak_price = pos.get("peak_price", entry_price)
+        peak_gain  = (peak_price - entry_price) / entry_price
+        gain       = (close_price - entry_price) / entry_price
+        target     = S2_TAKE_PROFIT_EXT if early_trig else S2_TAKE_PROFIT
 
-        # 손절 -7%
-        if pnl_rate <= -S2_STOP_LOSS:
+        # ① 손절 -7%
+        if gain <= -S2_STOP_LOSS:
             if not pos.get("stop_loss_pending"):
                 ma_store.set_stop_loss_pending(code, True)
-                stop_loss_flagged.append((code, name, entry_price, close_price, pnl_rate))
+                stop_loss_flagged.append((code, name, entry_price, close_price, gain))
                 logger.warning(
                     f"[S2 손절플래그] [{code}] {name}  "
-                    f"매수가:{entry_price:,} → 마감가:{close_price:,}  "
-                    f"{pnl_rate*100:+.2f}% ≤ -7% → 내일 09:00 시초가 매도"
+                    f"매수:{entry_price:,} → 마감:{close_price:,}  "
+                    f"{gain:+.2%} ≤ -{S2_STOP_LOSS:.0%} → 내일 09:00 매도"
                 )
             else:
-                logger.info(f"[S2 손절대기중] [{code}] {name}  {pnl_rate*100:+.2f}% (이미 플래그)")
+                logger.info(f"[S2 손절대기중] [{code}] {name}  {gain:+.2%}")
+            continue
+        elif pos.get("stop_loss_pending"):
+            ma_store.set_stop_loss_pending(code, False)
+            logger.info(f"[S2 손절플래그 해제] [{code}] {name}  회복:{gain:+.2%}")
 
-        # 익절 +20% / +25%
-        elif pnl_rate >= target:
+        # ② 러너(고점+20% 이상): MA이탈 시 청산
+        if peak_gain >= S2_RUNNER_THRESHOLD:
+            if stock and stock.get("ma21_below_ma62") and stock.get("ma62_declining_5d"):
+                if not pos.get("ma_exit_pending"):
+                    ma_store.set_ma_exit_pending(code, True)
+                    ma_exit_flagged.append((code, name, peak_gain, gain))
+                    logger.info(
+                        f"[S2 MA이탈플래그] [{code}] {name}  "
+                        f"고점:{peak_gain:+.1%}  현재:{gain:+.2%} → 내일 09:00 매도"
+                    )
+                else:
+                    logger.info(f"[S2 MA이탈대기중] [{code}] {name}  고점:{peak_gain:+.1%}")
+            elif pos.get("ma_exit_pending"):
+                ma_store.set_ma_exit_pending(code, False)
+                logger.info(f"[S2 MA이탈플래그 해제] [{code}] {name}  MA 조건 미충족")
+            else:
+                logger.info(
+                    f"[S2 러너보유] [{code}] {name}  "
+                    f"현재:{gain:+.2%}  고점:{peak_gain:+.2%}"
+                )
+            continue
+
+        # ③ 트레일링스탑 (고점+10% 이상일 때 활성화)
+        if peak_gain >= S2_TRAIL_STOP_MIN and close_price < peak_price * (1 - S2_TRAIL_STOP_PCT):
+            if not pos.get("trail_stop_pending"):
+                ma_store.set_trail_stop_pending(code, True)
+                trail_stop_flagged.append((code, name, peak_price, close_price, peak_gain, gain))
+                logger.info(
+                    f"[S2 트레일링스탑플래그] [{code}] {name}  "
+                    f"고점:{peak_price:,}(+{peak_gain:.1%}) → 마감:{close_price:,}({gain:+.2%}) → 내일 09:00 매도"
+                )
+            else:
+                logger.info(f"[S2 트레일링스탑대기중] [{code}] {name}  {gain:+.2%}")
+            continue
+        elif pos.get("trail_stop_pending"):
+            ma_store.set_trail_stop_pending(code, False)
+            logger.info(f"[S2 트레일링스탑플래그 해제] [{code}] {name}  고점:{peak_gain:+.2%}")
+
+        # ④ 익절 (러너 모드 처리 후 사실상 도달 불가 — 안전망)
+        if gain >= target:
             if not pos.get("take_profit_pending"):
                 ma_store.set_take_profit_pending(code, True)
-                take_profit_flagged.append((code, name, entry_price, close_price, pnl_rate, target))
                 logger.info(
                     f"[S2 익절플래그] [{code}] {name}  "
-                    f"매수가:{entry_price:,} → 마감가:{close_price:,}  "
-                    f"{pnl_rate*100:+.2f}% ≥ {target:.0%} → 내일 09:00 시초가 매도"
+                    f"마감:{close_price:,}  {gain:+.2%} ≥ {target:+.0%} → 내일 09:00 매도"
                 )
             else:
-                logger.info(f"[S2 익절대기중] [{code}] {name}  {pnl_rate*100:+.2f}% (이미 플래그)")
+                logger.info(f"[S2 익절대기중] [{code}] {name}  {gain:+.2%}")
+            continue
+        elif pos.get("take_profit_pending"):
+            ma_store.set_take_profit_pending(code, False)
+            logger.info(f"[S2 익절플래그 해제] [{code}] {name}  현재:{gain:+.2%} < {target:+.0%}")
 
-        # 타임스탑 56일
-        elif days_held >= S2_TIME_STOP_DAYS:
-            if not pos.get("stop_loss_pending") and not pos.get("take_profit_pending") and not pos.get("time_stop_pending"):
-                ma_store.set_time_stop_pending(code, True)
-                time_stop_flagged.append((code, name, entry_price, close_price, pnl_rate, days_held))
-                logger.info(
-                    f"[S2 타임스탑플래그] [{code}] {name}  "
-                    f"{days_held}일 경과 ({pnl_rate*100:+.2f}%) → 내일 09:00 시초가 매도"
-                )
-            else:
-                logger.info(f"[S2 타임스탑대기중] [{code}] {name}  {days_held}일 경과 (이미 플래그)")
-        else:
-            ext_mark = " (확장목표)" if early_trig else ""
-            logger.info(
-                f"[S2 보유중] [{code}] {name}  "
-                f"매수가:{entry_price:,} → 마감가:{close_price:,}  "
-                f"{pnl_rate*100:+.2f}%  목표:{target:.0%}{ext_mark}  {days_held}일"
-            )
+        ext_mark = " (확장목표)" if early_trig else ""
+        logger.info(
+            f"[S2 보유중] [{code}] {name}  "
+            f"마감:{close_price:,}  {gain:+.2%}  목표:{target:+.0%}{ext_mark}  고점:{peak_gain:+.2%}"
+        )
 
     if stop_loss_flagged and notifier:
-        lines = [f"[MA전략] 손절 대상 {len(stop_loss_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
-        for code, name, ep, cp, rate in stop_loss_flagged:
-            lines.append(f"  [{code}] {name}  매수:{ep:,} → 마감:{cp:,}  {rate*100:+.2f}%")
+        lines = [f"[S2] 손절 내일 09:00 매도 {len(stop_loss_flagged)}종목:"]
+        for c, n, ep, cp, r in stop_loss_flagged:
+            lines.append(f"  [{c}] {n}  매수:{ep:,} → 마감:{cp:,}  {r:+.2%}")
         notifier.notify("\n".join(lines))
 
-    if take_profit_flagged and notifier:
-        lines = [f"[MA전략] 익절 대상 {len(take_profit_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
-        for code, name, ep, cp, rate, tgt in take_profit_flagged:
-            lines.append(f"  [{code}] {name}  매수:{ep:,} → 마감:{cp:,}  {rate*100:+.2f}% ≥ {tgt:.0%}")
+    if ma_exit_flagged and notifier:
+        lines = [f"[S2] MA이탈(러너) 내일 09:00 매도 {len(ma_exit_flagged)}종목:"]
+        for c, n, pg, g in ma_exit_flagged:
+            lines.append(f"  [{c}] {n}  고점:{pg:+.1%}  현재:{g:+.2%}")
         notifier.notify("\n".join(lines))
 
-    if time_stop_flagged and notifier:
-        lines = [f"[MA전략] 타임스탑 대상 {len(time_stop_flagged)}종목 — 내일 09:00 시초가 매도 예약"]
-        for code, name, ep, cp, rate, days in time_stop_flagged:
-            lines.append(f"  [{code}] {name}  매수:{ep:,} → 마감:{cp:,}  {rate*100:+.2f}%  {days}일 경과")
+    if trail_stop_flagged and notifier:
+        lines = [f"[S2] 트레일링스탑 내일 09:00 매도 {len(trail_stop_flagged)}종목:"]
+        for c, n, pp, cp, pg, g in trail_stop_flagged:
+            lines.append(f"  [{c}] {n}  고점:{pp:,}(+{pg:.1%}) → 마감:{cp:,}({g:+.2%})")
         notifier.notify("\n".join(lines))
 
 
@@ -546,8 +576,9 @@ def _notify_daily_summary(
             ep      = pos.get("entry_price", 0)
             sl_flag = (
                 "  ※내일손절매도" if pos.get("stop_loss_pending")
+                else "  ※내일MA이탈매도" if pos.get("ma_exit_pending")
+                else "  ※내일트레일링스탑매도" if pos.get("trail_stop_pending")
                 else "  ※내일익절매도" if pos.get("take_profit_pending")
-                else "  ※내일타임스탑매도" if pos.get("time_stop_pending")
                 else ""
             )
             kis_p   = kis_pos_map.get(code)

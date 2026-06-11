@@ -104,37 +104,39 @@ def extra_slots(base_capital: int, total_eval: int, slot_ratio: float = 0.20) ->
     return int(profit / (base_capital * slot_ratio))
 
 
-def set_stop_loss_pending(code: str, flag: bool = True) -> None:
-    """포지션에 손절 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
+def _set_pos_flag(code: str, key: str, flag: bool, msg: str) -> None:
+    """포지션 단일 플래그 설정 공통 헬퍼"""
     data = load()
     pos = data.get("positions", {}).get(code)
     if pos is None:
         return
-    pos["stop_loss_pending"] = flag
+    pos[key] = flag
     save(data)
-    git_commit_push([str(MA_DATA_PATH)], f"chore: S2 손절플래그 {code}={'ON' if flag else 'OFF'}")
+    git_commit_push([str(MA_DATA_PATH)], msg)
+
+
+def set_stop_loss_pending(code: str, flag: bool = True) -> None:
+    """포지션에 손절 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
+    _set_pos_flag(code, "stop_loss_pending", flag,
+                  f"chore: S2 손절플래그 {code}={'ON' if flag else 'OFF'}")
 
 
 def set_take_profit_pending(code: str, flag: bool = True) -> None:
     """포지션에 익절 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
-    data = load()
-    pos = data.get("positions", {}).get(code)
-    if pos is None:
-        return
-    pos["take_profit_pending"] = flag
-    save(data)
-    git_commit_push([str(MA_DATA_PATH)], f"chore: S2 익절플래그 {code}={'ON' if flag else 'OFF'}")
+    _set_pos_flag(code, "take_profit_pending", flag,
+                  f"chore: S2 익절플래그 {code}={'ON' if flag else 'OFF'}")
 
 
-def set_time_stop_pending(code: str, flag: bool = True) -> None:
-    """포지션에 타임스탑 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
-    data = load()
-    pos = data.get("positions", {}).get(code)
-    if pos is None:
-        return
-    pos["time_stop_pending"] = flag
-    save(data)
-    git_commit_push([str(MA_DATA_PATH)], f"chore: S2 타임스탑플래그 {code}={'ON' if flag else 'OFF'}")
+def set_trail_stop_pending(code: str, flag: bool = True) -> None:
+    """포지션에 트레일링스탑 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
+    _set_pos_flag(code, "trail_stop_pending", flag,
+                  f"chore: S2 트레일링스탑플래그 {code}={'ON' if flag else 'OFF'}")
+
+
+def set_ma_exit_pending(code: str, flag: bool = True) -> None:
+    """포지션에 MA이탈 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
+    _set_pos_flag(code, "ma_exit_pending", flag,
+                  f"chore: S2 MA이탈플래그 {code}={'ON' if flag else 'OFF'}")
 
 
 def update_position_peak(code: str, current_price: int, current_date: str) -> None:
