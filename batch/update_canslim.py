@@ -48,13 +48,7 @@ CANSLIM_OHLCV_CACHE_PATH = Path("data/canslim_ohlcv_cache.json")
 CANSLIM_OHLCV_DAYS       = 300   # 약 210 거래일 (52주 신고가 계산에 충분)
 INCREMENTAL_DAYS         = 30
 
-KODEX200_CODE    = "069500"          # KOSPI 프록시
-RUNNER_THRESHOLD = 0.20              # 러너 기준 고점 수익률
-STOP_LOSS        = 0.07              # 손절 -7%
-TRAIL_STOP_PCT   = 0.10              # 트레일링스탑 폭 -10%
-TRAIL_STOP_MIN   = 0.10              # 트레일링스탑 활성화 최소 고점 수익률
-TAKE_PROFIT      = 0.20              # 기본 익절 +20%
-TAKE_PROFIT_EXT  = 0.25              # 조기익절 확장 +25%
+KODEX200_CODE = "069500"   # KOSPI 프록시
 
 
 # ── OHLCV 캐시 I/O ────────────────────────────────────────────────────
@@ -126,145 +120,6 @@ def _check_I(market, code: str, throttler: RateThrottler) -> bool:
         logger.debug(f"[CANSLIM] [{code}] I 조건 조회 실패: {e}")
         return False
 
-
-# ── S3 포지션 매도 조건 점검 (저녁 배치 — 모든 청산 결정) ─────────────────
-
-def _check_s3_exits(today_str: str, notifier: Notifier = None) -> None:
-    """S3 모든 포지션의 청산 조건을 저녁에 판정 → 각 pending 플래그 설정.
-    아침 전략은 플래그만 보고 시장가 매도 실행.
-    """
-    positions = canslim_store.load_positions()
-    if not positions:
-        return
-
-    flagged_stop  = []
-    flagged_ma    = []
-    flagged_trail = []
-    flagged_profit = []
-
-    for code, pos in list(positions.items()):
-        name        = pos.get("name", code)
-        entry_price = pos.get("entry_price", 0)
-        early_trig  = pos.get("early_gain_triggered", False)
-        if not entry_price:
-            continue
-
-        stock_ma = ma_store.get_stock(code)
-        if not stock_ma:
-            logger.warning(f"[S3 청산체크] [{code}] {name} — MA데이터 없음, 건너뜀")
-            continue
-
-        close = int(stock_ma.get("close", 0))
-        if close <= 0:
-            continue
-
-        # 고점 갱신
-        canslim_store.update_position_peak(code, close, today_str)
-        pos        = canslim_store.load_positions().get(code, pos)
-        peak_price = pos.get("peak_price", entry_price)
-        peak_gain  = (peak_price - entry_price) / entry_price
-        gain       = (close - entry_price) / entry_price
-        target     = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
-
-        # ① 손절 -7% (최우선)
-        if gain <= -STOP_LOSS:
-            if not pos.get("stop_loss_pending"):
-                canslim_store.set_stop_loss_pending(code, True)
-                flagged_stop.append((code, name, entry_price, close, gain))
-                logger.warning(
-                    f"[S3 손절플래그] [{code}] {name}  "
-                    f"매수:{entry_price:,} → 마감:{close:,}  {gain:+.2%} ≤ -{STOP_LOSS:.0%}"
-                )
-            else:
-                logger.info(f"[S3 손절대기중] [{code}] {name}  {gain:+.2%}")
-            continue
-        elif pos.get("stop_loss_pending"):
-            canslim_store.set_stop_loss_pending(code, False)
-            logger.info(f"[S3 손절플래그 해제] [{code}] {name}  회복:{gain:+.2%}")
-
-        # ② 러너 (+20% 이상): MA이탈 시 청산
-        if peak_gain >= RUNNER_THRESHOLD:
-            if stock_ma.get("ma21_below_ma62") and stock_ma.get("ma62_declining_5d"):
-                if not pos.get("ma_exit_pending"):
-                    canslim_store.set_ma_exit_pending(code, True)
-                    flagged_ma.append((code, name, peak_gain, gain))
-                    logger.info(
-                        f"[S3 MA이탈플래그] [{code}] {name}  "
-                        f"고점:{peak_gain:+.1%}  현재:{gain:+.2%} → 내일 09:00 청산"
-                    )
-                else:
-                    logger.info(f"[S3 MA이탈대기중] [{code}] {name}  고점:{peak_gain:+.1%}")
-            elif pos.get("ma_exit_pending"):
-                canslim_store.set_ma_exit_pending(code, False)
-                logger.info(f"[S3 MA이탈플래그 해제] [{code}] {name}  MA 조건 미충족")
-            else:
-                logger.info(
-                    f"[S3 러너보유] [{code}] {name}  "
-                    f"현재:{gain:+.2%}  고점:{peak_gain:+.2%}"
-                )
-            continue
-
-        # ③ +20% 미달 구간: 트레일링스탑
-        if peak_gain >= TRAIL_STOP_MIN and close < peak_price * (1 - TRAIL_STOP_PCT):
-            if not pos.get("trail_stop_pending"):
-                canslim_store.set_trail_stop_pending(code, True)
-                flagged_trail.append((code, name, peak_price, close, peak_gain, gain))
-                logger.info(
-                    f"[S3 트레일링스탑플래그] [{code}] {name}  "
-                    f"고점:{peak_price:,}(+{peak_gain:.1%}) → 마감:{close:,}({gain:+.2%})"
-                )
-            else:
-                logger.info(f"[S3 트레일링스탑대기중] [{code}] {name}  {gain:+.2%}")
-            continue
-        elif pos.get("trail_stop_pending"):
-            canslim_store.set_trail_stop_pending(code, False)
-            logger.info(f"[S3 트레일링스탑플래그 해제] [{code}] {name}  고점:{peak_gain:+.2%}")
-
-        # ④ +20% 미달 구간: 익절
-        if gain >= target:
-            if not pos.get("take_profit_pending"):
-                canslim_store.set_take_profit_pending(code, True)
-                flagged_profit.append((code, name, entry_price, close, gain, target))
-                logger.info(
-                    f"[S3 익절플래그] [{code}] {name}  "
-                    f"마감:{close:,}  {gain:+.2%} ≥ {target:+.0%}"
-                )
-            else:
-                logger.info(f"[S3 익절대기중] [{code}] {name}  {gain:+.2%}")
-            continue
-        elif pos.get("take_profit_pending"):
-            canslim_store.set_take_profit_pending(code, False)
-            logger.info(f"[S3 익절플래그 해제] [{code}] {name}  현재:{gain:+.2%} < {target:+.0%}")
-
-        logger.info(
-            f"[S3 보유중] [{code}] {name}  "
-            f"마감:{close:,}  {gain:+.2%}  목표:{target:+.0%}  고점:{peak_gain:+.2%}"
-        )
-
-    # 텔레그램 알림
-    if flagged_stop and notifier:
-        lines = [f"[S3 손절] 내일 09:00 청산 {len(flagged_stop)}종목:"]
-        for c, n, ep, cp, r in flagged_stop:
-            lines.append(f"  [{c}] {n}  매수:{ep:,} → 마감:{cp:,}  {r:+.2%}")
-        notifier.notify("\n".join(lines))
-
-    if flagged_ma and notifier:
-        lines = [f"[S3 MA이탈] 내일 09:00 청산 {len(flagged_ma)}종목:"]
-        for c, n, pg, g in flagged_ma:
-            lines.append(f"  [{c}] {n}  고점:{pg:+.1%}  현재:{g:+.2%}")
-        notifier.notify("\n".join(lines))
-
-    if flagged_trail and notifier:
-        lines = [f"[S3 트레일링스탑] 내일 09:00 청산 {len(flagged_trail)}종목:"]
-        for c, n, pp, cp, pg, g in flagged_trail:
-            lines.append(f"  [{c}] {n}  고점:{pp:,}(+{pg:.1%}) → 마감:{cp:,}({g:+.2%})")
-        notifier.notify("\n".join(lines))
-
-    if flagged_profit and notifier:
-        lines = [f"[S3 익절] 내일 09:00 청산 {len(flagged_profit)}종목:"]
-        for c, n, ep, cp, g, t in flagged_profit:
-            lines.append(f"  [{c}] {n}  마감:{cp:,}  {g:+.2%} ≥ {t:+.0%}")
-        notifier.notify("\n".join(lines))
 
 
 # ── S3 매수 후보 결정 (저녁 배치) ──────────────────────────────────────────
@@ -522,7 +377,6 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     if notifier:
         _notify(all_pass_list, M_global, ok, fail, notifier)
 
-    _check_s3_exits(today, notifier)
     _check_s3_entries(stocks_out, M_global, today, notifier)
 
 

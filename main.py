@@ -7,7 +7,9 @@ Usage:
     python main.py --mode ma-batch         # MA 배치 업데이트
     python main.py --mode canslim-morning  # CANSLIM 전략 (S3)
     python main.py --mode canslim-batch    # CANSLIM 일일 스크리닝 배치
-    python main.py --mode dart-batch       # DART 재무 데이터 배치 (분기 1회)
+    python main.py --mode sepa-batch       # SEPA 트렌드템플릿+VCP 배치
+    python main.py --mode trade-decision   # 통합 매매결정 배치 (20:00 KST)
+    python main.py --mode morning-trade    # 통합 아침 매매 실행 (09:00 KST)
     python main.py --mode balance          # 잔고 조회
     python main.py --mode market --code 005930   # 종목 시세 조회
     python main.py --mode check-watchlist  # 80개 종목 API 연결 테스트
@@ -83,6 +85,23 @@ def run_sepa_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
     from batch.update_sepa import run_batch
     run_batch(kis.market, notifier=notifier, force=force)
 
+
+def run_trade_decision(kis: KIS, notifier: Notifier) -> None:
+    """통합 매매 결정 배치 (20:00 KST) — S2/S3/S4 포지션 청산+매수 결정 → trade_queue.json"""
+    from batch.trade_decision import run_decision
+    run_decision(account=kis.account, notifier=notifier)
+
+
+def run_morning_trade(kis: KIS, notifier: Notifier) -> None:
+    """통합 아침 매매 실행 (08:55 → 09:00) — trade_queue.json 기반 S2/S3/S4 일괄 매매"""
+    from strategies.morning_trade import MorningTradeStrategy
+    MorningTradeStrategy(
+        market=kis.market,
+        order=kis.order,
+        account=kis.account,
+        notifier=notifier,
+        is_paper=kis.is_paper,
+    ).run()
 
 
 def run_morning_strategy(kis: KIS, notifier: Notifier) -> None:
@@ -209,6 +228,7 @@ def main():
         choices=["morning", "ma-morning", "ma-batch",
                  "canslim-morning", "canslim-batch",
                  "sepa-morning", "sepa-batch",
+                 "trade-decision", "morning-trade",
                  "balance", "market", "check-watchlist", "debug-investor", "auto"],
         default="morning",
         help="실행 모드 (기본: morning)"
@@ -249,6 +269,12 @@ def main():
 
     elif args.mode == "sepa-batch":
         run_sepa_batch(kis, notifier, force=args.force)
+
+    elif args.mode == "trade-decision":
+        run_trade_decision(kis, notifier)
+
+    elif args.mode == "morning-trade":
+        run_morning_trade(kis, notifier)
 
     elif args.mode == "balance":
         run_balance(kis)

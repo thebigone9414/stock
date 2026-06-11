@@ -104,39 +104,23 @@ def extra_slots(base_capital: int, total_eval: int, slot_ratio: float = 0.20) ->
     return int(profit / (base_capital * slot_ratio))
 
 
-def _set_pos_flag(code: str, key: str, flag: bool, msg: str) -> None:
-    """포지션 단일 플래그 설정 공통 헬퍼"""
+
+def get_entry_pending() -> list:
+    """저녁 배치에서 결정한 S2 매수 후보 목록 반환"""
+    return load().get("entry_pending", [])
+
+
+def set_entry_pending(entries: list) -> None:
+    """S2 매수 후보 목록 저장 (MA배치 호출)"""
     data = load()
-    pos = data.get("positions", {}).get(code)
-    if pos is None:
-        return
-    pos[key] = flag
+    data["entry_pending"] = entries
     save(data)
-    git_commit_push([str(MA_DATA_PATH)], msg)
-
-
-def set_stop_loss_pending(code: str, flag: bool = True) -> None:
-    """포지션에 손절 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
-    _set_pos_flag(code, "stop_loss_pending", flag,
-                  f"chore: S2 손절플래그 {code}={'ON' if flag else 'OFF'}")
-
-
-def set_take_profit_pending(code: str, flag: bool = True) -> None:
-    """포지션에 익절 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
-    _set_pos_flag(code, "take_profit_pending", flag,
-                  f"chore: S2 익절플래그 {code}={'ON' if flag else 'OFF'}")
-
-
-def set_trail_stop_pending(code: str, flag: bool = True) -> None:
-    """포지션에 트레일링스탑 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
-    _set_pos_flag(code, "trail_stop_pending", flag,
-                  f"chore: S2 트레일링스탑플래그 {code}={'ON' if flag else 'OFF'}")
-
-
-def set_ma_exit_pending(code: str, flag: bool = True) -> None:
-    """포지션에 MA이탈 대기 플래그 설정 (다음날 아침 시초가 매도 예약)"""
-    _set_pos_flag(code, "ma_exit_pending", flag,
-                  f"chore: S2 MA이탈플래그 {code}={'ON' if flag else 'OFF'}")
+    n     = len(entries)
+    codes = " ".join(e["code"] for e in entries[:3]) + ("..." if n > 3 else "")
+    git_commit_push(
+        [str(MA_DATA_PATH)],
+        f"chore: S2 매수대기 {n}종목" + (f" {codes}" if n else ""),
+    )
 
 
 def update_position_peak(code: str, current_price: int, current_date: str) -> None:

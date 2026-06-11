@@ -205,44 +205,6 @@ def remove_position(code: str) -> None:
     git_commit_push([str(CANSLIM_POS_PATH)], f"chore: S3 포지션 제거 {code}")
 
 
-def _set_pos_flag(code: str, key: str, flag: bool, msg: str) -> None:
-    """포지션 단일 플래그 설정 공통 헬퍼"""
-    if not CANSLIM_POS_PATH.exists():
-        return
-    with open(CANSLIM_POS_PATH, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    pos = data.get("positions", {}).get(code)
-    if pos is None:
-        return
-    pos[key] = flag
-    with open(CANSLIM_POS_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    git_commit_push([str(CANSLIM_POS_PATH)], msg)
-
-
-def set_stop_loss_pending(code: str, flag: bool = True) -> None:
-    """손절 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
-    _set_pos_flag(code, "stop_loss_pending", flag,
-                  f"chore: S3 손절플래그 {code}={'ON' if flag else 'OFF'}")
-
-
-def set_trail_stop_pending(code: str, flag: bool = True) -> None:
-    """트레일링스탑 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
-    _set_pos_flag(code, "trail_stop_pending", flag,
-                  f"chore: S3 트레일링스탑플래그 {code}={'ON' if flag else 'OFF'}")
-
-
-def set_take_profit_pending(code: str, flag: bool = True) -> None:
-    """익절 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
-    _set_pos_flag(code, "take_profit_pending", flag,
-                  f"chore: S3 익절플래그 {code}={'ON' if flag else 'OFF'}")
-
-
-def set_ma_exit_pending(code: str, flag: bool = True) -> None:
-    """MA이탈 매도 플래그 설정 (다음날 아침 09:00 시초가 매도 예약)"""
-    _set_pos_flag(code, "ma_exit_pending", flag,
-                  f"chore: S3 MA이탈플래그 {code}={'ON' if flag else 'OFF'}")
-
 
 # ── 매수 대기 목록 (저녁 배치에서 결정 → 아침에 실행) ──────────────────────
 

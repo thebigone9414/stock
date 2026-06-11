@@ -11,13 +11,15 @@ on:
         default: 'check-watchlist'
         type: choice
         options:
-          - morning          # 전략1 오전 수급 (cron-job.org 트리거)
-          - ma-morning       # 전략2 MA이평선 (cron-job.org 트리거)
+          - morning-trade    # S2/S3/S4 통합 아침 매매 (cron-job.org 08:55 KST)
+          - trade-decision   # S2/S3/S4 통합 매매결정 배치 (cron-job.org 20:00 KST)
           - ma-batch         # MA 이평선 배치 (16:30 KST)
-          - canslim-morning  # 전략3 CANSLIM (cron-job.org 트리거)
           - canslim-batch    # CANSLIM 스크리닝 배치 (16:40 KST)
-          - sepa-morning     # 전략4 SEPA (cron-job.org 트리거)
           - sepa-batch       # SEPA 트렌드템플릿+VCP 배치 (17:00 KST)
+          - morning          # 전략1 오전 수급 (cron-job.org 트리거)
+          - ma-morning       # 전략2 MA이평선 (비활성, 하위호환용)
+          - canslim-morning  # 전략3 CANSLIM (비활성, 하위호환용)
+          - sepa-morning     # 전략4 SEPA (비활성, 하위호환용)
           - update-watchlist # KOSPI200+KOSDAQ150 구성 종목 갱신 (월 1회 자동)
           - update-dart      # DART EPS 배치 (분기 1회 수동)
           - balance          # 잔고 조회
@@ -44,9 +46,10 @@ concurrency:
   # → S1 실행 중에도 S2/S3/S4가 별도 큐에서 즉시 실행 가능
   group: >-
     ${{
-      (github.event.inputs.mode == 'ma-batch'        ||
-       github.event.inputs.mode == 'canslim-batch'  ||
-       github.event.inputs.mode == 'sepa-batch'     ||
+      (github.event.inputs.mode == 'ma-batch'         ||
+       github.event.inputs.mode == 'canslim-batch'   ||
+       github.event.inputs.mode == 'sepa-batch'      ||
+       github.event.inputs.mode == 'trade-decision'  ||
        github.event.inputs.mode == 'update-watchlist' ||
        github.event.inputs.mode == 'update-dart')
       && 'okdongja-batch'
@@ -167,13 +170,15 @@ jobs:
 
     if: |
       github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.mode != 'morning'         &&
-      github.event.inputs.mode != 'ma-morning'      &&
-      github.event.inputs.mode != 'ma-batch'        &&
-      github.event.inputs.mode != 'canslim-morning' &&
-      github.event.inputs.mode != 'canslim-batch'   &&
-      github.event.inputs.mode != 'sepa-morning'    &&
-      github.event.inputs.mode != 'sepa-batch'      &&
+      github.event.inputs.mode != 'morning'          &&
+      github.event.inputs.mode != 'morning-trade'    &&
+      github.event.inputs.mode != 'trade-decision'   &&
+      github.event.inputs.mode != 'ma-morning'       &&
+      github.event.inputs.mode != 'ma-batch'         &&
+      github.event.inputs.mode != 'canslim-morning'  &&
+      github.event.inputs.mode != 'canslim-batch'    &&
+      github.event.inputs.mode != 'sepa-morning'     &&
+      github.event.inputs.mode != 'sepa-batch'       &&
       github.event.inputs.mode != 'update-watchlist' &&
       github.event.inputs.mode != 'update-dart'
 
@@ -614,14 +619,130 @@ jobs:
           if-no-files-found: ignore
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job J: DART 재무 데이터 배치 (분기 1회 수동 트리거)
+# Job J: 통합 매매결정 배치 (20:00 KST)
+# S2/S3/S4 포지션 청산 결정 + 매수 후보 취합 → trade_queue.json 저장
+# cron-job.org: 20:00 KST (11:00 UTC) Mon-Fri → trade-decision 트리거
+# 실행 순서: ma-batch(16:30) → canslim-batch(16:40) → sepa-batch(17:00) → trade-decision(20:00)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  trade-decision:
+    name: 통합 매매결정 배치 (S2/S3/S4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'trade-decision'
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 통합 매매결정 실행
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOG_LEVEL:            INFO
+        run: python main.py --mode trade-decision
+
+      - name: 배치 실패 텔레그램 알림
+        if: failure() || cancelled()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          NOW=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')
+          MSG="[매매결정] 미완료 — ${NOW}"$'\n'"원인: ${{ job.status }}"
+          curl -s -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}"
+
+      - name: 로그 저장
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trade-decision-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 90
+          if-no-files-found: ignore
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Job K: 통합 아침 매매 실행 (08:55 → 09:00 시장가)
+# trade_queue.json 기반 S2/S3/S4 일괄 매수/매도
+# cron-job.org: 08:55 KST (23:55 UTC 전날) Mon-Fri → morning-trade 트리거
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  morning-trade:
+    name: 통합 아침 매매 (S2/S3/S4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning-trade'
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 통합 아침 매매 실행
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOG_LEVEL:            INFO
+        run: python main.py --mode morning-trade
+
+      - name: 로그 저장
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-trade-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 90
+          if-no-files-found: ignore
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Job L: DART 재무 데이터 배치 (분기 1회 수동 트리거)
 # 실행 시기: 분기 보고서 공시 완료 후
 #   Q1(1분기):  5월 중순   Q2(반기): 8월 중순
 #   Q3(3분기): 11월 중순   Annual:  다음해 3월 말
 # DART_API_KEY Secret 필요 (https://opendart.fss.or.kr)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   update-dart:
-    name: DART EPS 배치 (분기)
+    name: DART EPS 배치 (분기 1회)
     runs-on: ubuntu-latest
     timeout-minutes: 120      # ~405종목 × 평균 3call × 0.11s ≈ 40분 + 여유
 
