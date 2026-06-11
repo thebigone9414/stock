@@ -11,24 +11,6 @@
       "date": "2026-06-11",
       "strategy": "S2",
       "per_slot_budget": 1300251
-    },
-    {
-      "code": "352560",
-      "name": "KODEX 한국부동산리츠인프라",
-      "candle_body_ratio": 0.00838,
-      "has_ma744": true,
-      "date": "2026-06-11",
-      "strategy": "S2",
-      "per_slot_budget": 1300251
-    },
-    {
-      "code": "033780",
-      "name": "KT&G",
-      "candle_body_ratio": 0.00054,
-      "has_ma744": true,
-      "date": "2026-06-11",
-      "strategy": "S2",
-      "per_slot_budget": 1300251
     }
   ]
 }
