@@ -11914,5 +11914,28 @@
   },
   "positions": {},
   "base_capital": 10000000,
-  "updated_at_kst": "2026-06-11 17:49"
+  "updated_at_kst": "2026-06-11 17:49",
+  "entry_pending": [
+    {
+      "code": "403870",
+      "name": "HPSP",
+      "candle_body_ratio": 0.056364,
+      "has_ma744": true,
+      "date": "2026-06-11"
+    },
+    {
+      "code": "352560",
+      "name": "KODEX 한국부동산리츠인프라",
+      "candle_body_ratio": 0.00838,
+      "has_ma744": true,
+      "date": "2026-06-11"
+    },
+    {
+      "code": "033780",
+      "name": "KT&G",
+      "candle_body_ratio": 0.00054,
+      "has_ma744": true,
+      "date": "2026-06-11"
+    }
+  ]
 }
