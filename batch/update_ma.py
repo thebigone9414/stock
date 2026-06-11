@@ -385,8 +385,10 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
 
 
 def _is_buy_signal(s: dict) -> bool:
-    """배치 기준 매수 신호 여부 (완전 정배열 or 부분 정배열)"""
+    """배치 기준 매수 신호 여부 (완전 정배열 or 부분 정배열 + 양봉 몸통 3% 이상)"""
     if not s.get("prev_bullish_candle"):
+        return False
+    if s.get("candle_body_ratio", 0) < 0.03:
         return False
     if not s.get("ma62_uptrend") or not s.get("ma248_uptrend"):
         return False
