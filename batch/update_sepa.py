@@ -281,6 +281,9 @@ def _check_s4_exits(today_str: str, notifier: Notifier = None) -> None:
             else:
                 logger.info(f"[S4 손절대기중] [{code}] {name}  {gain:+.2%}")
             continue
+        elif pos.get("stop_loss_pending"):
+            sepa_store.set_stop_loss_pending(code, False)
+            logger.info(f"[S4 손절플래그 해제] [{code}] {name}  회복:{gain:+.2%}")
 
         # ② 러너 (+20% 이상): MA이탈 시 청산
         if peak_gain >= RUNNER_THRESHOLD:
@@ -316,6 +319,9 @@ def _check_s4_exits(today_str: str, notifier: Notifier = None) -> None:
             else:
                 logger.info(f"[S4 트레일링스탑대기중] [{code}] {name}  {gain:+.2%}")
             continue
+        elif pos.get("trail_stop_pending"):
+            sepa_store.set_trail_stop_pending(code, False)
+            logger.info(f"[S4 트레일링스탑플래그 해제] [{code}] {name}  고점:{peak_gain:+.2%}")
 
         # ④ 익절
         if gain >= target:
@@ -329,6 +335,9 @@ def _check_s4_exits(today_str: str, notifier: Notifier = None) -> None:
             else:
                 logger.info(f"[S4 익절대기중] [{code}] {name}  {gain:+.2%}")
             continue
+        elif pos.get("take_profit_pending"):
+            sepa_store.set_take_profit_pending(code, False)
+            logger.info(f"[S4 익절플래그 해제] [{code}] {name}  현재:{gain:+.2%} < {target:+.0%}")
 
         logger.info(
             f"[S4 보유중] [{code}] {name}  "
@@ -389,6 +398,7 @@ def _check_s4_entries(
             "rs_score":         info.get("rs_score", 0),
             "pivot":            info.get("pivot", 0),
             "tight_range_pct":  info.get("tight_range_pct", 0),
+            "date":             today_str,
         })
 
     sepa_store.set_entry_pending(candidates)

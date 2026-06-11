@@ -178,6 +178,9 @@ def _check_s3_exits(today_str: str, notifier: Notifier = None) -> None:
             else:
                 logger.info(f"[S3 손절대기중] [{code}] {name}  {gain:+.2%}")
             continue
+        elif pos.get("stop_loss_pending"):
+            canslim_store.set_stop_loss_pending(code, False)
+            logger.info(f"[S3 손절플래그 해제] [{code}] {name}  회복:{gain:+.2%}")
 
         # ② 러너 (+20% 이상): MA이탈 시 청산
         if peak_gain >= RUNNER_THRESHOLD:
@@ -213,6 +216,9 @@ def _check_s3_exits(today_str: str, notifier: Notifier = None) -> None:
             else:
                 logger.info(f"[S3 트레일링스탑대기중] [{code}] {name}  {gain:+.2%}")
             continue
+        elif pos.get("trail_stop_pending"):
+            canslim_store.set_trail_stop_pending(code, False)
+            logger.info(f"[S3 트레일링스탑플래그 해제] [{code}] {name}  고점:{peak_gain:+.2%}")
 
         # ④ +20% 미달 구간: 익절
         if gain >= target:
@@ -226,6 +232,9 @@ def _check_s3_exits(today_str: str, notifier: Notifier = None) -> None:
             else:
                 logger.info(f"[S3 익절대기중] [{code}] {name}  {gain:+.2%}")
             continue
+        elif pos.get("take_profit_pending"):
+            canslim_store.set_take_profit_pending(code, False)
+            logger.info(f"[S3 익절플래그 해제] [{code}] {name}  현재:{gain:+.2%} < {target:+.0%}")
 
         logger.info(
             f"[S3 보유중] [{code}] {name}  "
@@ -303,6 +312,7 @@ def _check_s3_entries(
             "name":   info["name"],
             "score":  info.get("score", 0),
             "ca_tag": ca_tag,
+            "date":   today_str,
         })
 
     canslim_store.set_entry_pending(candidates)

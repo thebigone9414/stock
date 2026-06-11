@@ -140,6 +140,9 @@ class CANSLIMStrategy:
         entry_pending = get_entry_pending()
         today_str     = datetime.now(KST).strftime("%Y-%m-%d")
 
+        # 당일 저녁 배치가 결정한 후보만 유효 (배치 누락 시 stale 후보 방지)
+        entry_pending = [e for e in entry_pending if e.get("date") == today_str]
+
         if not entry_pending:
             logger.info("[S3] 매수 대기 종목 없음 (전날 저녁 후보 없음)")
             return
@@ -162,6 +165,7 @@ class CANSLIMStrategy:
             extra    = ma_store.extra_slots(base_cap, bal.total_eval) if base_cap else 0
         except Exception as e:
             logger.error(f"[S3] 잔고 조회 실패: {e}")
+            set_entry_pending([])
             return
 
         max_shared = S2_S3_BASE_SLOTS + extra
