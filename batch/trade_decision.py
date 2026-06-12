@@ -370,32 +370,29 @@ def run_decision(account, notifier: Notifier = None) -> None:
 
     raw_candidates = _collect_entries(today)
     buy_list: list = []
-    need_funding   = max(0, MAX_BUY_AMOUNT - bal.cash)
     if raw_candidates:
-        buy_budget = min(bal.cash, MAX_BUY_AMOUNT)
-        if buy_budget < 10_000:
-            logger.info(f"[매매결정] 가용현금 부족 ({bal.cash:,}원) — 매수 건너뜀")
+        per_budget     = MAX_BUY_AMOUNT  # 종목당 고정 400만원
+        total_needed   = per_budget * len(raw_candidates)
+        need_funding   = max(0, total_needed - bal.cash)
+
+        if bal.cash < per_budget:
+            logger.info(f"[매매결정] 가용현금 부족 ({bal.cash:,}원 < {per_budget:,}원) — 매수 건너뜀")
         else:
-            per_budget = int(buy_budget / len(raw_candidates))
-            if per_budget < 10_000:
-                max_buyable = int(buy_budget / 10_000)
-                if max_buyable == 0:
-                    logger.info(f"[매매결정] 가용현금 부족 ({bal.cash:,}원) — 매수 건너뜀")
-                else:
-                    raw_candidates = raw_candidates[:max_buyable]
-                    per_budget = int(buy_budget / len(raw_candidates))
-                    buy_list = [{**c, "per_slot_budget": per_budget} for c in raw_candidates]
-                    logger.info(
-                        f"[매매결정] 현금 부족으로 상위 {max_buyable}종목으로 축소  "
-                        f"매수예산:{buy_budget:,}원  1종목당:{per_budget:,}원"
-                    )
-            else:
-                buy_list = [{**c, "per_slot_budget": per_budget} for c in raw_candidates]
+            max_buyable = int(bal.cash / per_budget)
+            if max_buyable < len(raw_candidates):
+                raw_candidates = raw_candidates[:max_buyable]
+                need_funding   = total_needed - bal.cash
                 logger.info(
-                    f"[매매결정] 매수 후보 {len(buy_list)}종목  "
-                    f"매수예산:{buy_budget:,}원  1종목당:{per_budget:,}원"
+                    f"[매매결정] 현금 부족으로 상위 {max_buyable}종목으로 축소  "
+                    f"필요:{total_needed:,}원  가용:{bal.cash:,}원"
                 )
+            buy_list = [{**c, "per_slot_budget": per_budget} for c in raw_candidates]
+            logger.info(
+                f"[매매결정] 매수 후보 {len(buy_list)}종목  "
+                f"1종목당:{per_budget:,}원  합계:{per_budget * len(buy_list):,}원"
+            )
     else:
+        need_funding = 0
         logger.info("[매매결정] 매수 후보 없음")
 
     ma_store.set_entry_pending([])
@@ -438,7 +435,7 @@ def run_decision(account, notifier: Notifier = None) -> None:
                 f"예산:{b['per_slot_budget']:,}원"
             )
         if need_funding > 0:
-            lines.append(f"\n⚠️ 매수예산 부족: {need_funding:,}원 추가 입금 필요 (목표 {MAX_BUY_AMOUNT:,}원)")
+            lines.append(f"\n⚠️ 매수예산 부족: {need_funding:,}원 추가 입금 필요")
     else:
         lines.append("매수 예정 없음")
 
