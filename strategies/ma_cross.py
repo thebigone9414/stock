@@ -43,9 +43,9 @@ from kis.account import KISAccount
 from utils.notifier import Notifier
 
 KST                 = pytz.timezone("Asia/Seoul")
-S2_S3_BASE_SLOTS    = 4     # S2+S3 공유 슬롯 기본값 (총 5: S1=1 고정, S2+S3=4)
+S2_S3_BASE_SLOTS    = 10    # S2+S3 공유 슬롯 기본값
 MAX_POSITIONS       = S2_S3_BASE_SLOTS   # 하위 호환 유지
-SLOT_RATIO          = 0.20
+SLOT_RATIO          = 0.10
 S2_STOP_LOSS        = 0.07   # 손절 -7%
 S2_TAKE_PROFIT      = 0.20   # 익절 기본 +20% (러너 모드에서 사실상 도달 불가)
 S2_TAKE_PROFIT_EXT  = 0.25   # 익절 확장 +25%

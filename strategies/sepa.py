@@ -36,8 +36,8 @@ from data.sepa_store import (
 from data.shared_slots import count_shared
 
 KST              = pytz.timezone("Asia/Seoul")
-S2_S3_S4_BASE    = 4      # S2+S3+S4 공유 슬롯 기본값
-SLOT_RATIO       = 0.20   # 슬롯당 총자산 비율
+S2_S3_S4_BASE    = 10     # S2+S3+S4 공유 슬롯 기본값
+SLOT_RATIO       = 0.10   # 슬롯당 총자산 비율
 STOP_LOSS        = 0.07   # -7%
 RUNNER_THRESHOLD = 0.20   # 고점이 이 수준 이상이면 MA이탈 청산으로 전환
 TRAIL_STOP_PCT   = 0.10   # 고점 대비 -10% (러너 미달 구간 적용)

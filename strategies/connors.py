@@ -37,7 +37,7 @@ from data.connors_store import (
 )
 
 KST          = pytz.timezone("Asia/Seoul")
-S_BASE_SLOTS = 4
+S_BASE_SLOTS = 10
 STOP_LOSS    = 0.05    # -5% (단기 전략)
 TIME_STOP    = 10      # 거래일
 

@@ -252,6 +252,8 @@ class MorningSurgeStrategy:
     # ═══════════════════════════════════════════════════════════════════
     def _buy_phase(self) -> None:
         logger.info("[Phase 2] 프로그램 매매 분석 및 매수")
+        logger.info("[옥동자] S1 슬롯 비활성화 — 매수 없이 모니터링만 수행")
+        return
         result = self._analyze()
         if not result:
             logger.warning("[Phase 2] 유효한 프로그램 매매 신호 없음 — 매수 포기")

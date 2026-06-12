@@ -485,11 +485,11 @@ def _notify_daily_summary(
         from data.shared_slots import count_shared as _count_shared
         base_cap     = ma_store.get_base_capital()
         extra        = ma_store.extra_slots(base_cap, balance.total_eval) if base_cap else 0
-        shared_max   = 4 + extra
+        shared_max   = 10 + extra
         s2_n, s3_n, s4_n = _count_shared()
         total_shared = s2_n + s3_n + s4_n
         slot_line    = (
-            f"\n슬롯: S1=1개(고정)  S2+S3+S4={total_shared}/{shared_max}개 "
+            f"\n슬롯: S2+S3+S4={total_shared}/{shared_max}개 "
             f"(S2:{s2_n} S3:{s3_n} S4:{s4_n})"
         )
         if base_cap:

@@ -43,8 +43,8 @@ TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 TAKE_PROFIT      = 0.20
 TAKE_PROFIT_EXT  = 0.25
-S2_S3_S4_BASE    = 4
-SLOT_RATIO       = 0.20
+S2_S3_S4_BASE    = 10
+SLOT_RATIO       = 0.10
 
 
 def _sync_positions_from_balance(bal_positions: list, today_str: str) -> None:

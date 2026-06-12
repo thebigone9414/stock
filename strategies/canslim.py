@@ -33,7 +33,7 @@ from data.canslim_store import (
 )
 
 KST              = pytz.timezone("Asia/Seoul")
-S2_S3_BASE_SLOTS = 4     # S2+S3 공유 슬롯 기본값 (총 5: S1=1 고정, S2+S3=4)
+S2_S3_BASE_SLOTS = 10    # S2+S3 공유 슬롯 기본값
 MAX_POSITIONS    = S2_S3_BASE_SLOTS   # 하위 호환 유지
 STOP_LOSS        = 0.07   # -7%
 RUNNER_THRESHOLD = 0.20   # 고점이 이 수준 이상이면 MA이탈 청산으로 전환

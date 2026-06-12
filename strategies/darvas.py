@@ -39,7 +39,7 @@ from data.darvas_store import (
 )
 
 KST             = pytz.timezone("Asia/Seoul")
-S_BASE_SLOTS    = 4
+S_BASE_SLOTS    = 10
 STOP_LOSS       = 0.07
 TAKE_PROFIT     = 0.20
 TAKE_PROFIT_EXT = 0.25
