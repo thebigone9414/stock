@@ -144,11 +144,31 @@ def add_to_stop_blacklist(code: str, stop_date: str) -> None:
 
 # ── canslim_positions (포지션) ──────────────────────────────────────────
 
+def _migrate_positions(positions: dict) -> tuple:
+    """구 포맷 {code: tranche} → 신 포맷 {code: {date: tranche}} 변환"""
+    migrated = {}
+    changed = False
+    for code, val in positions.items():
+        if isinstance(val, dict) and "entry_price" in val:
+            entry_date = val.get("entry_date", "2026-01-01")
+            migrated[code] = {entry_date: val}
+            changed = True
+        else:
+            migrated[code] = val
+    return migrated, changed
+
+
 def load_positions() -> dict:
+    """Returns {code: {entry_date: tranche_dict}}"""
     if not CANSLIM_POS_PATH.exists():
         return {}
     with open(CANSLIM_POS_PATH, "r", encoding="utf-8") as f:
-        return json.load(f).get("positions", {})
+        raw = json.load(f).get("positions", {})
+    migrated, changed = _migrate_positions(raw)
+    if changed:
+        save_positions(migrated)
+        logger.info("[canslim_store] 포지션 포맷 마이그레이션 완료")
+    return migrated
 
 
 def save_positions(positions: dict) -> None:
@@ -170,20 +190,17 @@ def add_position(
     entry_date: str, entry_price: int, quantity: int,
 ) -> None:
     positions = load_positions()
-    existing  = positions.get(code)
-    if existing and existing.get("quantity", 0) > 0 and existing.get("entry_price", 0) > 0:
-        old_qty   = existing["quantity"]
-        old_price = existing["entry_price"]
-        new_qty   = old_qty + quantity
-        new_avg   = (old_price * old_qty + entry_price * quantity) / new_qty
-        positions[code] = {
-            **existing,
-            "entry_price": int(round(new_avg)),
-            "quantity":    new_qty,
-        }
-        msg = f"chore: S3 추가매수 {code} (수량 {old_qty}→{new_qty}, 평단 {old_price:,}→{int(round(new_avg)):,})"
+    if code not in positions:
+        positions[code] = {}
+    if entry_date in positions[code]:
+        t = positions[code][entry_date]
+        old_qty, old_price = t.get("quantity", 0), t.get("entry_price", 0)
+        new_qty = old_qty + quantity
+        new_avg = (old_price * old_qty + entry_price * quantity) / new_qty if new_qty else entry_price
+        positions[code][entry_date] = {**t, "entry_price": int(round(new_avg)), "quantity": new_qty}
+        msg = f"chore: S3 트랜치합산 {code} [{entry_date}]"
     else:
-        positions[code] = {
+        positions[code][entry_date] = {
             "name":                 name,
             "entry_date":           entry_date,
             "entry_price":          entry_price,
@@ -192,17 +209,21 @@ def add_position(
             "peak_gain_pct":        0.0,
             "early_gain_triggered": False,
         }
-        msg = f"chore: S3 포지션 추가 {code} {name} @{entry_price:,}"
-
+        n = len(positions[code])
+        msg = (f"chore: S3 포지션 추가 {code} {name} @{entry_price:,} [{entry_date}]"
+               + (f" (트랜치{n})" if n > 1 else ""))
     save_positions(positions)
     git_commit_push([str(CANSLIM_POS_PATH)], msg)
 
 
-def remove_position(code: str) -> None:
+def remove_position(code: str, entry_date: str) -> None:
     positions = load_positions()
-    positions.pop(code, None)
+    if code in positions:
+        positions[code].pop(entry_date, None)
+        if not positions[code]:
+            positions.pop(code)
     save_positions(positions)
-    git_commit_push([str(CANSLIM_POS_PATH)], f"chore: S3 포지션 제거 {code}")
+    git_commit_push([str(CANSLIM_POS_PATH)], f"chore: S3 포지션 제거 {code} [{entry_date}]")
 
 
 
@@ -240,38 +261,42 @@ def set_entry_pending(entries: list) -> None:
     )
 
 
-def update_position_peak(code: str, current_price: int, current_date: str) -> None:
-    """고점 가격·수익률 갱신 + 조기익절 트리거 체크"""
+def update_position_peak(code: str, entry_date: str, current_price: int, current_date: str) -> None:
+    """특정 트랜치 고점 갱신 + 조기익절 트리거 체크"""
     positions = load_positions()
-    pos = positions.get(code)
-    if not pos:
+    tranche = positions.get(code, {}).get(entry_date)
+    if not tranche:
         return
 
-    ep   = pos.get("entry_price", 0)
+    ep   = tranche.get("entry_price", 0)
     gain = (current_price - ep) / ep if ep > 0 else 0.0
 
-    if current_price > pos.get("peak_price", 0):
-        pos["peak_price"]    = current_price
-        pos["peak_gain_pct"] = round(gain, 6)
+    changed = False
+    if current_price > tranche.get("peak_price", 0):
+        tranche["peak_price"]    = current_price
+        tranche["peak_gain_pct"] = round(gain, 6)
+        changed = True
 
-    # 조기 +15% 달성 여부 체크 (진입 후 21 캘린더일 이내)
-    if not pos.get("early_gain_triggered") and gain >= 0.15:
+    if not tranche.get("early_gain_triggered") and gain >= 0.15:
         from datetime import datetime
         try:
-            entry_dt   = datetime.strptime(pos["entry_date"], "%Y-%m-%d")
-            current_dt = datetime.strptime(current_date, "%Y-%m-%d")
-            days_held  = (current_dt - entry_dt).days
+            days_held = (
+                datetime.strptime(current_date, "%Y-%m-%d")
+                - datetime.strptime(entry_date, "%Y-%m-%d")
+            ).days
             if days_held <= 21:
-                pos["early_gain_triggered"] = True
+                tranche["early_gain_triggered"] = True
+                changed = True
                 logger.info(
-                    f"[S3 조기익절트리거] [{code}] {pos.get('name', '')}  "
+                    f"[S3 조기익절트리거] [{code}] {tranche.get('name', '')}  "
                     f"+{gain:.1%} ({days_held}일) → 목표 +25%로 상향"
                 )
         except (ValueError, KeyError):
             pass
 
-    positions[code] = pos
-    save_positions(positions)
+    if changed:
+        positions[code][entry_date] = tranche
+        save_positions(positions)
 
 
 # ── git 커밋·푸시 ──────────────────────────────────────────────────────

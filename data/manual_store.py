@@ -1,7 +1,10 @@
 """
-S5 모멘텀 전략 데이터 영속성 레이어
+수동 포지션 영속성 레이어
 
-data/momentum_positions.json — S5 포지션 + 매수대기 목록
+data/manual_positions.json — 수동 매수 종목 (자동 매수 신호 없음)
+
+청산 조건: S2~S4와 동일 (손절-7% / 트레일링스탑 / 익절+20% / 조기익절)
+포지션 구조: positions[code][entry_date] = {tranche}
 """
 import json
 import os
@@ -11,12 +14,11 @@ from pathlib import Path
 
 from loguru import logger
 
-MOMENTUM_POS_PATH = Path("data/momentum_positions.json")
+MANUAL_POS_PATH = Path("data/manual_positions.json")
 
-_EMPTY_POS = {"positions": {}}
+# 잔고동기화 시 자동으로 수동 포지션으로 분류할 종목 코드
+MANUAL_CODES = {"034020", "0190C0", "305720"}
 
-
-# ── 포지션 ───────────────────────────────────────────────────────────
 
 def _migrate_positions(positions: dict) -> tuple:
     """구 포맷 {code: tranche} → 신 포맷 {code: {date: tranche}} 변환"""
@@ -34,36 +36,31 @@ def _migrate_positions(positions: dict) -> tuple:
 
 def load_positions() -> dict:
     """Returns {code: {entry_date: tranche_dict}}"""
-    if not MOMENTUM_POS_PATH.exists():
+    if not MANUAL_POS_PATH.exists():
         return {}
-    with open(MOMENTUM_POS_PATH, "r", encoding="utf-8") as f:
+    with open(MANUAL_POS_PATH, "r", encoding="utf-8") as f:
         raw = json.load(f).get("positions", {})
     migrated, changed = _migrate_positions(raw)
     if changed:
         save_positions(migrated)
-        logger.info("[momentum_store] 포지션 포맷 마이그레이션 완료")
     return migrated
 
 
 def save_positions(positions: dict) -> None:
-    MOMENTUM_POS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    MANUAL_POS_PATH.parent.mkdir(parents=True, exist_ok=True)
     existing: dict = {}
-    if MOMENTUM_POS_PATH.exists():
-        with open(MOMENTUM_POS_PATH, "r", encoding="utf-8") as f:
+    if MANUAL_POS_PATH.exists():
+        with open(MANUAL_POS_PATH, "r", encoding="utf-8") as f:
             try:
                 existing = json.load(f)
             except json.JSONDecodeError:
                 existing = {}
     existing["positions"] = positions
-    with open(MOMENTUM_POS_PATH, "w", encoding="utf-8") as f:
+    with open(MANUAL_POS_PATH, "w", encoding="utf-8") as f:
         json.dump(existing, f, ensure_ascii=False, indent=2)
 
 
-def add_position(
-    code: str, name: str,
-    entry_date: str, entry_price: int, quantity: int,
-    buyer_type: str = "foreign",
-) -> None:
+def add_position(code: str, name: str, entry_date: str, entry_price: int, quantity: int) -> None:
     positions = load_positions()
     if code not in positions:
         positions[code] = {}
@@ -73,7 +70,7 @@ def add_position(
         new_qty = old_qty + quantity
         new_avg = (old_price * old_qty + entry_price * quantity) / new_qty if new_qty else entry_price
         positions[code][entry_date] = {**t, "entry_price": int(round(new_avg)), "quantity": new_qty}
-        msg = f"chore: S5 트랜치합산 {code} [{entry_date}]"
+        msg = f"chore: 수동 트랜치합산 {code} [{entry_date}]"
     else:
         positions[code][entry_date] = {
             "name":                 name,
@@ -83,13 +80,10 @@ def add_position(
             "peak_price":           entry_price,
             "peak_gain_pct":        0.0,
             "early_gain_triggered": False,
-            "buyer_type":           buyer_type,
         }
-        n = len(positions[code])
-        msg = (f"chore: S5 포지션 추가 {code} {name} @{entry_price:,} [{entry_date}]"
-               + (f" (트랜치{n})" if n > 1 else ""))
+        msg = f"chore: 수동 포지션 추가 {code} {name} @{entry_price:,} [{entry_date}]"
     save_positions(positions)
-    git_commit_push([str(MOMENTUM_POS_PATH)], msg)
+    git_commit_push([str(MANUAL_POS_PATH)], msg)
 
 
 def remove_position(code: str, entry_date: str) -> None:
@@ -99,11 +93,11 @@ def remove_position(code: str, entry_date: str) -> None:
         if not positions[code]:
             positions.pop(code)
     save_positions(positions)
-    git_commit_push([str(MOMENTUM_POS_PATH)], f"chore: S5 포지션 제거 {code} [{entry_date}]")
+    git_commit_push([str(MANUAL_POS_PATH)], f"chore: 수동 포지션 제거 {code} [{entry_date}]")
 
 
 def update_position_peak(code: str, entry_date: str, current_price: int, current_date: str) -> None:
-    """특정 트랜치 고점 갱신"""
+    """특정 트랜치 고점 갱신 + 조기익절 트리거(21일 이내 +15%) 체크"""
     positions = load_positions()
     tranche = positions.get(code, {}).get(entry_date)
     if not tranche:
@@ -129,7 +123,7 @@ def update_position_peak(code: str, entry_date: str, current_price: int, current
                 tranche["early_gain_triggered"] = True
                 changed = True
                 logger.info(
-                    f"[S5 조기익절트리거] [{code}] {tranche.get('name', '')}  "
+                    f"[수동 조기익절트리거] [{code}] {tranche.get('name', '')}  "
                     f"+{gain:.1%} ({days_held}일) → 목표 +25%로 상향"
                 )
         except (ValueError, KeyError):
@@ -139,40 +133,6 @@ def update_position_peak(code: str, entry_date: str, current_price: int, current
         positions[code][entry_date] = tranche
         save_positions(positions)
 
-
-# ── 매수 대기 목록 ───────────────────────────────────────────────────
-
-def get_entry_pending() -> list:
-    if not MOMENTUM_POS_PATH.exists():
-        return []
-    with open(MOMENTUM_POS_PATH, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f).get("entry_pending", [])
-        except json.JSONDecodeError:
-            return []
-
-
-def set_entry_pending(entries: list) -> None:
-    MOMENTUM_POS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    existing: dict = {}
-    if MOMENTUM_POS_PATH.exists():
-        with open(MOMENTUM_POS_PATH, "r", encoding="utf-8") as f:
-            try:
-                existing = json.load(f)
-            except json.JSONDecodeError:
-                existing = {}
-    existing["entry_pending"] = entries
-    with open(MOMENTUM_POS_PATH, "w", encoding="utf-8") as f:
-        json.dump(existing, f, ensure_ascii=False, indent=2)
-    n     = len(entries)
-    codes = " ".join(e["code"] for e in entries[:3]) + ("..." if n > 3 else "")
-    git_commit_push(
-        [str(MOMENTUM_POS_PATH)],
-        f"chore: S5 매수대기 {n}종목" + (f" {codes}" if n else ""),
-    )
-
-
-# ── git 커밋·푸시 ────────────────────────────────────────────────────
 
 def git_commit_push(files: list, message: str) -> None:
     if not os.environ.get("GITHUB_ACTIONS"):

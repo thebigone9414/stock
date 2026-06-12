@@ -18,6 +18,7 @@ import data.ma_store as ma_store
 import data.canslim_store as canslim_store
 import data.sepa_store as sepa_store
 import data.momentum_store as momentum_store
+import data.manual_store as manual_store
 from data.trade_queue_store import get_today_queue, save_queue, QUEUE_PATH, git_commit_push
 
 KST = pytz.timezone("Asia/Seoul")
@@ -85,6 +86,7 @@ class MorningTradeStrategy:
         reason      = item["reason"]
         quantity    = item["quantity"]
         entry_price = item["entry_price"]
+        entry_date  = item.get("entry_date", "")
 
         try:
             current = self.market.get_quote(code).price
@@ -102,17 +104,19 @@ class MorningTradeStrategy:
                 logger.info(f"[morning] [{strategy}] 모의투자 — 주문 생략")
 
             if strategy == "S2":
-                ma_store.remove_position(code)
+                ma_store.remove_position(code, entry_date)
             elif strategy == "S3":
-                canslim_store.remove_position(code)
+                canslim_store.remove_position(code, entry_date)
                 if "손절" in reason:
                     canslim_store.add_to_stop_blacklist(
                         code, datetime.now(KST).strftime("%Y-%m-%d")
                     )
             elif strategy == "S4":
-                sepa_store.remove_position(code)
+                sepa_store.remove_position(code, entry_date)
             elif strategy == "S5":
-                momentum_store.remove_position(code)
+                momentum_store.remove_position(code, entry_date)
+            elif strategy == "수동":
+                manual_store.remove_position(code, entry_date)
 
             msg = (
                 f"[{strategy} 매도] [{code}] {name}  {reason}\n"
