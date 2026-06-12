@@ -11,7 +11,7 @@ CANSLIM 일일 스크리닝 배치
   S   — 당일 거래량 ≥ 50일 평균의 150%   (OHLCV)
   L   — 3개월 수익률 > KOSPI 3개월 수익률 (OHLCV)
   I   — 외국인+기관 순매수 > 0           (KIS 투자자동향 API)
-  M   — KODEX200 MA5 > MA20             (ohlcv_cache.json)
+  M   — KODEX200 MA20 > MA60            (ohlcv_cache.json, MA5>MA20보다 완화)
   ※ C·A(DART 재무조건) 제외 — DART 배치는 S2 유니버스에 한정
 
 [OHLCV 캐시 전략]
@@ -100,12 +100,12 @@ def _check_L(stock_closes: list, kospi_closes: list) -> tuple:
 
 
 def _check_M(kospi_closes: list) -> bool:
-    """KODEX200 MA5 > MA20 (단기 시장 상승 추세)"""
-    if len(kospi_closes) < 20:
+    """KODEX200 MA20 > MA60 (중기 시장 상승 추세 — MA5>MA20보다 완화된 기준)"""
+    if len(kospi_closes) < 60:
         return False
-    ma5  = sum(kospi_closes[-5:])  / 5
     ma20 = sum(kospi_closes[-20:]) / 20
-    return ma5 > ma20
+    ma60 = sum(kospi_closes[-60:]) / 60
+    return ma20 > ma60
 
 
 def _check_I(market, code: str, throttler: RateThrottler) -> bool:
