@@ -124,6 +124,14 @@ class KISOrder:
                 message=str(e),
             )
 
+    def buy_market(self, code: str, quantity: int) -> OrderResult:
+        """시장가 매수"""
+        return self.buy(code, quantity)
+
+    def sell_market(self, code: str, quantity: int) -> OrderResult:
+        """시장가 매도"""
+        return self.sell(code, quantity)
+
     def cancel(self, order_no: str, code: str, quantity: int, price: int, order_type: str) -> bool:
         """주문 취소"""
         tr_id = "VTTC0803U" if self.is_paper else "TTTC0803U"
