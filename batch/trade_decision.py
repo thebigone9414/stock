@@ -361,10 +361,9 @@ def run_decision(account, notifier: Notifier = None) -> None:
     base_cap     = ma_store.get_base_capital()
     extra        = ma_store.extra_slots(base_cap, bal.total_eval) if base_cap else 0
     max_shared   = S2_S3_S4_BASE + extra
-    s2_n, s3_n, s4_n, s5_n = count_shared()
-    total_shared = s2_n + s3_n + s4_n + s5_n
+    s2_n, s3_n, s4_n, s5_n, manual_n = count_shared()
+    total_shared = s2_n + s3_n + s4_n + s5_n + manual_n
     slots_free   = max_shared - total_shared
-    manual_n     = sum(len(t) for t in manual_store.load_positions().values())
 
     per_slot = int(bal.total_eval * SLOT_RATIO)
     if per_slot > bal.cash:
@@ -372,15 +371,14 @@ def run_decision(account, notifier: Notifier = None) -> None:
 
     logger.info(
         f"[매매결정] 총자산:{bal.total_eval:,}원  현금:{bal.cash:,}원  "
-        f"슬롯:{total_shared}/{max_shared}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n})  "
-        f"수동:{manual_n}  여유:{slots_free}  슬롯예산:{per_slot:,}원"
+        f"슬롯:{total_shared}/{max_shared}"
+        f"(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n} 수동:{manual_n})  "
+        f"여유:{slots_free}  슬롯예산:{per_slot:,}원"
     )
 
     sell_list = _decide_exits(today)
 
-    # 수동 포지션 매도는 슬롯 복구 불필요 (슬롯 미사용)
-    non_manual_sells = [s for s in sell_list if s["strategy"] != "수동"]
-    effective_free   = slots_free + len(non_manual_sells)
+    effective_free = slots_free + len(sell_list)
 
     buy_list: list = []
     if effective_free > 0 and per_slot >= 10_000:
@@ -410,8 +408,7 @@ def run_decision(account, notifier: Notifier = None) -> None:
     now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     lines   = [f"[매매결정] {now_str}"]
     lines  += [f"총자산:{bal.total_eval:,}원  현금:{bal.cash:,}원"]
-    lines  += [f"슬롯:{total_shared}/{max_shared}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n})"
-               + (f"  수동:{manual_n}" if manual_n else "")]
+    lines  += [f"슬롯:{total_shared}/{max_shared}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n} 수동:{manual_n})"]
 
     if sell_list:
         lines.append(f"\n내일 09:00 매도 ({len(sell_list)}종목):")

@@ -130,8 +130,8 @@ class MACrossStrategy:
         positions = self._reconcile(positions, balance)
 
         # S2~S4 공유 슬롯 계산
-        s2_n, s3_n, s4_n, s5_n = count_shared()
-        total_shared = s2_n + s3_n + s4_n + s5_n
+        s2_n, s3_n, s4_n, s5_n, manual_n = count_shared()
+        total_shared = s2_n + s3_n + s4_n + s5_n + manual_n
 
         extra_info = ""
         if base_cap and extra > 0:
