@@ -1,0 +1,15 @@
+{
+  "positions": {
+    "0190C0": {
+      "2026-06-12": {
+        "name": "RISE 현대차고정피지컬AI",
+        "entry_date": "2026-06-12",
+        "entry_price": 12655,
+        "quantity": 300,
+        "peak_price": 12655,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
+    }
+  }
+}
