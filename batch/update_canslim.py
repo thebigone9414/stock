@@ -366,7 +366,7 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     logger.info(f" CANSLIM(N·S·L·I·M) 완료: 성공:{ok} / 실패:{fail} / 건너뜀:{skip}")
     if all_pass_list:
         logger.info(f" 내일 매수 후보 (ALL_PASS 5/5) — {len(all_pass_list)}종목:")
-        for c, s in all_pass_list[:5]:
+        for c, s in all_pass_list[:20]:
             logger.info(
                 f"  [{c}] {s['name']}  close={s['close']:,}  "
                 f"vol_ratio={s['vol_ratio']:.2f}x  rs_3m={s['rs_3m']:+.1%}"
@@ -392,7 +392,7 @@ def _notify(
     lines   = [f"[CANSLIM배치] {now_str}  시장:{mstr}  처리:{ok}종목"]
     if all_pass_list:
         lines.append(f"ALL_PASS 후보 {len(all_pass_list)}종목:")
-        for c, s in all_pass_list[:5]:
+        for c, s in all_pass_list[:20]:
             lines.append(
                 f"  [{c}] {s['name']}  {s['close']:,}원  "
                 f"거래량:{s['vol_ratio']:.1f}x  RS:{s['rs_3m']:+.1%}"
