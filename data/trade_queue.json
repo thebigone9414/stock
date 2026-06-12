@@ -1,16 +1,63 @@
 {
-  "date": "2026-06-11",
-  "updated_at": "2026-06-11 20:00",
+  "date": "2026-06-12",
+  "updated_at": "2026-06-12 20:01",
   "sell": [],
   "buy": [
     {
-      "code": "403870",
-      "name": "HPSP",
-      "candle_body_ratio": 0.056364,
-      "has_ma744": true,
-      "date": "2026-06-11",
-      "strategy": "S2",
-      "per_slot_budget": 1300251
+      "code": "093370",
+      "name": "후성",
+      "buyer_type": "foreign",
+      "consec_days": 5,
+      "vol_ratio": 4.162,
+      "ma5": 15106,
+      "date": "2026-06-12",
+      "strategy": "S5",
+      "per_slot_budget": 666666
+    },
+    {
+      "code": "402340",
+      "name": "SK스퀘어",
+      "score": 5,
+      "ca_tag": " A",
+      "date": "2026-06-12",
+      "strategy": "S3",
+      "per_slot_budget": 666666
+    },
+    {
+      "code": "084370",
+      "name": "유진테크",
+      "score": 5,
+      "ca_tag": " A",
+      "date": "2026-06-12",
+      "strategy": "S3",
+      "per_slot_budget": 666666
+    },
+    {
+      "code": "095610",
+      "name": "테스",
+      "score": 5,
+      "ca_tag": " A",
+      "date": "2026-06-12",
+      "strategy": "S3",
+      "per_slot_budget": 666666
+    },
+    {
+      "code": "240810",
+      "name": "원익IPS",
+      "score": 4,
+      "ca_tag": " A",
+      "date": "2026-06-12",
+      "strategy": "S3",
+      "per_slot_budget": 666666
+    },
+    {
+      "code": "039030",
+      "name": "이오테크닉스",
+      "score": 4,
+      "ca_tag": " A",
+      "date": "2026-06-12",
+      "strategy": "S3",
+      "per_slot_budget": 666666
     }
   ]
 }
