@@ -7,9 +7,9 @@
         "entry_date": "2026-06-12",
         "entry_price": 60040,
         "quantity": 50,
-        "peak_price": 60040,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
+        "peak_price": 71500,
+        "peak_gain_pct": 0.190873,
+        "early_gain_triggered": true
       }
     }
   }
