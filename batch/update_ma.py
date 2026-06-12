@@ -237,14 +237,16 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
 
         cached           = ohlcv_cache.get(code, {})
         last_cached_date = cached.get("last_date", "")
-        cached_closes    = cached.get("closes", [])
-        cached_opens     = cached.get("opens",  [])
+        cached_closes    = cached.get("closes",  [])
+        cached_opens     = cached.get("opens",   [])
+        cached_volumes   = cached.get("volumes", [])
 
         try:
             # ── 캐시 히트: 오늘 이미 저장돼 있으면 API 생략 (force 시 무시) ──
             if not force and last_cached_date == today and len(cached_closes) >= MIN_DAYS_PARTIAL:
                 closes    = cached_closes
                 opens     = cached_opens
+                volumes   = cached_volumes
                 last_date = today
                 cache_hits += 1
                 logger.info(
@@ -270,30 +272,39 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
                     skip += 1
                     continue
 
-                new_dates  = [d.strftime("%Y-%m-%d") for d in df["date"]]
-                new_closes = [int(c) for c in df["close"].tolist()]
-                new_opens  = (
+                new_dates   = [d.strftime("%Y-%m-%d") for d in df["date"]]
+                new_closes  = [int(c) for c in df["close"].tolist()]
+                new_opens   = (
                     [int(o) for o in df["open"].tolist()]
                     if "open" in df.columns
                     else [0] * len(df)
                 )
-                last_date  = new_dates[-1]
+                new_volumes = (
+                    [int(v) for v in df["volume"].tolist()]
+                    if "volume" in df.columns
+                    else []
+                )
+                last_date   = new_dates[-1]
 
                 if fetch_days < OHLCV_DAYS and cached_closes:
                     # 캐시와 합산 (중복 날짜 제거)
                     new_mask   = [d > last_cached_date for d in new_dates]
-                    add_closes = [c for c, k in zip(new_closes, new_mask) if k]
-                    add_opens  = [o for o, k in zip(new_opens,  new_mask) if k]
-                    closes     = (cached_closes + add_closes)[-OHLCV_DAYS:]
-                    opens      = (cached_opens  + add_opens )[-OHLCV_DAYS:]
+                    add_closes  = [c for c, k in zip(new_closes,  new_mask) if k]
+                    add_opens   = [o for o, k in zip(new_opens,   new_mask) if k]
+                    add_volumes = [v for v, k in zip(new_volumes, new_mask) if k]
+                    closes  = (cached_closes  + add_closes )[-OHLCV_DAYS:]
+                    opens   = (cached_opens   + add_opens  )[-OHLCV_DAYS:]
+                    volumes = (cached_volumes + add_volumes)[-OHLCV_DAYS:]
                 else:
-                    closes = new_closes[-OHLCV_DAYS:]
-                    opens  = new_opens [-OHLCV_DAYS:]
+                    closes  = new_closes [-OHLCV_DAYS:]
+                    opens   = new_opens  [-OHLCV_DAYS:]
+                    volumes = new_volumes[-OHLCV_DAYS:]
 
                 ohlcv_cache[code] = {
                     "last_date": last_date,
                     "closes":    closes,
                     "opens":     opens,
+                    "volumes":   volumes,
                 }
 
             # ── 데이터 충분 여부 확인 ──────────────────────────────────

@@ -243,30 +243,9 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
 
             if s2_entry.get("last_date") == today and len(s2_entry.get("closes", [])) >= 60:
                 closes     = s2_entry["closes"]
+                # S2 배치가 거래량도 저장하므로 그대로 재사용
+                volumes    = s2_entry.get("volumes") or canslim_entry.get("volumes", [])
                 from_cache = "S2"
-                # S2 캐시는 거래량 없음 → canslim 캐시가 오늘치면 재사용, 아니면 증분 API 호출
-                if canslim_entry.get("last_date") == today and canslim_entry.get("volumes"):
-                    volumes = canslim_entry["volumes"]
-                else:
-                    last_vol  = canslim_entry.get("last_date", "")
-                    base_vols = canslim_entry.get("volumes", [])
-                    if last_vol and base_vols:
-                        stale_v = (today_date - datetime.strptime(last_vol, "%Y-%m-%d").date()).days
-                        fetch_v = max(INCREMENTAL_DAYS, stale_v * 2 + 5)
-                    else:
-                        fetch_v = CANSLIM_OHLCV_DAYS
-                    df_v = market.get_ohlcv_long(code, days=fetch_v, throttler=throttler)
-                    if not df_v.empty and "volume" in df_v.columns:
-                        new_dates_v = [d.strftime("%Y-%m-%d") for d in df_v["date"]]
-                        new_vols_v  = [int(v) for v in df_v["volume"].tolist()]
-                        if last_vol and base_vols:
-                            mask_v  = [d > last_vol for d in new_dates_v]
-                            volumes = (base_vols + [v for v, k in zip(new_vols_v, mask_v) if k])[-CANSLIM_OHLCV_DAYS:]
-                        else:
-                            volumes = new_vols_v[-CANSLIM_OHLCV_DAYS:]
-                        canslim_cache[code] = {"last_date": today, "closes": closes, "volumes": volumes}
-                    else:
-                        volumes = base_vols  # stale이지만 없는 것보단 나음
             elif canslim_entry.get("last_date") == today and len(canslim_entry.get("closes", [])) >= 60:
                 closes    = canslim_entry["closes"]
                 volumes   = canslim_entry.get("volumes", [])
