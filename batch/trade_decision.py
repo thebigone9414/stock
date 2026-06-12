@@ -47,6 +47,43 @@ S2_S3_S4_BASE    = 4
 SLOT_RATIO       = 0.20
 
 
+def _sync_positions_from_balance(bal_positions: list, today_str: str) -> None:
+    """KIS 잔고 → 포지션 스토어 동기화
+
+    스토어에 없는 종목(수동 매수 등)을 자동으로 추가한다.
+    전략 배정: SEPA 유니버스 → S4, CANSLIM 유니버스 → S3, 나머지 → S2
+    """
+    all_tracked = (
+        set(ma_store.get_positions())
+        | set(canslim_store.load_positions())
+        | set(sepa_store.load_positions())
+    )
+
+    canslim_universe = canslim_store.load_data()
+    sepa_universe    = sepa_store.load_data()
+
+    for pos in bal_positions:
+        if pos.code in all_tracked:
+            continue
+
+        entry_price = int(round(pos.avg_price)) or pos.current_price
+
+        if pos.code in sepa_universe:
+            strategy = "S4"
+            sepa_store.add_position(pos.code, pos.name, today_str, entry_price, pos.quantity)
+        elif pos.code in canslim_universe:
+            strategy = "S3"
+            canslim_store.add_position(pos.code, pos.name, today_str, entry_price, pos.quantity)
+        else:
+            strategy = "S2"
+            ma_store.add_position(pos.code, pos.name, today_str, entry_price, pos.quantity)
+
+        logger.warning(
+            f"[잔고동기화] [{pos.code}] {pos.name} → {strategy} 자동 추가  "
+            f"평단:{entry_price:,}  수량:{pos.quantity}"
+        )
+
+
 def _decide_exits(today_str: str) -> list:
     """모든 S2/S3/S4 포지션의 청산 조건 판정 → sell 리스트 반환"""
     sell_list = []
@@ -228,6 +265,9 @@ def run_decision(account, notifier: Notifier = None) -> None:
         if notifier:
             notifier.notify(f"[매매결정] 잔고 조회 실패로 중단\n{e}")
         return
+
+    # ── 잔고→스토어 동기화 (수동 매수 등 미추적 포지션 자동 추가) ──────
+    _sync_positions_from_balance(bal.positions, today)
 
     # ── 슬롯 계산 ──────────────────────────────────────────────────────
     base_cap     = ma_store.get_base_capital()
