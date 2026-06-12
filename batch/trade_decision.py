@@ -244,7 +244,7 @@ def _decide_exits(today_str: str) -> list:
                     ).days
                 except (ValueError, KeyError):
                     holding_days = 0
-                if holding_days > 21:
+                if holding_days >= 21:
                     reason = f"시간스탑({holding_days}일)"
                     logger.info(
                         f"[S5 시간스탑] [{code}] {name}  "

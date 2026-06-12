@@ -159,8 +159,8 @@ class SEPAStrategy:
             return
 
         # 슬롯 계산
-        s2_n, s3_n, s4_n = count_shared()
-        total_shared = s2_n + s3_n + s4_n
+        s2_n, s3_n, s4_n, s5_n = count_shared()
+        total_shared = s2_n + s3_n + s4_n + s5_n
 
         try:
             bal      = self.account.get_balance()
