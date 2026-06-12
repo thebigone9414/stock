@@ -21,6 +21,17 @@
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
+    },
+    "305720": {
+      "2026-06-12": {
+        "name": "KODEX 2차전지산업",
+        "entry_date": "2026-06-12",
+        "entry_price": 17625,
+        "quantity": 200,
+        "peak_price": 17625,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   }
 }
