@@ -368,37 +368,38 @@ def run_decision(account, notifier: Notifier = None) -> None:
 
     sell_list = _decide_exits(today)
 
+    try:
+        avail_cash = account.get_available_cash()
+    except Exception as e:
+        logger.warning(f"[매매결정] 주문가능금액 조회 실패, 예수금 사용: {e}")
+        avail_cash = bal.cash
+
     raw_candidates = _collect_entries(today)
     buy_list: list = []
     if raw_candidates:
-        per_budget     = MAX_BUY_AMOUNT  # 종목당 고정 400만원
-        total_needed   = per_budget * len(raw_candidates)
-        need_funding   = max(0, total_needed - bal.cash)
+        per_budget   = MAX_BUY_AMOUNT  # 종목당 고정 400만원
+        total_needed = per_budget * len(raw_candidates)
+        need_funding = max(0, total_needed - avail_cash)
 
-        if bal.cash < per_budget:
-            logger.info(f"[매매결정] 가용현금 부족 ({bal.cash:,}원 < {per_budget:,}원) — 매수 건너뜀")
+        if avail_cash < per_budget:
+            logger.info(f"[매매결정] 주문가능금액 부족 ({avail_cash:,}원 < {per_budget:,}원) — 매수 건너뜀")
         else:
-            max_buyable = int(bal.cash / per_budget)
+            max_buyable = int(avail_cash / per_budget)
             if max_buyable < len(raw_candidates):
                 raw_candidates = raw_candidates[:max_buyable]
-                need_funding   = total_needed - bal.cash
+                need_funding   = total_needed - avail_cash
                 logger.info(
                     f"[매매결정] 현금 부족으로 상위 {max_buyable}종목으로 축소  "
-                    f"필요:{total_needed:,}원  가용:{bal.cash:,}원"
+                    f"필요:{total_needed:,}원  주문가능:{avail_cash:,}원"
                 )
             buy_list = [{**c, "per_slot_budget": per_budget} for c in raw_candidates]
             logger.info(
                 f"[매매결정] 매수 후보 {len(buy_list)}종목  "
-                f"1종목당:{per_budget:,}원  합계:{per_budget * len(buy_list):,}원"
+                f"1종목당:{per_budget:,}원  합계:{per_budget * len(buy_list):,}원  주문가능:{avail_cash:,}원"
             )
     else:
         need_funding = 0
         logger.info("[매매결정] 매수 후보 없음")
-
-    ma_store.set_entry_pending([])
-    canslim_store.set_entry_pending([])
-    sepa_store.set_entry_pending([])
-    momentum_store.set_entry_pending([])
 
     queue = {
         "date":       today,
@@ -414,7 +415,7 @@ def run_decision(account, notifier: Notifier = None) -> None:
 
     now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     lines   = [f"[매매결정] {now_str}"]
-    lines  += [f"총자산:{bal.total_eval:,}원  현금:{bal.cash:,}원"]
+    lines  += [f"총자산:{bal.total_eval:,}원  주문가능:{avail_cash:,}원"]
     lines  += [f"슬롯:{total_shared}/{max_shared}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n} 수동:{manual_n})"]
 
     if sell_list:
