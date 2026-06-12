@@ -1,4 +1,47 @@
 {
   "positions": {},
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "402340",
+      "name": "SK스퀘어",
+      "score": 5,
+      "ca_tag": " A",
+      "date": "2026-06-12"
+    },
+    {
+      "code": "084370",
+      "name": "유진테크",
+      "score": 5,
+      "ca_tag": " A",
+      "date": "2026-06-12"
+    },
+    {
+      "code": "095610",
+      "name": "테스",
+      "score": 5,
+      "ca_tag": " A",
+      "date": "2026-06-12"
+    },
+    {
+      "code": "240810",
+      "name": "원익IPS",
+      "score": 4,
+      "ca_tag": " A",
+      "date": "2026-06-12"
+    },
+    {
+      "code": "039030",
+      "name": "이오테크닉스",
+      "score": 4,
+      "ca_tag": " A",
+      "date": "2026-06-12"
+    },
+    {
+      "code": "140860",
+      "name": "파크시스템스",
+      "score": 4,
+      "ca_tag": " A",
+      "date": "2026-06-12"
+    }
+  ]
 }
