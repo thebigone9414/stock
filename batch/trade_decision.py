@@ -109,7 +109,7 @@ def _decide_exits(today_str: str) -> list:
     """
     sell_list = []
 
-    # ── S2/S3/S4/수동 공통 청산 ──────────────────────────────────────
+    # ── S2/S3/S4 공통 청산 (수동 포지션은 자동 청산 제외) ────────────
     common_strategies = [
         ("S2",  ma_store.get_positions(),       ma_store.update_position_peak,
          lambda c, d: ma_store.get_positions().get(c, {}).get(d, {})),
@@ -117,8 +117,6 @@ def _decide_exits(today_str: str) -> list:
          lambda c, d: canslim_store.load_positions().get(c, {}).get(d, {})),
         ("S4",  sepa_store.load_positions(),    sepa_store.update_position_peak,
          lambda c, d: sepa_store.load_positions().get(c, {}).get(d, {})),
-        ("수동", manual_store.load_positions(), manual_store.update_position_peak,
-         lambda c, d: manual_store.load_positions().get(c, {}).get(d, {})),
     ]
 
     for strat_name, positions, update_peak, reload_pos in common_strategies:
