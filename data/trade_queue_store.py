@@ -49,9 +49,12 @@ def save_queue(data: dict) -> None:
 
 
 def get_today_queue(today: str) -> Optional[dict]:
-    """오늘 날짜 큐 반환 — date 불일치 또는 executed=True 시 None (stale/중복 방지)"""
+    """미실행 큐 반환 — executed=True 이면 None (중복 실행 방지)
+    date 체크를 하지 않는 이유: trade_decision은 전날 저녁에 date를 저장하므로
+    아침에 today와 date가 항상 다름 → date 필드는 메타데이터용으로만 사용
+    """
     q = load_queue()
-    if q.get("date") != today:
+    if not q.get("date"):
         return None
     if q.get("executed"):
         return None
