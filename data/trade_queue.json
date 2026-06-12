@@ -1,6 +1,27 @@
 {
   "date": "2026-06-12",
-  "updated_at": "2026-06-12 20:33",
+  "updated_at": "2026-06-12 20:46",
   "sell": [],
-  "buy": []
+  "buy": [
+    {
+      "code": "093370",
+      "name": "후성",
+      "buyer_type": "foreign",
+      "consec_days": 5,
+      "vol_ratio": 4.162,
+      "ma5": 15106,
+      "date": "2026-06-12",
+      "strategy": "S5",
+      "per_slot_budget": 4000000
+    },
+    {
+      "code": "402340",
+      "name": "SK스퀘어",
+      "score": 5,
+      "ca_tag": " A",
+      "date": "2026-06-12",
+      "strategy": "S3",
+      "per_slot_budget": 4000000
+    }
+  ]
 }
