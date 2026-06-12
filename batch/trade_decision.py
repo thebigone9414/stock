@@ -59,8 +59,8 @@ def _sync_positions_from_balance(bal_positions: list, today_str: str) -> None:
         | set(sepa_store.load_positions())
     )
 
-    canslim_universe = canslim_store.load_data()
-    sepa_universe    = sepa_store.load_data()
+    canslim_universe = set(canslim_store.load_data().get("stocks", {}).keys())
+    sepa_universe    = set(sepa_store.load_data().get("stocks", {}).keys())
 
     for pos in bal_positions:
         if pos.code in all_tracked:
