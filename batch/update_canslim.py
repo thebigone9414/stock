@@ -176,11 +176,11 @@ def _check_s3_entries(
 
     if candidates:
         logger.info(f"[S3 매수결정] {len(candidates)}종목 → entry_pending 설정")
-        for c in candidates[:3]:
+        for c in candidates:
             logger.info(f"  [{c['code']}] {c['name']}{c['ca_tag']}")
         if notifier:
             lines = [f"[S3 매수대기] 내일 09:00 매수 예정 {len(candidates)}종목:"]
-            for c in candidates[:3]:
+            for c in candidates:
                 lines.append(f"  [{c['code']}] {c['name']}{c['ca_tag']}")
             notifier.notify("\n".join(lines))
     else:

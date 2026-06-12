@@ -374,25 +374,27 @@ def run_decision(account, notifier: Notifier = None) -> None:
         logger.warning(f"[매매결정] 주문가능금액 조회 실패, 예수금 사용: {e}")
         avail_cash = bal.cash
 
-    raw_candidates = _collect_entries(today)
+    all_candidates = _collect_entries(today)
     buy_list: list = []
-    if raw_candidates:
+    deferred_list: list = []
+    if all_candidates:
         per_budget   = MAX_BUY_AMOUNT  # 종목당 고정 400만원
-        total_needed = per_budget * len(raw_candidates)
+        total_needed = per_budget * len(all_candidates)
         need_funding = max(0, total_needed - avail_cash)
 
         if avail_cash < per_budget:
             logger.info(f"[매매결정] 주문가능금액 부족 ({avail_cash:,}원 < {per_budget:,}원) — 매수 건너뜀")
+            deferred_list = all_candidates
         else:
-            max_buyable = int(avail_cash / per_budget)
-            if max_buyable < len(raw_candidates):
-                raw_candidates = raw_candidates[:max_buyable]
-                need_funding   = total_needed - avail_cash
+            max_buyable   = int(avail_cash / per_budget)
+            buy_candidates = all_candidates[:max_buyable]
+            deferred_list  = all_candidates[max_buyable:]
+            if deferred_list:
                 logger.info(
-                    f"[매매결정] 현금 부족으로 상위 {max_buyable}종목으로 축소  "
+                    f"[매매결정] 현금 부족으로 상위 {max_buyable}종목만 매수  "
                     f"필요:{total_needed:,}원  주문가능:{avail_cash:,}원"
                 )
-            buy_list = [{**c, "per_slot_budget": per_budget} for c in raw_candidates]
+            buy_list = [{**c, "per_slot_budget": per_budget} for c in buy_candidates]
             logger.info(
                 f"[매매결정] 매수 후보 {len(buy_list)}종목  "
                 f"1종목당:{per_budget:,}원  합계:{per_budget * len(buy_list):,}원  주문가능:{avail_cash:,}원"
@@ -428,12 +430,17 @@ def run_decision(account, notifier: Notifier = None) -> None:
     else:
         lines.append("매도 예정 없음")
 
-    if buy_list:
-        lines.append(f"\n내일 09:00 매수 ({len(buy_list)}종목):")
+    total_candidates = len(buy_list) + len(deferred_list)
+    if buy_list or deferred_list:
+        lines.append(f"\n내일 09:00 매수 ({len(buy_list)}/{total_candidates}종목):")
         for b in buy_list:
             lines.append(
                 f"  [{b['code']}] {b['name']} [{b['strategy']}]  "
                 f"예산:{b['per_slot_budget']:,}원"
+            )
+        for d in deferred_list:
+            lines.append(
+                f"  [{d['code']}] {d['name']} [{d['strategy']}]  (현금부족 스킵)"
             )
         if need_funding > 0:
             lines.append(f"\n⚠️ 매수예산 부족: {need_funding:,}원 추가 입금 필요")
