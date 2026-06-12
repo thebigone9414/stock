@@ -1,0 +1,13 @@
+{
+  "entry_pending": [
+    {
+      "code": "093370",
+      "name": "후성",
+      "buyer_type": "foreign",
+      "consec_days": 5,
+      "vol_ratio": 4.162,
+      "ma5": 15106,
+      "date": "2026-06-12"
+    }
+  ]
+}
