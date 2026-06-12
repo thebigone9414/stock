@@ -1,3 +1,16 @@
 {
-  "entry_pending": []
+  "entry_pending": [],
+  "positions": {
+    "403870": {
+      "2026-06-12": {
+        "name": "HPSP",
+        "entry_date": "2026-06-12",
+        "entry_price": 60040,
+        "quantity": 50,
+        "peak_price": 60040,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
+    }
+  }
 }
