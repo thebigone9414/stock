@@ -10,6 +10,17 @@
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
+    },
+    "034020": {
+      "2026-06-12": {
+        "name": "두산에너빌리티",
+        "entry_date": "2026-06-12",
+        "entry_price": 94655,
+        "quantity": 100,
+        "peak_price": 94655,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   }
 }
