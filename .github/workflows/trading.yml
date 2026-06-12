@@ -83,7 +83,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -131,7 +131,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
 
       - name: Python 3.11 설정
         uses: actions/setup-python@v5
@@ -189,7 +189,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
 
       - name: Python 3.11 설정
         uses: actions/setup-python@v5
@@ -269,7 +269,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -342,7 +342,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -398,7 +398,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -449,7 +449,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -520,7 +520,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -571,7 +571,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -641,7 +641,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -705,7 +705,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -758,7 +758,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
@@ -819,7 +819,7 @@ jobs:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: dev
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 설정
