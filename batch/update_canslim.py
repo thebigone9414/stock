@@ -102,9 +102,11 @@ def _check_L(stock_closes: list, kospi_closes: list) -> tuple:
 def _check_M(kospi_closes: list) -> bool:
     """KODEX200 MA20 > MA60 (중기 시장 상승 추세 — MA5>MA20보다 완화된 기준)"""
     if len(kospi_closes) < 60:
+        logger.warning(f"[CANSLIM M] KODEX200 closes 부족 ({len(kospi_closes)}개) — M=False")
         return False
     ma20 = sum(kospi_closes[-20:]) / 20
     ma60 = sum(kospi_closes[-60:]) / 60
+    logger.info(f"[CANSLIM M] MA20={ma20:.0f}  MA60={ma60:.0f}  MA20>MA60={ma20 > ma60}  (closes:{len(kospi_closes)}개, 최근:{kospi_closes[-1]:,})")
     return ma20 > ma60
 
 
