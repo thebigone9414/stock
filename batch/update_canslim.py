@@ -172,6 +172,11 @@ def _check_s3_entries(
             "date":   today_str,
         })
 
+    MAX_S3_ENTRIES = 5
+    if len(candidates) > MAX_S3_ENTRIES:
+        logger.info(f"[S3 매수결정] 후보 {len(candidates)}종목 → 상위 {MAX_S3_ENTRIES}종목으로 제한")
+        candidates = candidates[:MAX_S3_ENTRIES]
+
     canslim_store.set_entry_pending(candidates)
 
     if candidates:
