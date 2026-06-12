@@ -352,3 +352,29 @@ class KISMarket:
                     return record
             return output[0] if output else {}
         return output if isinstance(output, dict) else {}
+
+    def get_investor_trend_history(self, code: str, days: int = 5) -> list:
+        """투자자별 매매동향 최근 N거래일 반환
+        Returns list of {"date": "YYYYMMDD", "frgn_net": int, "orgn_net": int}
+        sorted most-recent first.
+        """
+        data = self.client.get(
+            "/uapi/domestic-stock/v1/quotations/inquire-investor",
+            tr_id="FHKST01010900",
+            params={"fid_cond_mrkt_div_code": "J", "fid_input_iscd": code},
+        )
+        output = data.get("output", [])
+        if not isinstance(output, list):
+            return []
+        result = []
+        for record in output:
+            if not (isinstance(record, dict) and record.get("frgn_ntby_tr_pbmn", "")):
+                continue
+            result.append({
+                "date":     record.get("stnd_isit", ""),
+                "frgn_net": _safe_int(record.get("frgn_ntby_tr_pbmn", "0")),
+                "orgn_net": _safe_int(record.get("orgn_ntby_tr_pbmn", "0")),
+            })
+            if len(result) >= days:
+                break
+        return result

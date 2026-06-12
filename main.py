@@ -86,6 +86,12 @@ def run_sepa_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
     run_batch(kis.market, notifier=notifier, force=force)
 
 
+def run_momentum_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
+    """S5 Momentum 일일 스크리닝 배치"""
+    from batch.update_momentum import run_batch
+    run_batch(kis.market, notifier=notifier, force=force)
+
+
 def run_trade_decision(kis: KIS, notifier: Notifier) -> None:
     """통합 매매 결정 배치 (20:00 KST) — S2/S3/S4 포지션 청산+매수 결정 → trade_queue.json"""
     from batch.trade_decision import run_decision
@@ -228,6 +234,7 @@ def main():
         choices=["morning", "ma-morning", "ma-batch",
                  "canslim-morning", "canslim-batch",
                  "sepa-morning", "sepa-batch",
+                 "momentum-batch",
                  "trade-decision", "morning-trade",
                  "balance", "market", "check-watchlist", "debug-investor", "auto"],
         default="morning",
@@ -269,6 +276,9 @@ def main():
 
     elif args.mode == "sepa-batch":
         run_sepa_batch(kis, notifier, force=args.force)
+
+    elif args.mode == "momentum-batch":
+        run_momentum_batch(kis, notifier, force=args.force)
 
     elif args.mode == "trade-decision":
         run_trade_decision(kis, notifier)

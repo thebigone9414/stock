@@ -16,6 +16,7 @@ on:
           - ma-batch         # MA 이평선 배치 (16:30 KST)
           - canslim-batch    # CANSLIM 스크리닝 배치 (16:40 KST)
           - sepa-batch       # SEPA 트렌드템플릿+VCP 배치 (17:00 KST)
+          - momentum-batch   # S5 Momentum 스크리닝 배치 (16:35 KST)
           - morning          # 전략1 오전 수급 (cron-job.org 트리거)
           - ma-morning       # 전략2 MA이평선 (비활성, 하위호환용)
           - canslim-morning  # 전략3 CANSLIM (비활성, 하위호환용)
@@ -49,6 +50,7 @@ concurrency:
       (github.event.inputs.mode == 'ma-batch'         ||
        github.event.inputs.mode == 'canslim-batch'   ||
        github.event.inputs.mode == 'sepa-batch'      ||
+       github.event.inputs.mode == 'momentum-batch'  ||
        github.event.inputs.mode == 'trade-decision'  ||
        github.event.inputs.mode == 'update-watchlist' ||
        github.event.inputs.mode == 'update-dart')
@@ -179,6 +181,7 @@ jobs:
       github.event.inputs.mode != 'canslim-batch'    &&
       github.event.inputs.mode != 'sepa-morning'     &&
       github.event.inputs.mode != 'sepa-batch'       &&
+      github.event.inputs.mode != 'momentum-batch'   &&
       github.event.inputs.mode != 'update-watchlist' &&
       github.event.inputs.mode != 'update-dart'
 
@@ -795,4 +798,73 @@ jobs:
           name: dart-batch-log-${{ github.run_id }}
           path: logs/
           retention-days: 90
+          if-no-files-found: ignore
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Job M: S5 Momentum 스크리닝 배치
+# cron-job.org: 16:35 KST (07:35 UTC) Mon-Fri → momentum-batch 트리거
+# (ma-batch 16:30 완료 후 5분 뒤 실행 → ma_data.json MA값 최신 활용)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  update-momentum:
+    name: S5 Momentum 스크리닝 배치
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      contents: write
+
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'momentum-batch'
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: S5 Momentum 스크리닝 실행
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOG_LEVEL:            INFO
+        run: |
+          FORCE_FLAG=""
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+          python main.py --mode momentum-batch $FORCE_FLAG
+
+      - name: 배치 실패 텔레그램 알림
+        if: failure() || cancelled()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          NOW=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')
+          MSG="[Momentum배치] 미완료 — ${NOW}"$'\n'"원인: ${{ job.status }}"
+          curl -s -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}"
+
+      - name: 로그 저장
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: momentum-batch-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 30
           if-no-files-found: ignore

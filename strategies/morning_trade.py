@@ -17,6 +17,7 @@ from loguru import logger
 import data.ma_store as ma_store
 import data.canslim_store as canslim_store
 import data.sepa_store as sepa_store
+import data.momentum_store as momentum_store
 from data.trade_queue_store import get_today_queue, save_queue, QUEUE_PATH, git_commit_push
 
 KST = pytz.timezone("Asia/Seoul")
@@ -110,6 +111,8 @@ class MorningTradeStrategy:
                     )
             elif strategy == "S4":
                 sepa_store.remove_position(code)
+            elif strategy == "S5":
+                momentum_store.remove_position(code)
 
             msg = (
                 f"[{strategy} 매도] [{code}] {name}  {reason}\n"
@@ -159,6 +162,9 @@ class MorningTradeStrategy:
                 canslim_store.add_position(code, name, today_str, price, qty)
             elif strategy == "S4":
                 sepa_store.add_position(code, name, today_str, price, qty)
+            elif strategy == "S5":
+                buyer_type = item.get("buyer_type", "foreign")
+                momentum_store.add_position(code, name, today_str, price, qty, buyer_type)
 
             msg = (
                 f"[{strategy} 매수] [{code}] {name}\n"
