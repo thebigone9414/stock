@@ -87,6 +87,8 @@ class MorningTradeStrategy:
         quantity    = item["quantity"]
         entry_price = item["entry_price"]
         entry_date  = item.get("entry_date", "")
+        if not entry_date:
+            logger.warning(f"[morning] [{strategy}] [{code}] 매도 큐에 entry_date 누락 — 포지션 JSON 제거 불가")
 
         try:
             current = self.market.get_quote(code).price

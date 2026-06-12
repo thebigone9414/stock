@@ -89,51 +89,51 @@ class CANSLIMStrategy:
 
         today_str = datetime.now(KST).strftime("%Y-%m-%d")
 
-        for code, pos in list(positions.items()):
-            name        = pos.get("name", code)
-            entry_price = pos.get("entry_price", 0)
-            entry_date  = pos.get("entry_date", today_str)
-            quantity    = pos.get("quantity", 0)
-            early_trig  = pos.get("early_gain_triggered", False)
-            peak_price  = pos.get("peak_price", entry_price)
-            peak_gain   = (peak_price - entry_price) / entry_price if entry_price else 0.0
+        for code, tranches in list(positions.items()):
+            for entry_date, pos in list(tranches.items()):
+                name        = pos.get("name", code)
+                entry_price = pos.get("entry_price", 0)
+                quantity    = pos.get("quantity", 0)
+                early_trig  = pos.get("early_gain_triggered", False)
+                peak_price  = pos.get("peak_price", entry_price)
+                peak_gain   = (peak_price - entry_price) / entry_price if entry_price else 0.0
 
-            if not entry_price or not quantity:
-                continue
+                if not entry_price or not quantity:
+                    continue
 
-            # 매도 사유 — 저녁 배치가 설정한 플래그 기반 (우선순위 순)
-            if pos.get("stop_loss_pending"):
-                reason = "손절(-7%)"
-            elif pos.get("ma_exit_pending"):
-                reason = f"MA이탈(고점{peak_gain:+.1%})"
-            elif pos.get("trail_stop_pending"):
-                reason = f"트레일링스탑(고점-{TRAIL_STOP_PCT:.0%})"
-            elif pos.get("take_profit_pending"):
-                target = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
-                reason = f"익절(+{target:.0%}" + (" 확장목표)" if early_trig else ")")
-            else:
-                # 플래그 없음 → 보유
+                # 매도 사유 — 저녁 배치가 설정한 플래그 기반 (우선순위 순)
+                if pos.get("stop_loss_pending"):
+                    reason = "손절(-7%)"
+                elif pos.get("ma_exit_pending"):
+                    reason = f"MA이탈(고점{peak_gain:+.1%})"
+                elif pos.get("trail_stop_pending"):
+                    reason = f"트레일링스탑(고점-{TRAIL_STOP_PCT:.0%})"
+                elif pos.get("take_profit_pending"):
+                    target = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
+                    reason = f"익절(+{target:.0%}" + (" 확장목표)" if early_trig else ")")
+                else:
+                    # 플래그 없음 → 보유
+                    try:
+                        days_held = (
+                            datetime.strptime(today_str, "%Y-%m-%d")
+                            - datetime.strptime(entry_date, "%Y-%m-%d")
+                        ).days
+                    except ValueError:
+                        days_held = 0
+                    target = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
+                    logger.info(
+                        f"[S3 보유] [{code}] {name}  "
+                        f"매수:{entry_price:,}  고점:{peak_gain:+.2%}  "
+                        f"목표:{target:+.0%}  보유:{days_held}일"
+                    )
+                    continue
+
+                # 시장가 매도 실행 (현재가는 PnL 로깅용)
                 try:
-                    days_held = (
-                        datetime.strptime(today_str, "%Y-%m-%d")
-                        - datetime.strptime(entry_date, "%Y-%m-%d")
-                    ).days
-                except ValueError:
-                    days_held = 0
-                target = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
-                logger.info(
-                    f"[S3 보유] [{code}] {name}  "
-                    f"매수:{entry_price:,}  고점:{peak_gain:+.2%}  "
-                    f"목표:{target:+.0%}  보유:{days_held}일"
-                )
-                continue
-
-            # 시장가 매도 실행 (현재가는 PnL 로깅용)
-            try:
-                current = self.market.get_quote(code).price
-            except Exception:
-                current = entry_price
-            self._sell_market(code, name, quantity, entry_price, current, reason)
+                    current = self.market.get_quote(code).price
+                except Exception:
+                    current = entry_price
+                self._sell_market(code, name, quantity, entry_price, current, reason, entry_date)
 
     # ── 매수 처리 (저녁 배치 entry_pending 실행) ─────────────────────
     def _process_entries(self) -> None:
@@ -241,7 +241,7 @@ class CANSLIMStrategy:
     # ── 시장가 매도 ───────────────────────────────────────────────────
     def _sell_market(
         self, code: str, name: str, quantity: int,
-        entry_price: int, current_price: int, reason: str,
+        entry_price: int, current_price: int, reason: str, entry_date: str = "",
     ) -> None:
         pnl     = (current_price - entry_price) * quantity
         pnl_pct = (current_price - entry_price) / entry_price
@@ -253,7 +253,7 @@ class CANSLIMStrategy:
             else:
                 logger.info("[S3] 모의투자 — 주문 생략")
 
-            remove_position(code)
+            remove_position(code, entry_date)
 
             msg = (
                 f"[S3 매도] [{code}] {name}  {reason}\n"

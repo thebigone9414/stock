@@ -153,7 +153,7 @@ class MACrossStrategy:
         self.notifier.notify(
             f"[MA전략] 시작 [{mode}] {today}\n"
             f"MA 기준일: {updated} ({len(stocks)}종목){stale_note}\n"
-            f"총자산: {balance.total_eval:,}원  보유: {len(positions)}/{max_positions}슬롯"
+            f"총자산: {balance.total_eval:,}원  보유: {s2_n}/{max_shared}슬롯"
         )
 
         _sold   = 0
@@ -173,9 +173,10 @@ class MACrossStrategy:
 
         # ── 오늘 할 일 없으면 조기 종료 (Actions 분 절약) ────────────────
         any_sell = any(
-            p.get("stop_loss_pending") or p.get("trail_stop_pending")
-            or p.get("ma_exit_pending") or p.get("take_profit_pending")
-            for p in positions.values()
+            t.get("stop_loss_pending") or t.get("trail_stop_pending")
+            or t.get("ma_exit_pending") or t.get("take_profit_pending")
+            for tranches in positions.values()
+            for t in tranches.values()
         )
         if not any_sell and not candidates:
             msg = "[MA전략] 오늘 매수·매도 신호 없음 — 조기 종료"
@@ -193,48 +194,60 @@ class MACrossStrategy:
 
         # ── 손절 매도 ────────────────────────────────────────────────────
         for code in list(positions):
-            if positions[code].get("stop_loss_pending"):
-                pos = positions[code]
-                logger.info(f"[MA전략 손절매도] [{code}] {pos['name']}  -{S2_STOP_LOSS:.0%} 손절 플래그")
-                self._sell(code, pos, reason=f"손절 -{S2_STOP_LOSS:.0%}")
-                del positions[code]
-                ma_store.remove_position(code)
-                _sold += 1
+            for entry_date in list(positions[code]):
+                pos = positions[code][entry_date]
+                if pos.get("stop_loss_pending"):
+                    logger.info(f"[MA전략 손절매도] [{code}] {pos['name']}  -{S2_STOP_LOSS:.0%} 손절 플래그")
+                    self._sell(code, pos, reason=f"손절 -{S2_STOP_LOSS:.0%}")
+                    del positions[code][entry_date]
+                    ma_store.remove_position(code, entry_date)
+                    _sold += 1
+            if not positions.get(code):
+                positions.pop(code, None)
 
         # ── MA이탈 매도 (러너 고점+20% 이상, MA21<MA62 && MA62 5일 하락) ─
         for code in list(positions):
-            if positions[code].get("ma_exit_pending"):
-                pos       = positions[code]
-                peak_gain = (pos.get("peak_price", pos.get("entry_price", 0)) - pos.get("entry_price", 0)) / pos.get("entry_price", 1)
-                logger.info(f"[MA전략 MA이탈매도] [{code}] {pos['name']}  고점{peak_gain:+.1%} 러너 MA이탈 플래그")
-                self._sell(code, pos, reason=f"MA이탈(러너 고점{peak_gain:+.1%})")
-                del positions[code]
-                ma_store.remove_position(code)
-                _sold += 1
+            for entry_date in list(positions[code]):
+                pos       = positions[code][entry_date]
+                if pos.get("ma_exit_pending"):
+                    peak_gain = (pos.get("peak_price", pos.get("entry_price", 0)) - pos.get("entry_price", 0)) / pos.get("entry_price", 1)
+                    logger.info(f"[MA전략 MA이탈매도] [{code}] {pos['name']}  고점{peak_gain:+.1%} 러너 MA이탈 플래그")
+                    self._sell(code, pos, reason=f"MA이탈(러너 고점{peak_gain:+.1%})")
+                    del positions[code][entry_date]
+                    ma_store.remove_position(code, entry_date)
+                    _sold += 1
+            if not positions.get(code):
+                positions.pop(code, None)
 
         # ── 트레일링스탑 매도 (고점 대비 -{S2_TRAIL_STOP_PCT:.0%}) ────────
         for code in list(positions):
-            if positions[code].get("trail_stop_pending"):
-                pos       = positions[code]
-                peak_gain = (pos.get("peak_price", pos.get("entry_price", 0)) - pos.get("entry_price", 0)) / pos.get("entry_price", 1)
-                logger.info(f"[MA전략 트레일링스탑매도] [{code}] {pos['name']}  고점{peak_gain:+.1%} → 트레일링스탑 플래그")
-                self._sell(code, pos, reason=f"트레일링스탑(고점{peak_gain:+.1%} → 고점-{S2_TRAIL_STOP_PCT:.0%})")
-                del positions[code]
-                ma_store.remove_position(code)
-                _sold += 1
+            for entry_date in list(positions[code]):
+                pos       = positions[code][entry_date]
+                if pos.get("trail_stop_pending"):
+                    peak_gain = (pos.get("peak_price", pos.get("entry_price", 0)) - pos.get("entry_price", 0)) / pos.get("entry_price", 1)
+                    logger.info(f"[MA전략 트레일링스탑매도] [{code}] {pos['name']}  고점{peak_gain:+.1%} → 트레일링스탑 플래그")
+                    self._sell(code, pos, reason=f"트레일링스탑(고점{peak_gain:+.1%} → 고점-{S2_TRAIL_STOP_PCT:.0%})")
+                    del positions[code][entry_date]
+                    ma_store.remove_position(code, entry_date)
+                    _sold += 1
+            if not positions.get(code):
+                positions.pop(code, None)
 
         # ── 익절 매도 (안전망 — 실질적으로 러너 모드에서 처리됨) ──────────
         for code in list(positions):
-            if positions[code].get("take_profit_pending"):
-                pos       = positions[code]
-                early_trig = pos.get("early_gain_triggered", False)
-                target    = S2_TAKE_PROFIT_EXT if early_trig else S2_TAKE_PROFIT
-                ext_note  = " (조기확장목표)" if early_trig else ""
-                logger.info(f"[MA전략 익절매도] [{code}] {pos['name']}  +{target:.0%}{ext_note} 익절 플래그")
-                self._sell(code, pos, reason=f"익절 +{target:.0%}{ext_note}")
-                del positions[code]
-                ma_store.remove_position(code)
-                _sold += 1
+            for entry_date in list(positions[code]):
+                pos        = positions[code][entry_date]
+                if pos.get("take_profit_pending"):
+                    early_trig = pos.get("early_gain_triggered", False)
+                    target    = S2_TAKE_PROFIT_EXT if early_trig else S2_TAKE_PROFIT
+                    ext_note  = " (조기확장목표)" if early_trig else ""
+                    logger.info(f"[MA전략 익절매도] [{code}] {pos['name']}  +{target:.0%}{ext_note} 익절 플래그")
+                    self._sell(code, pos, reason=f"익절 +{target:.0%}{ext_note}")
+                    del positions[code][entry_date]
+                    ma_store.remove_position(code, entry_date)
+                    _sold += 1
+            if not positions.get(code):
+                positions.pop(code, None)
 
         # ── 매수 ─────────────────────────────────────────────────────────
         if not candidates:
@@ -291,17 +304,18 @@ class MACrossStrategy:
                 bought += 1
                 entry_date = datetime.now(KST).strftime("%Y-%m-%d")
                 if is_rebuy:
-                    prev       = positions[code]
-                    prev_qty   = prev.get("quantity", 0)
-                    prev_price = prev.get("entry_price", 0)
+                    prev_tranches = positions[code]  # {date: tranche}
+                    prev_qty   = sum(t.get("quantity", 0) for t in prev_tranches.values())
+                    prev_total = sum(t.get("entry_price", 0) * t.get("quantity", 0) for t in prev_tranches.values())
+                    prev_avg   = int(prev_total / prev_qty) if prev_qty else 0
                     new_qty    = prev_qty + qty
-                    new_avg    = int(round((prev_price * prev_qty + price * qty) / new_qty)) if new_qty > 0 else price
+                    new_avg    = int(round((prev_total + price * qty) / new_qty)) if new_qty > 0 else price
                     ma_store.add_position(code, name, entry_date, price, qty)
                     avail_cash -= price * qty
                     self.notifier.notify(
                         f"[MA전략 추가매수] [{code}] {name} {tag}\n"
-                        f"추가: {qty:,}주 @ {price:,}원\n"
-                        f"통합: {new_qty:,}주  평단 {prev_price:,}→{new_avg:,}원\n"
+                        f"추가: {qty:,}주 @ {price:,}원  (트랜치{len(prev_tranches)+1})\n"
+                        f"통합: {new_qty:,}주  평단 {prev_avg:,}→{new_avg:,}원\n"
                         f"62일추세↑:{cand['ma62_uptrend']}  "
                         f"248일추세↑:{cand['ma248_uptrend']}"
                         + (f"  744일추세↑:{cand['ma744_uptrend']}" if cand.get("has_ma744") else "")
@@ -330,22 +344,26 @@ class MACrossStrategy:
         for code in list(json_positions):
             if code not in kis_map:
                 logger.warning(f"[MA전략] [{code}] KIS 잔고에 없음 → JSON 포지션 제거")
-                ma_store.remove_position(code)
+                for entry_date in list(json_positions[code].keys()):
+                    ma_store.remove_position(code, entry_date)
                 del json_positions[code]
             else:
                 real_name = kis_map[code].name
-                if json_positions[code].get("name") != real_name:
-                    logger.info(
-                        f"[MA전략] [{code}] 종목명 수정: "
-                        f"{json_positions[code].get('name')} → {real_name}"
-                    )
-                    json_positions[code]["name"] = real_name
-                    name_changed = True
+                for entry_date, tranche in json_positions[code].items():
+                    if tranche.get("name") != real_name:
+                        logger.info(
+                            f"[MA전략] [{code}] 종목명 수정: "
+                            f"{tranche.get('name')} → {real_name}"
+                        )
+                        tranche["name"] = real_name
+                        name_changed = True
         if name_changed:
             raw = ma_store.load()
-            for code, pos in json_positions.items():
+            for code, tranches in json_positions.items():
                 if code in raw.get("positions", {}):
-                    raw["positions"][code]["name"] = pos["name"]
+                    for entry_date, t in tranches.items():
+                        if entry_date in raw["positions"][code]:
+                            raw["positions"][code][entry_date]["name"] = t["name"]
             ma_store.save(raw)
         return json_positions
 
