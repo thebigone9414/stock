@@ -310,11 +310,16 @@ class MACrossStrategy:
                     prev_avg   = int(prev_total / prev_qty) if prev_qty else 0
                     new_qty    = prev_qty + qty
                     new_avg    = int(round((prev_total + price * qty) / new_qty)) if new_qty > 0 else price
+                    is_merge = entry_date in prev_tranches  # 당일 트랜치 합산 여부
                     ma_store.add_position(code, name, entry_date, price, qty)
                     avail_cash -= price * qty
+                    tranche_label = (
+                        f"트랜치{len(prev_tranches)} 합산" if is_merge
+                        else f"트랜치{len(prev_tranches)+1}"
+                    )
                     self.notifier.notify(
                         f"[MA전략 추가매수] [{code}] {name} {tag}\n"
-                        f"추가: {qty:,}주 @ {price:,}원  (트랜치{len(prev_tranches)+1})\n"
+                        f"추가: {qty:,}주 @ {price:,}원  ({tranche_label})\n"
                         f"통합: {new_qty:,}주  평단 {prev_avg:,}→{new_avg:,}원\n"
                         f"62일추세↑:{cand['ma62_uptrend']}  "
                         f"248일추세↑:{cand['ma248_uptrend']}"

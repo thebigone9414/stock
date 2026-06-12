@@ -88,7 +88,11 @@ class MorningTradeStrategy:
         entry_price = item["entry_price"]
         entry_date  = item.get("entry_date", "")
         if not entry_date:
-            logger.warning(f"[morning] [{strategy}] [{code}] 매도 큐에 entry_date 누락 — 포지션 JSON 제거 불가")
+            logger.error(
+                f"[morning] [{strategy}] [{code}] 매도 큐에 entry_date 누락 — "
+                "ghost position 방지를 위해 매도 건너뜀. trade_queue 수동 확인 필요"
+            )
+            return
 
         try:
             current = self.market.get_quote(code).price
