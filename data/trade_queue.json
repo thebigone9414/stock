@@ -1,43 +1,32 @@
 {
-  "date": "2026-06-12",
-  "updated_at": "2026-06-13 23:49",
+  "date": "2026-06-14",
+  "updated_at": "2026-06-14 00:52",
   "sell": [],
   "buy": [
-    {
-      "code": "093370",
-      "name": "후성",
-      "buyer_type": "foreign",
-      "consec_days": 5,
-      "vol_ratio": 4.162,
-      "ma5": 15106,
-      "date": "2026-06-12",
-      "strategy": "S5",
-      "per_slot_budget": 5000000
-    },
-    {
-      "code": "402340",
-      "name": "SK스퀘어",
-      "score": 5,
-      "ca_tag": " A",
-      "date": "2026-06-12",
-      "strategy": "S3",
-      "per_slot_budget": 5000000
-    },
-    {
-      "code": "084370",
-      "name": "유진테크",
-      "score": 5,
-      "ca_tag": " A",
-      "date": "2026-06-12",
-      "strategy": "S3",
-      "per_slot_budget": 5000000
-    },
     {
       "code": "095610",
       "name": "테스",
       "score": 5,
-      "ca_tag": " A",
-      "date": "2026-06-12",
+      "rs_3m": 1.7398,
+      "date": "2026-06-14",
+      "strategy": "S3",
+      "per_slot_budget": 5000000
+    },
+    {
+      "code": "131970",
+      "name": "두산테스나",
+      "score": 5,
+      "rs_3m": 1.7216,
+      "date": "2026-06-14",
+      "strategy": "S3",
+      "per_slot_budget": 5000000
+    },
+    {
+      "code": "093370",
+      "name": "후성",
+      "score": 5,
+      "rs_3m": 1.6513,
+      "date": "2026-06-14",
       "strategy": "S3",
       "per_slot_budget": 5000000
     }
