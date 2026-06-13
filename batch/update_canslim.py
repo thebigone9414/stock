@@ -138,33 +138,42 @@ def _check_s3_entries(
         logger.info("[S3 매수결정] 시장 하락장 → 매수 후보 없음")
         return
 
+    MAX_S3 = 3
     positions = canslim_store.load_positions()
 
-    candidates = []
-    for code, info in sorted(
-        [(c, i) for c, i in stocks_out.items() if i.get("all_pass")],
-        key=lambda x: x[1].get("score", 0),
+    all_pass_list = sorted(
+        [(c, i) for c, i in stocks_out.items() if i.get("all_pass") and c not in positions],
+        key=lambda x: x[1].get("rs_3m", 0),
         reverse=True,
-    ):
-        if code in positions:
-            continue
+    )
+
+    candidates = []
+    for code, info in all_pass_list[:MAX_S3]:
         candidates.append({
-            "code":  code,
-            "name":  info["name"],
-            "score": info.get("score", 0),
-            "date":  today_str,
+            "code":   code,
+            "name":   info["name"],
+            "score":  info.get("score", 0),
+            "rs_3m":  info.get("rs_3m", 0),
+            "date":   today_str,
         })
+
+    if len(all_pass_list) > MAX_S3:
+        dropped = all_pass_list[MAX_S3:]
+        logger.info(
+            f"[S3 매수결정] ALL_PASS {len(all_pass_list)}종목 중 상대강도 상위 {MAX_S3}종목 선정  "
+            f"제외: {', '.join(f'[{c}]{i[\"name\"]}(rs={i.get(\"rs_3m\",0):.2%})' for c, i in dropped)}"
+        )
 
     canslim_store.set_entry_pending(candidates)
 
     if candidates:
         logger.info(f"[S3 매수결정] {len(candidates)}종목 → entry_pending 설정")
         for c in candidates:
-            logger.info(f"  [{c['code']}] {c['name']}{c['ca_tag']}")
+            logger.info(f"  [{c['code']}] {c['name']}  rs_3m={c['rs_3m']:.2%}")
         if notifier:
             lines = [f"[S3 매수대기] 내일 09:00 매수 예정 {len(candidates)}종목:"]
             for c in candidates:
-                lines.append(f"  [{c['code']}] {c['name']}{c['ca_tag']}")
+                lines.append(f"  [{c['code']}] {c['name']}  RS={c['rs_3m']:+.1%}")
             notifier.notify("\n".join(lines))
     else:
         logger.info("[S3 매수결정] 후보 없음")
