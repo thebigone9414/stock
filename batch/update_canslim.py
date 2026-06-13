@@ -7,14 +7,13 @@ CANSLIM 일일 스크리닝 배치
   → get_s2_watchlist() 사용 (S2, S3 공통)
 
 [조건 계산]
-  A   — 연간 EPS 성장 25% 이상 (최근 4분기 합 vs 이전 4분기 합, DART)  ← hard filter
-  N   — 52주 신고가 대비 10% 이내         (OHLCV)
-  S   — 당일 거래량 ≥ 50일 평균의 150%   (OHLCV)
-  L   — 3개월 수익률 > KOSPI 3개월 수익률 (OHLCV)
-  I   — 외국인+기관 20거래일 누적 순매수 > 0  (KIS 투자자동향 API)
-  M   — KODEX200 MA20 > MA60            (ohlcv_cache.json)
-  ※ C(당기 분기 EPS 성장) 제외, A 조건으로 대체
-  score = N+S+L+I+M (최대 5), all_pass = A and N and S and I and score≥4
+  N   — 52주 신고가 대비 10% 이내              (OHLCV)
+  S   — 당일 거래량 ≥ 50일 평균의 150%        (OHLCV)
+  L   — 3개월 수익률 > KOSPI 3개월 수익률      (OHLCV)
+  I   — 외국인+기관 30거래일 누적 순매수 > 0   (KIS 투자자동향 API)
+  M   — KODEX200 MA20 > MA60                 (ohlcv_cache.json)
+  ※ C·A(DART 재무조건) 제외
+  score = N+S+L+I+M (최대 5), all_pass = N and S and I and score≥4
 
 [OHLCV 캐시 전략]
   S2 MA배치(update_ma.py)의 ohlcv_cache.json 우선 재사용.
@@ -112,25 +111,11 @@ def _check_M(kospi_closes: list) -> bool:
     return ma20 > ma60
 
 
-def _check_A(dart_corps: dict, code: str) -> bool:
-    """연간 EPS 성장 25% 이상 (최근 4분기 합 vs 이전 4분기 합)"""
-    corp = dart_corps.get(code, {})
-    eps_list = [e for e in corp.get("quarterly_eps", []) if e.get("eps") is not None]
-    eps_list.sort(key=lambda e: (e["year"], e["quarter"]), reverse=True)
-    if len(eps_list) < 8:
-        return False
-    recent = sum(e["eps"] for e in eps_list[:4])
-    prior  = sum(e["eps"] for e in eps_list[4:8])
-    if prior <= 0:
-        return False
-    return (recent / prior - 1) >= 0.25
-
-
 def _check_I(market, code: str, throttler: RateThrottler) -> bool:
-    """외국인+기관 최근 20거래일 누적 순매수금액 > 0 (1개월 보유수량 증가)"""
+    """외국인+기관 최근 30거래일 누적 순매수금액 > 0 (보유수량 증가 추세)"""
     try:
         throttler.acquire()
-        history = market.get_investor_trend_history(code, days=20)
+        history = market.get_investor_trend_history(code, days=30)
         total = sum(h["frgn_net"] + h["orgn_net"] for h in history)
         return total > 0
     except Exception as e:
@@ -225,16 +210,6 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     # ── 스크리닝 대상: S2/S3 통합 유니버스 ────────────────────────────
     universe = get_s2_watchlist()
     logger.info(f"[CANSLIM배치] 스크리닝 대상: {len(universe)}종목 (KOSPI200+KOSDAQ150+ETF)")
-
-    # DART 재무 데이터 (A 조건)
-    dart_path = Path("data/dart_data.json")
-    dart_corps: dict = {}
-    if dart_path.exists():
-        with open(dart_path, encoding="utf-8") as f:
-            dart_corps = json.load(f).get("corps", {})
-        logger.info(f"[CANSLIM배치] DART 데이터 로드: {len(dart_corps)}개 기업")
-    else:
-        logger.warning("[CANSLIM배치] dart_data.json 없음 — A 조건 비활성화")
 
     # S2 OHLCV 캐시 (update_ma.py가 이미 최신화)
     s2_cache      = _load_cache(OHLCV_CACHE_PATH)
@@ -339,8 +314,7 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
                 skip += 1
                 continue
 
-            # ── A·N·S·L·I·M 조건 ────────────────────────────────────
-            A            = _check_A(dart_corps, code)
+            # ── N·S·L·I·M 조건 ────────────────────────────────────
             N, hi_52w    = _check_N(closes)
             S, vol_ratio = _check_S(volumes) if volumes else (False, 0.0)
             L, rs_3m     = _check_L(closes, kospi_closes)
@@ -348,12 +322,12 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
             M            = M_global
 
             score    = sum([N, S, L, I, M])
-            all_pass = (A and N and S and I and score >= 4)
+            all_pass = (N and S and I and score >= 4)
 
             stocks_out[code] = {
                 "name":      name,
                 "sector":    sector,
-                "A": A, "N": N, "S": S, "L": L, "I": I, "M": M,
+                "N": N, "S": S, "L": L, "I": I, "M": M,
                 "score":     score,
                 "all_pass":  all_pass,
                 "close":     int(closes[-1]),
@@ -365,7 +339,7 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
             signal = " ★ALL_PASS" if all_pass else ""
             logger.info(
                 f"[{i:03d}/{n_total}] [{code}] {name:14s}  "
-                f"A:{int(A)} N:{int(N)} S:{int(S)} L:{int(L)} I:{int(I)} M:{int(M)}  "
+                f"N:{int(N)} S:{int(S)} L:{int(L)} I:{int(I)} M:{int(M)}  "
                 f"score={score}/5  ({from_cache}){signal}"
             )
             ok += 1
