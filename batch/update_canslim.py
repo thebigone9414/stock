@@ -112,10 +112,10 @@ def _check_M(kospi_closes: list) -> bool:
 
 
 def _check_I(market, code: str, throttler: RateThrottler) -> bool:
-    """외국인+기관 최근 30거래일 누적 순매수금액 > 0 (보유수량 증가 추세)"""
+    """외국인+기관 최근 20거래일 누적 순매수금액 > 0 (보유수량 증가 추세)"""
     try:
         throttler.acquire()
-        history = market.get_investor_trend_history(code, days=30)
+        history = market.get_investor_trend_history(code, days=20)
         total = sum(h["frgn_net"] + h["orgn_net"] for h in history)
         return total > 0
     except Exception as e:
@@ -192,7 +192,8 @@ def _check_s3_entries(
 def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     from data.holidays import is_market_holiday
 
-    today = datetime.now(KST).strftime("%Y-%m-%d")
+    today      = datetime.now(KST).strftime("%Y-%m-%d")
+    today_date = datetime.now(KST).date()
 
     # 중복 실행 방지 (--force 시 건너뜀)
     if not force:
