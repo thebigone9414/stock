@@ -58,7 +58,7 @@ TRAIL_STOP_PCT   = 0.10
 TAKE_PROFIT      = 0.20
 TAKE_PROFIT_EXT  = 0.25
 S2_S3_S4_BASE    = 10
-MAX_BUY_AMOUNT   = 4_000_000  # 일일 최대 매수 예산 (400만원)
+MAX_BUY_AMOUNT   = 3_000_000  # 종목당 매수 한도 (300만원)
 
 
 def _sync_positions_from_balance(bal_positions: list, today_str: str) -> None:
