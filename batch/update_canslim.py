@@ -240,6 +240,10 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     s2_cache      = _load_cache(OHLCV_CACHE_PATH)
     canslim_cache = _load_cache(CANSLIM_OHLCV_CACHE_PATH)
 
+    # 캐시 신선도 기준: 최근 7일 이내면 재사용 (비거래일·주말 실행 대응)
+    from datetime import timedelta
+    cache_cutoff = (today_date - timedelta(days=7)).strftime("%Y-%m-%d")
+
     # KODEX200 (M·L 조건용)
     kospi_closes: list = s2_cache.get(KODEX200_CODE, {}).get("closes", [])
     if not kospi_closes:
@@ -268,12 +272,13 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
             s2_entry      = s2_cache.get(code, {})
             canslim_entry = canslim_cache.get(code, {})
 
-            if s2_entry.get("last_date") == today and len(s2_entry.get("closes", [])) >= 60:
+            s2_date = s2_entry.get("last_date", "")
+            cl_date = canslim_entry.get("last_date", "")
+            if s2_date >= cache_cutoff and len(s2_entry.get("closes", [])) >= 60:
                 closes     = s2_entry["closes"]
-                # S2 배치가 거래량도 저장하므로 그대로 재사용
                 volumes    = s2_entry.get("volumes") or canslim_entry.get("volumes", [])
                 from_cache = "S2"
-            elif canslim_entry.get("last_date") == today and len(canslim_entry.get("closes", [])) >= 60:
+            elif cl_date >= cache_cutoff and len(canslim_entry.get("closes", [])) >= 60:
                 closes    = canslim_entry["closes"]
                 volumes   = canslim_entry.get("volumes", [])
                 from_cache = "canslim"
