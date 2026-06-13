@@ -328,7 +328,14 @@ def _collect_entries(today_str: str) -> list:
         reverse=True,
     )
 
-    return [{k: v for k, v in c.items() if not k.startswith("_")} for c in all_candidates]
+    # 동일 종목 중복 제거 — 우선순위 높은 전략 유지 (S4>S5>S3>S2)
+    seen_codes: set = set()
+    result: list = []
+    for c in all_candidates:
+        if c["code"] not in seen_codes:
+            seen_codes.add(c["code"])
+            result.append({k: v for k, v in c.items() if not k.startswith("_")})
+    return result
 
 
 def run_decision(account, notifier: Notifier = None, force: bool = False) -> None:
@@ -447,6 +454,23 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
     lines   = [f"[매매결정] {now_str}"]
     lines  += [f"총자산:{bal.total_eval:,}원  주문가능:{avail_cash:,}원"]
     lines  += [f"슬롯:{total_strategy}/{max_shared}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n}) 수동:{manual_n}  여유:{slots_free}"]
+
+    # 보유 현황 (종목명 표시)
+    held_tags = []
+    for strat, positions in [
+        ("S2", ma_store.get_positions()),
+        ("S3", canslim_store.load_positions()),
+        ("S4", sepa_store.load_positions()),
+        ("S5", momentum_store.load_positions()),
+    ]:
+        for code, tranches in positions.items():
+            first = next(iter(tranches.values()), {})
+            held_tags.append(f"[{code}]{first.get('name', code)}({strat})")
+    for code, tranches in manual_store.load_positions().items():
+        first = next(iter(tranches.values()), {})
+        held_tags.append(f"[{code}]{first.get('name', code)}(수동)")
+    if held_tags:
+        lines.append("보유: " + " | ".join(held_tags))
 
     if sell_list:
         lines.append(f"\n내일 09:00 매도 ({len(sell_list)}종목):")
