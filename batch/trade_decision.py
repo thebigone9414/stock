@@ -328,14 +328,7 @@ def _collect_entries(today_str: str) -> list:
         reverse=True,
     )
 
-    # 동일 종목 중복 제거 — 우선순위 높은 전략 유지 (S4>S5>S3>S2)
-    seen_codes: set = set()
-    result: list = []
-    for c in all_candidates:
-        if c["code"] not in seen_codes:
-            seen_codes.add(c["code"])
-            result.append({k: v for k, v in c.items() if not k.startswith("_")})
-    return result
+    return [{k: v for k, v in c.items() if not k.startswith("_")} for c in all_candidates]
 
 
 def run_decision(account, notifier: Notifier = None, force: bool = False) -> None:

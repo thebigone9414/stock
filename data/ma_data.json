@@ -11912,7 +11912,19 @@
       "candle_body_ratio": 0.017424
     }
   },
-  "positions": {},
+  "positions": {
+    "403870": {
+      "2026-06-12": {
+        "name": "HPSP",
+        "entry_date": "2026-06-12",
+        "entry_price": 60040,
+        "quantity": 50,
+        "peak_price": 71500,
+        "peak_gain_pct": 0.190873,
+        "early_gain_triggered": true
+      }
+    }
+  },
   "base_capital": 10000000,
   "updated_at_kst": "2026-06-12 18:23",
   "entry_pending": []
