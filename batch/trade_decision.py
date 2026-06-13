@@ -331,11 +331,11 @@ def _collect_entries(today_str: str) -> list:
     return [{k: v for k, v in c.items() if not k.startswith("_")} for c in all_candidates]
 
 
-def run_decision(account, notifier: Notifier = None) -> None:
+def run_decision(account, notifier: Notifier = None, force: bool = False) -> None:
     from data.holidays import is_market_holiday
 
     today = datetime.now(KST).strftime("%Y-%m-%d")
-    if is_market_holiday():
+    if not force and is_market_holiday():
         logger.info(f"[매매결정] {today} 휴장일 — 실행 건너뜀")
         return
 

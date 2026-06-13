@@ -92,10 +92,10 @@ def run_momentum_batch(kis: KIS, notifier: Notifier, force: bool = False) -> Non
     run_batch(kis.market, notifier=notifier, force=force)
 
 
-def run_trade_decision(kis: KIS, notifier: Notifier) -> None:
+def run_trade_decision(kis: KIS, notifier: Notifier, force: bool = False) -> None:
     """통합 매매 결정 배치 (20:00 KST) — S2/S3/S4 포지션 청산+매수 결정 → trade_queue.json"""
     from batch.trade_decision import run_decision
-    run_decision(account=kis.account, notifier=notifier)
+    run_decision(account=kis.account, notifier=notifier, force=force)
 
 
 def run_morning_trade(kis: KIS, notifier: Notifier) -> None:
@@ -281,7 +281,7 @@ def main():
         run_momentum_batch(kis, notifier, force=args.force)
 
     elif args.mode == "trade-decision":
-        run_trade_decision(kis, notifier)
+        run_trade_decision(kis, notifier, force=args.force)
 
     elif args.mode == "morning-trade":
         run_morning_trade(kis, notifier)
