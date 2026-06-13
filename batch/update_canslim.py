@@ -13,7 +13,7 @@ CANSLIM 일일 스크리닝 배치
   I   — 외국인+기관 30거래일 누적 순매수 > 0   (KIS 투자자동향 API)
   M   — KODEX200 MA20 > MA60                 (ohlcv_cache.json)
   ※ C·A(DART 재무조건) 제외
-  score = N+S+L+I+M (최대 5), all_pass = N and S and I and score≥4
+  score = N+S+L+I+M (최대 5), all_pass = N and S and L and I and M (5개 전부 충족)
 
 [OHLCV 캐시 전략]
   S2 MA배치(update_ma.py)의 ohlcv_cache.json 우선 재사용.
@@ -138,16 +138,7 @@ def _check_s3_entries(
         logger.info("[S3 매수결정] 시장 하락장 → 매수 후보 없음")
         return
 
-    positions   = canslim_store.load_positions()
-    ca_data     = canslim_store.load_ca_screened()
-    ca_screened = ca_data.get("screened", [])
-    ca_codes    = {s["code"] for s in ca_screened if s.get("A")}
-    use_ca      = bool(ca_codes)
-
-    if use_ca:
-        logger.info(f"[S3 매수결정] A 필터 적용 — {len(ca_codes)}종목")
-    else:
-        logger.warning("[S3 매수결정] A 스크리닝 없음 — 전체 후보 사용")
+    positions = canslim_store.load_positions()
 
     candidates = []
     for code, info in sorted(
@@ -157,19 +148,11 @@ def _check_s3_entries(
     ):
         if code in positions:
             continue
-        if use_ca and code not in ca_codes:
-            continue
-        ca_info = next((s for s in ca_screened if s["code"] == code), None)
-        ca_tag  = ""
-        if ca_info:
-            ca_tag = (" C+A" if (ca_info.get("C") and ca_info.get("A"))
-                      else (" C" if ca_info.get("C") else " A"))
         candidates.append({
-            "code":   code,
-            "name":   info["name"],
-            "score":  info.get("score", 0),
-            "ca_tag": ca_tag,
-            "date":   today_str,
+            "code":  code,
+            "name":  info["name"],
+            "score": info.get("score", 0),
+            "date":  today_str,
         })
 
     canslim_store.set_entry_pending(candidates)
@@ -323,7 +306,7 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
             M            = M_global
 
             score    = sum([N, S, L, I, M])
-            all_pass = (N and S and I and score >= 4)
+            all_pass = (N and S and L and I and M)  # 5개 전부 충족
 
             stocks_out[code] = {
                 "name":      name,
