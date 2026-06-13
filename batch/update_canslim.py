@@ -159,9 +159,13 @@ def _check_s3_entries(
 
     if len(all_pass_list) > MAX_S3:
         dropped = all_pass_list[MAX_S3:]
+        dropped_str = ", ".join(
+            "[{}]{}(rs={:.2%})".format(c, i["name"], i.get("rs_3m", 0))
+            for c, i in dropped
+        )
         logger.info(
             f"[S3 매수결정] ALL_PASS {len(all_pass_list)}종목 중 상대강도 상위 {MAX_S3}종목 선정  "
-            f"제외: {', '.join(f'[{c}]{i[\"name\"]}(rs={i.get(\"rs_3m\",0):.2%})' for c, i in dropped)}"
+            f"제외: {dropped_str}"
         )
 
     canslim_store.set_entry_pending(candidates)
