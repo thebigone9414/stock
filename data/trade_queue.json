@@ -1,6 +1,6 @@
 {
   "date": "2026-06-12",
-  "updated_at": "2026-06-13 09:15",
+  "updated_at": "2026-06-13 23:49",
   "sell": [],
   "buy": [
     {
@@ -12,7 +12,7 @@
       "ma5": 15106,
       "date": "2026-06-12",
       "strategy": "S5",
-      "per_slot_budget": 3000000
+      "per_slot_budget": 5000000
     },
     {
       "code": "402340",
@@ -21,7 +21,7 @@
       "ca_tag": " A",
       "date": "2026-06-12",
       "strategy": "S3",
-      "per_slot_budget": 3000000
+      "per_slot_budget": 5000000
     },
     {
       "code": "084370",
@@ -30,7 +30,7 @@
       "ca_tag": " A",
       "date": "2026-06-12",
       "strategy": "S3",
-      "per_slot_budget": 3000000
+      "per_slot_budget": 5000000
     },
     {
       "code": "095610",
@@ -39,34 +39,7 @@
       "ca_tag": " A",
       "date": "2026-06-12",
       "strategy": "S3",
-      "per_slot_budget": 3000000
-    },
-    {
-      "code": "240810",
-      "name": "원익IPS",
-      "score": 4,
-      "ca_tag": " A",
-      "date": "2026-06-12",
-      "strategy": "S3",
-      "per_slot_budget": 3000000
-    },
-    {
-      "code": "039030",
-      "name": "이오테크닉스",
-      "score": 4,
-      "ca_tag": " A",
-      "date": "2026-06-12",
-      "strategy": "S3",
-      "per_slot_budget": 3000000
-    },
-    {
-      "code": "140860",
-      "name": "파크시스템스",
-      "score": 4,
-      "ca_tag": " A",
-      "date": "2026-06-12",
-      "strategy": "S3",
-      "per_slot_budget": 3000000
+      "per_slot_budget": 5000000
     }
   ]
 }

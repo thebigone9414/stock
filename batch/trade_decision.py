@@ -57,8 +57,9 @@ TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 TAKE_PROFIT      = 0.20
 TAKE_PROFIT_EXT  = 0.25
-S2_S3_S4_BASE    = 10
-MAX_BUY_AMOUNT   = 3_000_000  # 종목당 매수 한도 (300만원)
+S2_S3_S4_BASE    = 5    # 총 슬롯 수 (수동 제외)
+MAX_BUY_AMOUNT   = 5_000_000  # 종목당 매수 한도 (500만원)
+MAX_PER_STRATEGY = 3    # 전략당 최대 보유 종목 수
 
 
 def _sync_positions_from_balance(bal_positions: list, today_str: str) -> None:
@@ -350,17 +351,15 @@ def run_decision(account, notifier: Notifier = None) -> None:
 
     _sync_positions_from_balance(bal.positions, today)
 
-    base_cap     = ma_store.get_base_capital()
-    extra        = ma_store.extra_slots(base_cap, bal.total_eval) if base_cap else 0
-    max_shared   = S2_S3_S4_BASE + extra
     s2_n, s3_n, s4_n, s5_n, manual_n = count_shared()
-    total_shared = s2_n + s3_n + s4_n + s5_n + manual_n
-    slots_free   = max_shared - total_shared
+    total_strategy = s2_n + s3_n + s4_n + s5_n   # 수동 제외
+    max_shared     = S2_S3_S4_BASE
+    slots_free     = max(0, max_shared - total_strategy)
 
     logger.info(
         f"[매매결정] 총자산:{bal.total_eval:,}원  현금:{bal.cash:,}원  "
-        f"슬롯:{total_shared}/{max_shared}"
-        f"(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n} 수동:{manual_n})  "
+        f"슬롯:{total_strategy}/{max_shared}(수동:{manual_n})"
+        f"(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n})  "
         f"여유:{slots_free}"
     )
 
@@ -375,26 +374,57 @@ def run_decision(account, notifier: Notifier = None) -> None:
     all_candidates = _collect_entries(today)
     buy_list: list = []
     deferred_list: list = []
-    if all_candidates:
-        per_budget   = MAX_BUY_AMOUNT  # 종목당 고정 400만원
-        total_needed = per_budget * len(all_candidates)
-        need_funding = max(0, total_needed - avail_cash)
 
-        if avail_cash < per_budget:
+    if all_candidates:
+        # ① 미보유 전략 우선 (안정 정렬 — 전략 내 score 순서 유지)
+        held_strat = {
+            "S2": s2_n > 0, "S3": s3_n > 0,
+            "S4": s4_n > 0, "S5": s5_n > 0,
+        }
+        all_candidates.sort(key=lambda c: 1 if held_strat.get(c["strategy"], False) else 0)
+
+        # ② 전략당 MAX_PER_STRATEGY 종목 + 여유슬롯 cap
+        filtered: list = []
+        new_per_strat: dict = {}
+        for c in all_candidates:
+            if len(filtered) >= slots_free:
+                break
+            strat = c["strategy"]
+            existing = {"S2": s2_n, "S3": s3_n, "S4": s4_n, "S5": s5_n}.get(strat, 0)
+            if existing + new_per_strat.get(strat, 0) >= MAX_PER_STRATEGY:
+                continue
+            new_per_strat[strat] = new_per_strat.get(strat, 0) + 1
+            filtered.append(c)
+
+        skipped = [c for c in all_candidates if c not in filtered]
+        if skipped:
+            logger.info(
+                f"[매매결정] 슬롯/전략 캡으로 {len(skipped)}종목 제외: "
+                + ", ".join(f"[{c['code']}]{c['name']}({c['strategy']})" for c in skipped)
+            )
+
+        per_budget   = MAX_BUY_AMOUNT
+        need_funding = 0
+
+        if slots_free == 0:
+            logger.info(f"[매매결정] 슬롯 없음 ({total_strategy}/{max_shared}) — 매수 건너뜀")
+            deferred_list = filtered
+        elif avail_cash < per_budget:
             logger.info(f"[매매결정] 주문가능금액 부족 ({avail_cash:,}원 < {per_budget:,}원) — 매수 건너뜀")
-            deferred_list = all_candidates
+            deferred_list = filtered
         else:
-            max_buyable   = int(avail_cash / per_budget)
-            buy_candidates = all_candidates[:max_buyable]
-            deferred_list  = all_candidates[max_buyable:]
-            if deferred_list:
+            max_by_cash   = int(avail_cash / per_budget)
+            buy_candidates = filtered[:max_by_cash]
+            deferred_list  = filtered[max_by_cash:] + skipped
+            need_funding   = max(0, per_budget * len(filtered) - avail_cash)
+            if len(buy_candidates) < len(filtered):
                 logger.info(
-                    f"[매매결정] 현금 부족으로 상위 {max_buyable}종목만 매수  "
-                    f"필요:{total_needed:,}원  주문가능:{avail_cash:,}원"
+                    f"[매매결정] 현금 부족으로 {len(filtered)}→{len(buy_candidates)}종목으로 축소  "
+                    f"주문가능:{avail_cash:,}원"
                 )
             buy_list = [{**c, "per_slot_budget": per_budget} for c in buy_candidates]
             logger.info(
-                f"[매매결정] 매수 후보 {len(buy_list)}종목  "
+                f"[매매결정] 매수 확정 {len(buy_list)}종목  "
                 f"1종목당:{per_budget:,}원  합계:{per_budget * len(buy_list):,}원  주문가능:{avail_cash:,}원"
             )
     else:
@@ -416,7 +446,7 @@ def run_decision(account, notifier: Notifier = None) -> None:
     now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     lines   = [f"[매매결정] {now_str}"]
     lines  += [f"총자산:{bal.total_eval:,}원  주문가능:{avail_cash:,}원"]
-    lines  += [f"슬롯:{total_shared}/{max_shared}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n} 수동:{manual_n})"]
+    lines  += [f"슬롯:{total_strategy}/{max_shared}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n}) 수동:{manual_n}  여유:{slots_free}"]
 
     if sell_list:
         lines.append(f"\n내일 09:00 매도 ({len(sell_list)}종목):")
