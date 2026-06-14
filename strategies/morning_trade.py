@@ -102,6 +102,8 @@ class MorningTradeStrategy:
         pnl     = (current - entry_price) * quantity
         pnl_pct = (current - entry_price) / entry_price if entry_price else 0.0
 
+        is_partial = item.get("partial", False)
+
         try:
             if not self.is_paper:
                 resp = self.order.sell_market(code, quantity)
@@ -109,23 +111,33 @@ class MorningTradeStrategy:
             else:
                 logger.info(f"[morning] [{strategy}] 모의투자 — 주문 생략")
 
-            if strategy == "S2":
-                ma_store.remove_position(code, entry_date)
-            elif strategy == "S3":
-                canslim_store.remove_position(code, entry_date)
-                if "손절" in reason:
-                    canslim_store.add_to_stop_blacklist(
-                        code, datetime.now(KST).strftime("%Y-%m-%d")
-                    )
-            elif strategy == "S4":
-                sepa_store.remove_position(code, entry_date)
-            elif strategy == "S5":
-                momentum_store.remove_position(code, entry_date)
-            elif strategy == "수동":
-                manual_store.remove_position(code, entry_date)
+            if is_partial:
+                if strategy == "S2":
+                    ma_store.reduce_quantity(code, entry_date, quantity)
+                elif strategy == "S3":
+                    canslim_store.reduce_quantity(code, entry_date, quantity)
+                elif strategy == "S4":
+                    sepa_store.reduce_quantity(code, entry_date, quantity)
+                elif strategy == "S5":
+                    momentum_store.reduce_quantity(code, entry_date, quantity)
+            else:
+                if strategy == "S2":
+                    ma_store.remove_position(code, entry_date)
+                elif strategy == "S3":
+                    canslim_store.remove_position(code, entry_date)
+                    if "손절" in reason:
+                        canslim_store.add_to_stop_blacklist(
+                            code, datetime.now(KST).strftime("%Y-%m-%d")
+                        )
+                elif strategy == "S4":
+                    sepa_store.remove_position(code, entry_date)
+                elif strategy == "S5":
+                    momentum_store.remove_position(code, entry_date)
+                elif strategy == "수동":
+                    manual_store.remove_position(code, entry_date)
 
             msg = (
-                f"[{strategy} 매도] [{code}] {name}  {reason}\n"
+                f"[{strategy} {'부분' if is_partial else ''}매도] [{code}] {name}  {reason}\n"
                 f"매수:{entry_price:,} → 현재:{current:,}  "
                 f"{pnl_pct:+.2%} ({pnl:+,}원)"
             )

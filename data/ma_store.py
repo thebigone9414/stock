@@ -113,6 +113,36 @@ def remove_position(code: str, entry_date: str) -> None:
     git_commit_push([str(MA_DATA_PATH)], f"chore: S2 포지션 제거 {code} [{entry_date}]")
 
 
+def mark_half_sold(code: str, entry_date: str) -> None:
+    data = load()
+    positions = data.setdefault("positions", {})
+    migrated, _ = _migrate_positions(positions)
+    data["positions"] = migrated
+    if code in migrated and entry_date in migrated[code]:
+        migrated[code][entry_date]["half_sold"] = True
+        save(data)
+        git_commit_push([str(MA_DATA_PATH)], f"chore: S2 부분익절 플래그 {code} [{entry_date}]")
+
+
+def reduce_quantity(code: str, entry_date: str, sold_qty: int) -> None:
+    data = load()
+    positions = data.setdefault("positions", {})
+    migrated, _ = _migrate_positions(positions)
+    data["positions"] = migrated
+    if code in migrated and entry_date in migrated[code]:
+        old_qty = migrated[code][entry_date].get("quantity", 0)
+        new_qty = max(0, old_qty - sold_qty)
+        if new_qty == 0:
+            migrated[code].pop(entry_date)
+            if not migrated[code]:
+                migrated.pop(code)
+        else:
+            migrated[code][entry_date]["quantity"] = new_qty
+        save(data)
+        git_commit_push([str(MA_DATA_PATH)],
+            f"chore: S2 부분매도 수량조정 {code} [{entry_date}] {old_qty}→{new_qty}")
+
+
 def get_base_capital() -> int:
     return load().get("base_capital", 0)
 

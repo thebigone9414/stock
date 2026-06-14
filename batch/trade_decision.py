@@ -52,11 +52,9 @@ from data.shared_slots import count_shared
 KST = pytz.timezone("Asia/Seoul")
 
 STOP_LOSS        = 0.07
-RUNNER_THRESHOLD = 0.20
+RUNNER_THRESHOLD = 0.20   # 부분익절 + 러너 진입 기준
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
-TAKE_PROFIT      = 0.20
-TAKE_PROFIT_EXT  = 0.25
 S2_S3_S4_BASE    = 5    # 총 슬롯 수 (수동 제외)
 MAX_BUY_AMOUNT   = 5_000_000  # 종목당 매수 한도 (500만원)
 MAX_PER_STRATEGY = 3    # 전략당 최대 보유 종목 수
@@ -113,14 +111,17 @@ def _decide_exits(today_str: str) -> list:
     # ── S2/S3/S4 공통 청산 (수동 포지션은 자동 청산 제외) ────────────
     common_strategies = [
         ("S2",  ma_store.get_positions(),       ma_store.update_position_peak,
-         lambda c, d: ma_store.get_positions().get(c, {}).get(d, {})),
+         lambda c, d: ma_store.get_positions().get(c, {}).get(d, {}),
+         ma_store.mark_half_sold),
         ("S3",  canslim_store.load_positions(), canslim_store.update_position_peak,
-         lambda c, d: canslim_store.load_positions().get(c, {}).get(d, {})),
+         lambda c, d: canslim_store.load_positions().get(c, {}).get(d, {}),
+         canslim_store.mark_half_sold),
         ("S4",  sepa_store.load_positions(),    sepa_store.update_position_peak,
-         lambda c, d: sepa_store.load_positions().get(c, {}).get(d, {})),
+         lambda c, d: sepa_store.load_positions().get(c, {}).get(d, {}),
+         sepa_store.mark_half_sold),
     ]
 
-    for strat_name, positions, update_peak, reload_pos in common_strategies:
+    for strat_name, positions, update_peak, reload_pos, mark_half_sold_fn in common_strategies:
         if not positions:
             logger.info(f"[매매결정 {strat_name}] 보유 포지션 없음")
             continue
@@ -130,7 +131,7 @@ def _decide_exits(today_str: str) -> list:
                 entry_price = pos.get("entry_price", 0)
                 name        = pos.get("name", code)
                 quantity    = pos.get("quantity", 0)
-                early_trig  = pos.get("early_gain_triggered", False)
+                half_sold   = pos.get("half_sold", False)
                 if not entry_price or not quantity:
                     continue
 
@@ -150,7 +151,6 @@ def _decide_exits(today_str: str) -> list:
                 peak_price = pos.get("peak_price", entry_price)
                 peak_gain  = (peak_price - entry_price) / entry_price
                 gain       = (close - entry_price) / entry_price
-                target     = TAKE_PROFIT_EXT if early_trig else TAKE_PROFIT
 
                 reason = None
 
@@ -161,7 +161,30 @@ def _decide_exits(today_str: str) -> list:
                         f"매수:{entry_price:,} → 마감:{close:,}  {gain:+.2%}"
                     )
 
+                elif gain >= RUNNER_THRESHOLD and not half_sold:
+                    # 처음 +20% 도달 → 보유수량 절반 즉시 익절
+                    half_qty = quantity // 2
+                    if half_qty > 0:
+                        sell_list.append({
+                            "code":        code,
+                            "name":        name,
+                            "strategy":    strat_name,
+                            "entry_date":  entry_date,
+                            "reason":      f"부분익절(+{RUNNER_THRESHOLD:.0%})",
+                            "quantity":    half_qty,
+                            "entry_price": entry_price,
+                            "close":       close,
+                            "gain":        round(gain, 6),
+                            "partial":     True,
+                        })
+                        mark_half_sold_fn(code, entry_date)
+                        logger.info(
+                            f"[{strat_name} 부분익절] [{code}] {name}  "
+                            f"현재:{gain:+.2%}  절반매도:{half_qty}주"
+                        )
+
                 elif peak_gain >= RUNNER_THRESHOLD:
+                    # 절반 익절 후 러너 보유 → MA이탈 대기
                     if stock_ma.get("ma21_below_ma62") and stock_ma.get("ma62_declining_5d"):
                         reason = f"MA이탈(러너 고점{peak_gain:+.1%})"
                         logger.info(
@@ -181,19 +204,10 @@ def _decide_exits(today_str: str) -> list:
                         f"고점:{peak_price:,}(+{peak_gain:.1%}) → 마감:{close:,}({gain:+.2%})"
                     )
 
-                elif gain >= target:
-                    reason = f"익절({target:+.0%}" + (" 확장)" if early_trig else ")")
-                    logger.info(
-                        f"[{strat_name} 익절] [{code}] {name}  "
-                        f"마감:{close:,}  {gain:+.2%} ≥ {target:+.0%}"
-                    )
-
                 else:
-                    ext_mark = " (확장목표)" if early_trig else ""
                     logger.info(
                         f"[{strat_name} 보유중] [{code}] {name}  [{entry_date}]  "
-                        f"마감:{close:,}  {gain:+.2%}  목표:{target:+.0%}{ext_mark}  "
-                        f"고점:{peak_gain:+.2%}"
+                        f"마감:{close:,}  {gain:+.2%}  고점:{peak_gain:+.2%}"
                     )
 
                 if reason:

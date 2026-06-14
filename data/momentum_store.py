@@ -102,6 +102,30 @@ def remove_position(code: str, entry_date: str) -> None:
     git_commit_push([str(MOMENTUM_POS_PATH)], f"chore: S5 포지션 제거 {code} [{entry_date}]")
 
 
+def mark_half_sold(code: str, entry_date: str) -> None:
+    positions = load_positions()
+    if code in positions and entry_date in positions[code]:
+        positions[code][entry_date]["half_sold"] = True
+        save_positions(positions)
+        git_commit_push([str(MOMENTUM_POS_PATH)], f"chore: S5 부분익절 플래그 {code} [{entry_date}]")
+
+
+def reduce_quantity(code: str, entry_date: str, sold_qty: int) -> None:
+    positions = load_positions()
+    if code in positions and entry_date in positions[code]:
+        old_qty = positions[code][entry_date].get("quantity", 0)
+        new_qty = max(0, old_qty - sold_qty)
+        if new_qty == 0:
+            positions[code].pop(entry_date)
+            if not positions[code]:
+                positions.pop(code)
+        else:
+            positions[code][entry_date]["quantity"] = new_qty
+        save_positions(positions)
+        git_commit_push([str(MOMENTUM_POS_PATH)],
+            f"chore: S5 부분매도 수량조정 {code} [{entry_date}] {old_qty}→{new_qty}")
+
+
 def update_position_peak(code: str, entry_date: str, current_price: int, current_date: str) -> None:
     """특정 트랜치 고점 갱신"""
     positions = load_positions()
