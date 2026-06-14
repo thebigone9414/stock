@@ -1,8 +1,19 @@
 {
   "date": "2026-06-14",
-  "updated_at": "2026-06-14 00:52",
+  "updated_at": "2026-06-14 09:59",
   "sell": [],
   "buy": [
+    {
+      "code": "093370",
+      "name": "후성",
+      "buyer_type": "foreign",
+      "consec_days": 5,
+      "vol_ratio": 4.162,
+      "ma5": 15106,
+      "date": "2026-06-14",
+      "strategy": "S5",
+      "per_slot_budget": 5000000
+    },
     {
       "code": "095610",
       "name": "테스",
