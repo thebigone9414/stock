@@ -1,6 +1,6 @@
 {
   "date": "2026-06-15",
-  "updated_at": "2026-06-15 21:30",
+  "updated_at": "2026-06-15 21:45",
   "sell": [
     {
       "code": "403870",
@@ -25,6 +25,24 @@
       "ma5": 63940,
       "date": "2026-06-15",
       "strategy": "S5",
+      "per_slot_budget": 5000000
+    },
+    {
+      "code": "403870",
+      "name": "HPSP",
+      "score": 5,
+      "rs_3m": 0.9306,
+      "date": "2026-06-15",
+      "strategy": "S3",
+      "per_slot_budget": 5000000
+    },
+    {
+      "code": "023530",
+      "name": "롯데쇼핑",
+      "score": 5,
+      "rs_3m": 0.9167,
+      "date": "2026-06-15",
+      "strategy": "S3",
       "per_slot_budget": 5000000
     },
     {
