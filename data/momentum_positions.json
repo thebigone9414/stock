@@ -1,13 +1,13 @@
 {
   "entry_pending": [
     {
-      "code": "093370",
-      "name": "후성",
-      "buyer_type": "foreign",
-      "consec_days": 5,
-      "vol_ratio": 4.162,
-      "ma5": 15106,
-      "date": "2026-06-14"
+      "code": "403870",
+      "name": "HPSP",
+      "buyer_type": "institution",
+      "consec_days": 3,
+      "vol_ratio": 6.792,
+      "ma5": 63940,
+      "date": "2026-06-15"
     }
   ],
   "positions": {
