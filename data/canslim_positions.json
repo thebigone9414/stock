@@ -10,6 +10,17 @@
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
+    },
+    "131970": {
+      "2026-06-15": {
+        "name": "두산테스나",
+        "entry_date": "2026-06-15",
+        "entry_price": 175000,
+        "quantity": 28,
+        "peak_price": 175000,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   },
   "entry_pending": [
