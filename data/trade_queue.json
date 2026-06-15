@@ -1,6 +1,19 @@
 {
   "date": "2026-06-15",
-  "updated_at": "2026-06-15 21:00",
-  "sell": [],
+  "updated_at": "2026-06-15 20:01",
+  "sell": [
+    {
+      "code": "403870",
+      "name": "HPSP",
+      "strategy": "S2",
+      "entry_date": "2026-06-12",
+      "reason": "부분익절(+20%)",
+      "quantity": 25,
+      "entry_price": 60040,
+      "close": 83500,
+      "gain": 0.39074,
+      "partial": true
+    }
+  ],
   "buy": []
 }
