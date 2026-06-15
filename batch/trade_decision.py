@@ -55,7 +55,6 @@ STOP_LOSS        = 0.07
 RUNNER_THRESHOLD = 0.20   # 부분익절 + 러너 진입 기준
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
-S2_S3_S4_BASE    = 5    # 총 슬롯 수 (수동 제외)
 MAX_BUY_AMOUNT   = 5_000_000  # 종목당 매수 한도 (500만원)
 MAX_PER_STRATEGY = 3    # 전략당 최대 보유 종목 수
 
@@ -367,14 +366,11 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
 
     s2_n, s3_n, s4_n, s5_n, manual_n = count_shared()
     total_strategy = s2_n + s3_n + s4_n + s5_n   # 수동 제외
-    max_shared     = S2_S3_S4_BASE
-    slots_free     = max(0, max_shared - total_strategy)
 
     logger.info(
         f"[매매결정] 총자산:{bal.total_eval:,}원  현금:{bal.cash:,}원  "
-        f"슬롯:{total_strategy}/{max_shared}(수동:{manual_n})"
-        f"(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n})  "
-        f"여유:{slots_free}"
+        f"보유:{total_strategy}(수동:{manual_n})"
+        f"(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n})"
     )
 
     sell_list = _decide_exits(today)
@@ -397,12 +393,10 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
         }
         all_candidates.sort(key=lambda c: 1 if held_strat.get(c["strategy"], False) else 0)
 
-        # ② 전략당 MAX_PER_STRATEGY 종목 + 여유슬롯 cap
+        # ② 전략당 MAX_PER_STRATEGY 종목 제한
         filtered: list = []
         new_per_strat: dict = {}
         for c in all_candidates:
-            if len(filtered) >= slots_free:
-                break
             strat = c["strategy"]
             existing = {"S2": s2_n, "S3": s3_n, "S4": s4_n, "S5": s5_n}.get(strat, 0)
             if existing + new_per_strat.get(strat, 0) >= MAX_PER_STRATEGY:
@@ -413,17 +407,14 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
         skipped = [c for c in all_candidates if c not in filtered]
         if skipped:
             logger.info(
-                f"[매매결정] 슬롯/전략 캡으로 {len(skipped)}종목 제외: "
+                f"[매매결정] 전략 캡으로 {len(skipped)}종목 제외: "
                 + ", ".join(f"[{c['code']}]{c['name']}({c['strategy']})" for c in skipped)
             )
 
         per_budget   = MAX_BUY_AMOUNT
         need_funding = 0
 
-        if slots_free == 0:
-            logger.info(f"[매매결정] 슬롯 없음 ({total_strategy}/{max_shared}) — 매수 건너뜀")
-            deferred_list = filtered
-        elif avail_cash < per_budget:
+        if avail_cash < per_budget:
             logger.info(f"[매매결정] 주문가능금액 부족 ({avail_cash:,}원 < {per_budget:,}원) — 매수 건너뜀")
             deferred_list = filtered
         else:
@@ -460,7 +451,7 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
     now_str = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
     lines   = [f"[매매결정] {now_str}"]
     lines  += [f"총자산:{bal.total_eval:,}원  주문가능:{avail_cash:,}원"]
-    lines  += [f"슬롯:{total_strategy}/{max_shared}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n}) 수동:{manual_n}  여유:{slots_free}"]
+    lines  += [f"보유:{total_strategy}(S2:{s2_n} S3:{s3_n} S4:{s4_n} S5:{s5_n}) 수동:{manual_n}  전략당 최대:{MAX_PER_STRATEGY}"]
 
     # 보유 현황 (종목명 표시)
     held_tags = []
