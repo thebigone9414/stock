@@ -1,5 +1,17 @@
 {
-  "positions": {},
+  "positions": {
+    "095610": {
+      "2026-06-15": {
+        "name": "테스",
+        "entry_date": "2026-06-15",
+        "entry_price": 182200,
+        "quantity": 27,
+        "peak_price": 182200,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
+    }
+  },
   "entry_pending": [
     {
       "code": "095610",
