@@ -1,46 +1,19 @@
 {
-  "date": "2026-06-14",
-  "updated_at": "2026-06-14 09:59",
-  "sell": [],
-  "buy": [
+  "date": "2026-06-15",
+  "updated_at": "2026-06-15 20:01",
+  "sell": [
     {
-      "code": "093370",
-      "name": "후성",
-      "buyer_type": "foreign",
-      "consec_days": 5,
-      "vol_ratio": 4.162,
-      "ma5": 15106,
-      "date": "2026-06-14",
-      "strategy": "S5",
-      "per_slot_budget": 5000000
-    },
-    {
-      "code": "095610",
-      "name": "테스",
-      "score": 5,
-      "rs_3m": 1.7398,
-      "date": "2026-06-14",
-      "strategy": "S3",
-      "per_slot_budget": 5000000
-    },
-    {
-      "code": "131970",
-      "name": "두산테스나",
-      "score": 5,
-      "rs_3m": 1.7216,
-      "date": "2026-06-14",
-      "strategy": "S3",
-      "per_slot_budget": 5000000
-    },
-    {
-      "code": "093370",
-      "name": "후성",
-      "score": 5,
-      "rs_3m": 1.6513,
-      "date": "2026-06-14",
-      "strategy": "S3",
-      "per_slot_budget": 5000000
+      "code": "403870",
+      "name": "HPSP",
+      "strategy": "S2",
+      "entry_date": "2026-06-12",
+      "reason": "부분익절(+20%)",
+      "quantity": 25,
+      "entry_price": 60040,
+      "close": 83500,
+      "gain": 0.39074,
+      "partial": true
     }
   ],
-  "executed": true
+  "buy": []
 }
