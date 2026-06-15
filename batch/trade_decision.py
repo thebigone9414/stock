@@ -46,7 +46,7 @@ import data.canslim_store as canslim_store
 import data.sepa_store as sepa_store
 import data.momentum_store as momentum_store
 import data.manual_store as manual_store
-from data.trade_queue_store import save_queue, git_commit_push, QUEUE_PATH
+from data.trade_queue_store import load_queue, save_queue, git_commit_push, QUEUE_PATH
 from data.shared_slots import count_shared
 
 KST = pytz.timezone("Asia/Seoul")
@@ -374,6 +374,18 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
     )
 
     sell_list = _decide_exits(today)
+
+    # 기존 큐의 부분익절(partial) 보존 — 재실행 시 half_sold=True로 재감지 안 되는 항목 유지
+    existing_queue = load_queue()
+    if existing_queue.get("date") == today:
+        new_sell_keys = {(s["code"], s.get("entry_date", "")) for s in sell_list}
+        for s in existing_queue.get("sell", []):
+            key = (s["code"], s.get("entry_date", ""))
+            if s.get("partial") and key not in new_sell_keys:
+                sell_list.append(s)
+                logger.info(
+                    f"[매매결정] 기존 부분익절 보존: [{s['code']}] {s['name']} {s['gain']:+.2%}"
+                )
 
     try:
         avail_cash = account.get_available_cash()
