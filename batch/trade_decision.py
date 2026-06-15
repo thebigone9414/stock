@@ -56,7 +56,7 @@ RUNNER_THRESHOLD = 0.20   # 부분익절 + 러너 진입 기준
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 MAX_BUY_AMOUNT   = 5_000_000  # 종목당 매수 한도 (500만원)
-MAX_PER_STRATEGY = 3    # 전략당 최대 보유 종목 수
+MAX_PER_STRATEGY = 5    # 전략당 최대 보유 종목 수
 
 
 def _sync_positions_from_balance(bal_positions: list, today_str: str) -> None:
