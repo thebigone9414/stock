@@ -9,5 +9,19 @@
       "ma5": 15106,
       "date": "2026-06-14"
     }
-  ]
+  ],
+  "positions": {
+    "093370": {
+      "2026-06-15": {
+        "name": "후성",
+        "entry_date": "2026-06-15",
+        "entry_price": 19010,
+        "quantity": 263,
+        "peak_price": 19010,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false,
+        "buyer_type": "foreign"
+      }
+    }
+  }
 }
