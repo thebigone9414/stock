@@ -1,6 +1,6 @@
 {
   "date": "2026-06-15",
-  "updated_at": "2026-06-15 20:01",
+  "updated_at": "2026-06-15 21:30",
   "sell": [
     {
       "code": "403870",
@@ -15,5 +15,35 @@
       "partial": true
     }
   ],
-  "buy": []
+  "buy": [
+    {
+      "code": "403870",
+      "name": "HPSP",
+      "buyer_type": "institution",
+      "consec_days": 3,
+      "vol_ratio": 6.792,
+      "ma5": 63940,
+      "date": "2026-06-15",
+      "strategy": "S5",
+      "per_slot_budget": 5000000
+    },
+    {
+      "code": "003490",
+      "name": "대한항공",
+      "candle_body_ratio": 0.066667,
+      "has_ma744": true,
+      "date": "2026-06-15",
+      "strategy": "S2",
+      "per_slot_budget": 5000000
+    },
+    {
+      "code": "028260",
+      "name": "삼성물산",
+      "candle_body_ratio": 0.056566,
+      "has_ma744": true,
+      "date": "2026-06-15",
+      "strategy": "S2",
+      "per_slot_budget": 5000000
+    }
+  ]
 }
