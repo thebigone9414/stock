@@ -11,7 +11,8 @@ on:
         default: 'check-watchlist'
         type: choice
         options:
-          - morning-trade    # S2/S3/S4 통합 아침 매매 (cron-job.org 08:55 KST)
+          - morning-trade      # S2/S3/S4 통합 아침 매매 (cron-job.org 08:55 KST)
+          - intraday-monitor  # 장중 포지션 모니터링 (cron-job.org 09~15시 매시 KST)
           - trade-decision   # S2/S3/S4 통합 매매결정 배치 (cron-job.org 20:00 KST)
           - ma-batch         # MA 이평선 배치 (16:30 KST)
           - canslim-batch    # CANSLIM 스크리닝 배치 (16:40 KST)
@@ -743,7 +744,70 @@ jobs:
           if-no-files-found: ignore
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Job L: DART 재무 데이터 배치 (분기 1회 수동 트리거)
+# Job L: 장중 포지션 모니터링 (09:00~15:00 KST 매시 트리거)
+# cron-job.org 7개 등록: 00:00~06:00 UTC (09~15시 KST) Mon-Fri
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  intraday-monitor:
+    name: 장중 포지션 모니터링
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write
+
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'intraday-monitor'
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 장중 모니터링 실행
+        env:
+          KIS_APP_KEY:          ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET:       ${{ secrets.KIS_APP_SECRET }}
+          KIS_ACCOUNT_NO:       ${{ secrets.KIS_ACCOUNT_NO }}
+          KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
+          LOG_LEVEL:            INFO
+        run: python main.py --mode intraday-monitor
+
+      - name: 배치 실패 텔레그램 알림
+        if: failure() || cancelled()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          NOW=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')
+          MSG="[장중모니터] 미완료 — ${NOW}"$'\n'"원인: ${{ job.status }}"
+          curl -s -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}"
+
+      - name: 로그 저장
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intraday-monitor-log-${{ github.run_id }}
+          path: logs/
+          retention-days: 30
+          if-no-files-found: ignore
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Job M: DART 재무 데이터 배치 (분기 1회 수동 트리거)
 # 실행 시기: 분기 보고서 공시 완료 후
 #   Q1(1분기):  5월 중순   Q2(반기): 8월 중순
 #   Q3(3분기): 11월 중순   Annual:  다음해 3월 말

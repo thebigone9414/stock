@@ -110,6 +110,17 @@ def run_morning_trade(kis: KIS, notifier: Notifier) -> None:
     ).run()
 
 
+def run_intraday_monitor(kis: KIS, notifier: Notifier) -> None:
+    """장중 포지션 모니터링 (09:00~15:00 매시) — 손절/익절 즉시 집행"""
+    from batch.intraday_monitor import run_monitor
+    run_monitor(
+        market=kis.market,
+        order=kis.order,
+        notifier=notifier,
+        is_paper=kis.is_paper,
+    )
+
+
 def run_morning_strategy(kis: KIS, notifier: Notifier) -> None:
     """옥동자 오전 수급 전략 실행"""
     from strategies.morning_surge import MorningSurgeStrategy
@@ -285,6 +296,9 @@ def main():
 
     elif args.mode == "morning-trade":
         run_morning_trade(kis, notifier)
+
+    elif args.mode == "intraday-monitor":
+        run_intraday_monitor(kis, notifier)
 
     elif args.mode == "balance":
         run_balance(kis)
