@@ -43,6 +43,17 @@
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
+    },
+    "023530": {
+      "2026-06-16": {
+        "name": "롯데쇼핑",
+        "entry_date": "2026-06-16",
+        "entry_price": 183300,
+        "quantity": 27,
+        "peak_price": 183300,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   },
   "entry_pending": [
