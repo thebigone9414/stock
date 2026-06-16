@@ -11924,6 +11924,17 @@
         "early_gain_triggered": true,
         "half_sold": true
       }
+    },
+    "003490": {
+      "2026-06-16": {
+        "name": "대한항공",
+        "entry_date": "2026-06-16",
+        "entry_price": 29200,
+        "quantity": 171,
+        "peak_price": 29200,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   },
   "base_capital": 10000000,
