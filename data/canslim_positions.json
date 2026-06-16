@@ -32,6 +32,17 @@
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
+    },
+    "403870": {
+      "2026-06-16": {
+        "name": "HPSP",
+        "entry_date": "2026-06-16",
+        "entry_price": 83500,
+        "quantity": 59,
+        "peak_price": 83500,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   },
   "entry_pending": [
