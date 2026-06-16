@@ -10480,27 +10480,5 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-06-16 16:32",
-  "entry_pending": [
-    {
-      "code": "003490",
-      "name": "대한항공",
-      "candle_body_ratio": 0.066667,
-      "has_ma744": true,
-      "date": "2026-06-15"
-    },
-    {
-      "code": "028260",
-      "name": "삼성물산",
-      "candle_body_ratio": 0.056566,
-      "has_ma744": true,
-      "date": "2026-06-15"
-    },
-    {
-      "code": "178320",
-      "name": "서진시스템",
-      "candle_body_ratio": 0.038363,
-      "has_ma744": true,
-      "date": "2026-06-15"
-    }
-  ]
+  "entry_pending": []
 }
