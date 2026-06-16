@@ -11918,7 +11918,7 @@
         "name": "HPSP",
         "entry_date": "2026-06-12",
         "entry_price": 60040,
-        "quantity": 50,
+        "quantity": 25,
         "peak_price": 83500,
         "peak_gain_pct": 0.39074,
         "early_gain_triggered": true,
