@@ -11935,6 +11935,17 @@
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
+    },
+    "028260": {
+      "2026-06-16": {
+        "name": "삼성물산",
+        "entry_date": "2026-06-16",
+        "entry_price": 495500,
+        "quantity": 10,
+        "peak_price": 495500,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   },
   "base_capital": 10000000,
