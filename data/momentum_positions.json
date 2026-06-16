@@ -1,29 +1,4 @@
 {
   "entry_pending": [],
-  "positions": {
-    "093370": {
-      "2026-06-15": {
-        "name": "후성",
-        "entry_date": "2026-06-15",
-        "entry_price": 19010,
-        "quantity": 263,
-        "peak_price": 19010,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false,
-        "buyer_type": "foreign"
-      }
-    },
-    "403870": {
-      "2026-06-16": {
-        "name": "HPSP",
-        "entry_date": "2026-06-16",
-        "entry_price": 83500,
-        "quantity": 59,
-        "peak_price": 83500,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false,
-        "buyer_type": "institution"
-      }
-    }
-  }
+  "positions": {}
 }

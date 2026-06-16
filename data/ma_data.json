@@ -10442,42 +10442,7 @@
       "candle_body_ratio": 0.00459
     }
   },
-  "positions": {
-    "403870": {
-      "2026-06-12": {
-        "name": "HPSP",
-        "entry_date": "2026-06-12",
-        "entry_price": 60040,
-        "quantity": 25,
-        "peak_price": 83500,
-        "peak_gain_pct": 0.39074,
-        "early_gain_triggered": true,
-        "half_sold": true
-      }
-    },
-    "003490": {
-      "2026-06-16": {
-        "name": "대한항공",
-        "entry_date": "2026-06-16",
-        "entry_price": 29200,
-        "quantity": 171,
-        "peak_price": 29200,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    },
-    "028260": {
-      "2026-06-16": {
-        "name": "삼성물산",
-        "entry_date": "2026-06-16",
-        "entry_price": 495500,
-        "quantity": 10,
-        "peak_price": 495500,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    }
-  },
+  "positions": {},
   "base_capital": 10000000,
   "updated_at_kst": "2026-06-16 16:32",
   "entry_pending": []
