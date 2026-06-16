@@ -1,15 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "403870",
-      "name": "HPSP",
-      "buyer_type": "institution",
-      "consec_days": 3,
-      "vol_ratio": 6.792,
-      "ma5": 63940,
-      "date": "2026-06-15"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "093370": {
       "2026-06-15": {
