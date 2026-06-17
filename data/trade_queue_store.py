@@ -49,15 +49,26 @@ def save_queue(data: dict) -> None:
 
 
 def get_today_queue(today: str) -> Optional[dict]:
-    """미실행 큐 반환 — executed=True 이면 None (중복 실행 방지)
-    date 체크를 하지 않는 이유: trade_decision은 전날 저녁에 date를 저장하므로
-    아침에 today와 date가 항상 다름 → date 필드는 메타데이터용으로만 사용
+    """미실행 큐 반환 — executed=True 또는 2일 이상 경과 시 None (중복/지연 실행 방지)
+    trade_decision은 전날 저녁에 실행하므로 큐 날짜가 today와 같거나 하루 전이면 유효.
+    2일 이상 된 큐는 stale로 간주해 실행하지 않는다.
     """
+    from datetime import datetime, timedelta
     q = load_queue()
     if not q.get("date"):
         return None
     if q.get("executed"):
         return None
+    try:
+        queue_date = datetime.strptime(q["date"], "%Y-%m-%d").date()
+        today_date = datetime.strptime(today, "%Y-%m-%d").date()
+        if (today_date - queue_date).days > 1:
+            logger.warning(
+                f"[매매큐] 큐 날짜 {q['date']}가 오늘({today})보다 2일 이상 오래됨 — stale 큐 실행 방지"
+            )
+            return None
+    except (ValueError, KeyError):
+        pass
     return q
 
 

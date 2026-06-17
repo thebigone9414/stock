@@ -1,6 +1,7 @@
 {
   "date": "2026-06-16",
   "updated_at": "2026-06-16 20:01",
+  "executed": true,
   "sell": [
     {
       "code": "095610",
@@ -47,6 +48,5 @@
       "gain": -0.205988
     }
   ],
-  "buy": [],
-  "executed": true
+  "buy": []
 }
