@@ -397,6 +397,15 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
     buy_list: list = []
     deferred_list: list = []
 
+    # 전략·수동 전체 보유 종목 코드 집합 (중복 매수 방지용)
+    all_held_codes = (
+        set(ma_store.get_positions().keys())
+        | set(canslim_store.load_positions().keys())
+        | set(sepa_store.load_positions().keys())
+        | set(momentum_store.load_positions().keys())
+        | set(manual_store.load_positions().keys())
+    )
+
     if all_candidates:
         # ① 미보유 전략 우선 (안정 정렬 — 전략 내 score 순서 유지)
         held_strat = {
@@ -405,7 +414,16 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
         }
         all_candidates.sort(key=lambda c: 1 if held_strat.get(c["strategy"], False) else 0)
 
-        # ② 전략당 MAX_PER_STRATEGY 종목 제한
+        # ② 타 전략 포함 이미 보유 중인 종목 제외 (cross-strategy 중복 매수 방지)
+        cross_dupes = [c for c in all_candidates if c["code"] in all_held_codes]
+        if cross_dupes:
+            logger.info(
+                f"[매매결정] 타전략 보유로 {len(cross_dupes)}종목 제외: "
+                + ", ".join(f"[{c['code']}]{c['name']}({c['strategy']})" for c in cross_dupes)
+            )
+        all_candidates = [c for c in all_candidates if c["code"] not in all_held_codes]
+
+        # ③ 전략당 MAX_PER_STRATEGY 종목 제한
         filtered: list = []
         new_per_strat: dict = {}
         for c in all_candidates:
