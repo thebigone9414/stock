@@ -11915,5 +11915,13 @@
   "positions": {},
   "base_capital": 10000000,
   "updated_at_kst": "2026-06-17 16:32",
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "080220",
+      "name": "제주반도체",
+      "candle_body_ratio": 0.111211,
+      "has_ma744": true,
+      "date": "2026-06-17"
+    }
+  ]
 }
