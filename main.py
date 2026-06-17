@@ -246,7 +246,7 @@ def main():
                  "canslim-morning", "canslim-batch",
                  "sepa-morning", "sepa-batch",
                  "momentum-batch",
-                 "trade-decision", "morning-trade",
+                 "trade-decision", "morning-trade", "intraday-monitor",
                  "balance", "market", "check-watchlist", "debug-investor", "auto"],
         default="morning",
         help="실행 모드 (기본: morning)"
