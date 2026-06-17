@@ -1,52 +1,16 @@
 {
-  "date": "2026-06-16",
-  "updated_at": "2026-06-16 20:01",
-  "executed": true,
-  "sell": [
+  "date": "2026-06-17",
+  "updated_at": "2026-06-17 20:01",
+  "sell": [],
+  "buy": [
     {
-      "code": "095610",
-      "name": "테스",
-      "strategy": "S3",
-      "entry_date": "2026-06-15",
-      "reason": "손절(-7%)",
-      "quantity": 27,
-      "entry_price": 182200,
-      "close": 169200,
-      "gain": -0.07135
-    },
-    {
-      "code": "131970",
-      "name": "두산테스나",
-      "strategy": "S3",
-      "entry_date": "2026-06-15",
-      "reason": "손절(-7%)",
-      "quantity": 28,
-      "entry_price": 175000,
-      "close": 150300,
-      "gain": -0.141143
-    },
-    {
-      "code": "403870",
-      "name": "HPSP",
-      "strategy": "S3",
-      "entry_date": "2026-06-16",
-      "reason": "손절(-7%)",
-      "quantity": 59,
-      "entry_price": 83500,
-      "close": 66300,
-      "gain": -0.205988
-    },
-    {
-      "code": "403870",
-      "name": "HPSP",
-      "strategy": "S5",
-      "entry_date": "2026-06-16",
-      "reason": "손절(-7%)",
-      "quantity": 59,
-      "entry_price": 83500,
-      "close": 66300,
-      "gain": -0.205988
+      "code": "080220",
+      "name": "제주반도체",
+      "candle_body_ratio": 0.111211,
+      "has_ma744": true,
+      "date": "2026-06-17",
+      "strategy": "S2",
+      "per_slot_budget": 5000000
     }
-  ],
-  "buy": []
+  ]
 }
