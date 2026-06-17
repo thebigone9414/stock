@@ -4,7 +4,7 @@
 보유 포지션의 현재가를 실시간 조회하여 손절/익절 즉시 집행.
 다음날 아침 집행으로 인한 시간 리스크 제거.
 
-[S2/S3/S4 조건]
+[S2/S3/S4/수동 조건]
   ① 손절:       현재가 ≤ 매수가 × 0.93
   ② 부분익절:   현재가 ≥ 매수가 × 1.20 (처음) → 절반 매도
   ③ 러너 MA이탈: 고점 ≥ +20% 후 MA21 < MA62 AND MA62 5일 하락
@@ -29,6 +29,7 @@ import data.ma_store as ma_store
 import data.canslim_store as canslim_store
 import data.sepa_store as sepa_store
 import data.momentum_store as momentum_store
+import data.manual_store as manual_store
 
 KST = pytz.timezone("Asia/Seoul")
 
@@ -60,8 +61,9 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
     logger.info(f"[장중모니터] 시작 {now_str}")
 
     executed: list[str] = []
+    holding_summary: list[str] = []
 
-    # ── S2 / S3 / S4 공통 청산 ────────────────────────────────────────
+    # ── S2 / S3 / S4 / 수동 공통 청산 ────────────────────────────────────
     common_strategies = [
         ("S2",
          ma_store.get_positions,        ma_store.update_position_peak,
@@ -75,6 +77,10 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
          sepa_store.load_positions,     sepa_store.update_position_peak,
          sepa_store.mark_half_sold,     sepa_store.remove_position,
          sepa_store.reduce_quantity),
+        ("수동",
+         manual_store.load_positions,   manual_store.update_position_peak,
+         manual_store.mark_half_sold,   manual_store.remove_position,
+         manual_store.reduce_quantity),
     ]
 
     for strat, load_fn, upd_peak, mark_half, rm_pos, reduce_qty in common_strategies:
@@ -126,6 +132,9 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
                     reason = f"트레일링스탑(고점{peak_gain:+.1%}→고점-{TRAIL_STOP_PCT:.0%})"
 
                 if not reason:
+                    holding_summary.append(
+                        f"[{code}]{name}({strat}) {gain:+.2%}"
+                    )
                     logger.info(
                         f"[장중{strat}] [{code}] {name}  "
                         f"현재:{current:,}  {gain:+.2%}  고점:{peak_gain:+.2%}"
@@ -198,6 +207,7 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
                     pass
 
             if not reason:
+                holding_summary.append(f"[{code}]{name}(S5) {gain:+.2%}")
                 logger.info(
                     f"[장중S5] [{code}] {name}  현재:{current:,}  {gain:+.2%}"
                 )
@@ -226,7 +236,12 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
             except Exception as e:
                 logger.error(f"[장중모니터] [S5] [{code}] {name} 매도 실패: {e}")
 
-    if not executed:
-        logger.info(f"[장중모니터] {now_str} — 조건 충족 포지션 없음")
-    else:
+    # ── 완료 알림 (매도 없어도 heartbeat 전송) ───────────────────────────
+    if executed:
         logger.info(f"[장중모니터] 완료 — {len(executed)}건 집행")
+    else:
+        summary_line = "  |  ".join(holding_summary) if holding_summary else "보유 없음"
+        heartbeat = f"[장중모니터] {now_str} — 이상없음\n{summary_line}"
+        logger.info(heartbeat)
+        if notifier:
+            notifier.notify(heartbeat)
