@@ -63,7 +63,7 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
     executed: list[str] = []
     holding_summary: list[str] = []
 
-    # ── S2 / S3 / S4 / 수동 공통 청산 ────────────────────────────────────
+    # ── S2 / S3 / S4 공통 청산 ────────────────────────────────────────
     common_strategies = [
         ("S2",
          ma_store.get_positions,        ma_store.update_position_peak,
@@ -77,10 +77,6 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
          sepa_store.load_positions,     sepa_store.update_position_peak,
          sepa_store.mark_half_sold,     sepa_store.remove_position,
          sepa_store.reduce_quantity),
-        ("수동",
-         manual_store.load_positions,   manual_store.update_position_peak,
-         manual_store.mark_half_sold,   manual_store.remove_position,
-         manual_store.reduce_quantity),
     ]
 
     for strat, load_fn, upd_peak, mark_half, rm_pos, reduce_qty in common_strategies:
@@ -236,12 +232,29 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
             except Exception as e:
                 logger.error(f"[장중모니터] [S5] [{code}] {name} 매도 실패: {e}")
 
+    # ── 수동 포지션 현황 (알림만, 매도 없음) ────────────────────────────
+    for code, tranches in list(manual_store.load_positions().items()):
+        for entry_date, pos in list(tranches.items()):
+            entry_price = pos.get("entry_price", 0)
+            quantity    = pos.get("quantity", 0)
+            name        = pos.get("name", code)
+            if not entry_price or not quantity:
+                continue
+            current = _get_price(market, code)
+            if current <= 0:
+                continue
+            gain = (current - entry_price) / entry_price
+            holding_summary.append(f"[{code}]{name}(수동) {gain:+.2%}")
+            logger.info(f"[장중수동] [{code}] {name}  현재:{current:,}  {gain:+.2%}")
+
     # ── 완료 알림 (매도 없어도 heartbeat 전송) ───────────────────────────
     if executed:
         logger.info(f"[장중모니터] 완료 — {len(executed)}건 집행")
-    else:
-        summary_line = "  |  ".join(holding_summary) if holding_summary else "보유 없음"
-        heartbeat = f"[장중모니터] {now_str} — 이상없음\n{summary_line}"
-        logger.info(heartbeat)
-        if notifier:
-            notifier.notify(heartbeat)
+
+    summary_line = "  |  ".join(holding_summary) if holding_summary else "보유 없음"
+    heartbeat = f"[장중모니터] {now_str}\n{summary_line}"
+    if executed:
+        heartbeat += f"\n매도 {len(executed)}건 집행"
+    logger.info(heartbeat)
+    if notifier:
+        notifier.notify(heartbeat)
