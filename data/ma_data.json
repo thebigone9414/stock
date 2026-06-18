@@ -11912,7 +11912,19 @@
       "candle_body_ratio": 0.006542
     }
   },
-  "positions": {},
+  "positions": {
+    "080220": {
+      "2026-06-18": {
+        "name": "제주반도체",
+        "entry_date": "2026-06-18",
+        "entry_price": 111500,
+        "quantity": 44,
+        "peak_price": 111500,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
+    }
+  },
   "base_capital": 10000000,
   "updated_at_kst": "2026-06-17 16:32",
   "entry_pending": [
