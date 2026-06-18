@@ -43,10 +43,10 @@ def run_ma_morning(kis: KIS, notifier: Notifier) -> None:
     strategy.run()
 
 
-def run_ma_batch(kis: KIS, notifier: Notifier) -> None:
+def run_ma_batch(kis: KIS, notifier: Notifier, force: bool = False) -> None:
     """MA 이평선 배치 업데이트 + 손절 체크 + 잔고 현황 알림"""
     from batch.update_ma import run_batch
-    run_batch(kis.market, account=kis.account, notifier=notifier)
+    run_batch(kis.market, account=kis.account, notifier=notifier, force=force)
 
 
 def run_canslim_morning(kis: KIS, notifier: Notifier) -> None:
@@ -274,7 +274,7 @@ def main():
         run_ma_morning(kis, notifier)
 
     elif args.mode == "ma-batch":
-        run_ma_batch(kis, notifier)
+        run_ma_batch(kis, notifier, force=args.force)
 
     elif args.mode == "canslim-morning":
         run_canslim_morning(kis, notifier)

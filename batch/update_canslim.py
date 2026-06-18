@@ -195,7 +195,10 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     if not force:
         existing_out = canslim_store.load_data()
         if existing_out.get("updated_at", "").startswith(today):
-            logger.info(f"[CANSLIM배치] {today} 이미 완료 — 중복 실행 건너뜀")
+            msg = f"[CANSLIM배치] {today} 이미 완료 — 2차 실행 생략"
+            logger.info(msg)
+            if notifier:
+                notifier.notify(msg)
             return
 
         if is_market_holiday():

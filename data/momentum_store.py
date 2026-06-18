@@ -185,7 +185,10 @@ def set_entry_pending(entries: list) -> None:
                 existing = json.load(f)
             except json.JSONDecodeError:
                 existing = {}
+    from datetime import datetime as _dt
+    import pytz as _pytz
     existing["entry_pending"] = entries
+    existing["updated_at"] = _dt.now(_pytz.timezone("Asia/Seoul")).strftime("%Y-%m-%d")
     with open(MOMENTUM_POS_PATH, "w", encoding="utf-8") as f:
         json.dump(existing, f, ensure_ascii=False, indent=2)
     n     = len(entries)

@@ -44,6 +44,18 @@ VOL_RATIO_MIN   = 1.2
 STOP_LOSS       = 0.07
 
 
+def _load_momentum_raw() -> dict:
+    from data.momentum_store import MOMENTUM_POS_PATH
+    import json as _json
+    if not MOMENTUM_POS_PATH.exists():
+        return {}
+    with open(MOMENTUM_POS_PATH, "r", encoding="utf-8") as f:
+        try:
+            return _json.load(f)
+        except Exception:
+            return {}
+
+
 def _load_ohlcv_cache() -> dict:
     if not OHLCV_CACHE_PATH.exists():
         return {}
@@ -132,9 +144,12 @@ def run_batch(market, notifier: Notifier = None, force: bool = False) -> None:
     today = datetime.now(KST).strftime("%Y-%m-%d")
 
     if not force:
-        pending = momentum_store.get_entry_pending()
-        if pending and any(e.get("date") == today for e in pending):
-            logger.info(f"[Momentum배치] {today} 이미 완료 — 중복 실행 건너뜀")
+        existing_data = momentum_store.load_raw() if hasattr(momentum_store, "load_raw") else _load_momentum_raw()
+        if existing_data.get("updated_at", "").startswith(today):
+            msg = f"[Momentum배치] {today} 이미 완료 — 2차 실행 생략"
+            logger.info(msg)
+            if notifier:
+                notifier.notify(msg)
             return
         if is_market_holiday():
             logger.info(f"[Momentum배치] {today} 휴장일 — 미실행")
