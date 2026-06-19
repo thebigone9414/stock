@@ -55,7 +55,7 @@ STOP_LOSS        = 0.07
 RUNNER_THRESHOLD = 0.20   # 부분익절 + 러너 진입 기준
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
-MAX_BUY_AMOUNT   = 5_000_000  # 종목당 매수 한도 (500만원)
+MAX_BUY_AMOUNT   = 3_000_000  # 종목당 매수 한도 (300만원)
 MAX_PER_STRATEGY = 5    # 전략당 최대 보유 종목 수
 
 
