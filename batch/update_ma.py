@@ -229,6 +229,8 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
     existing   = ma_store.load()
     stocks_out = {}
     ok, fail, skip, cache_hits = 0, 0, 0, 0
+    consecutive_api_fails = 0
+    CIRCUIT_BREAKER_LIMIT = 10  # 연속 실패 이 수 이상이면 API 장애로 판단, 배치 중단
 
     for i, stock in enumerate(S2_WATCHLIST, 1):
         code   = stock["code"]
@@ -264,6 +266,7 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
                     fetch_days = OHLCV_DAYS
 
                 df = market.get_ohlcv_long(code, days=fetch_days, throttler=throttler)
+                consecutive_api_fails = 0  # 성공 시 리셋
 
                 if df.empty:
                     logger.warning(
@@ -344,6 +347,16 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
         except Exception as e:
             logger.warning(f"[{i:03d}/{len(S2_WATCHLIST)}] [{code}] {name} 실패: {e}")
             fail += 1
+            consecutive_api_fails += 1
+            if consecutive_api_fails >= CIRCUIT_BREAKER_LIMIT:
+                msg = (
+                    f"[MA배치] API 연속 실패 {consecutive_api_fails}회 ({i}/{len(S2_WATCHLIST)}종목 처리 중) "
+                    f"— KIS API 장애로 판단, 배치 중단"
+                )
+                logger.error(msg)
+                if notifier:
+                    notifier.notify(msg)
+                raise RuntimeError(msg)
 
     logger.info(
         f" 완료: 성공:{ok} / 실패:{fail} / 데이터부족:{skip} / 캐시히트:{cache_hits}"

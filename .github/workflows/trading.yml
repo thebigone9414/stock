@@ -42,22 +42,19 @@ on:
           - 'true'
 
 concurrency:
-  # 배치(ma-batch·canslim-batch·sepa-batch·update-watchlist): okdongja-batch 그룹
+  # 배치별 독립 그룹: MA가 타임아웃나도 다른 배치 차단 안 함
   # S1(morning): okdongja-s1 그룹 (07:50~09:50, 최대 150분 점유)
-  # S2/S3/S4(ma-morning·canslim-morning·sepa-morning): okdongja-trading 그룹
-  # → S1 실행 중에도 S2/S3/S4가 별도 큐에서 즉시 실행 가능
+  # S2/S3/S4 아침매매·장중모니터: okdongja-trading 그룹
   group: >-
     ${{
-      (github.event.inputs.mode == 'ma-batch'         ||
-       github.event.inputs.mode == 'canslim-batch'   ||
-       github.event.inputs.mode == 'sepa-batch'      ||
-       github.event.inputs.mode == 'momentum-batch'  ||
-       github.event.inputs.mode == 'trade-decision'  ||
-       github.event.inputs.mode == 'update-watchlist' ||
-       github.event.inputs.mode == 'update-dart')
-      && 'okdongja-batch'
-      || github.event.inputs.mode == 'morning'
-      && 'okdongja-s1'
+      github.event.inputs.mode == 'ma-batch'           && 'okdongja-ma'
+      || github.event.inputs.mode == 'momentum-batch'  && 'okdongja-momentum'
+      || github.event.inputs.mode == 'canslim-batch'   && 'okdongja-canslim'
+      || github.event.inputs.mode == 'sepa-batch'      && 'okdongja-sepa'
+      || github.event.inputs.mode == 'trade-decision'  && 'okdongja-trade'
+      || github.event.inputs.mode == 'update-watchlist' && 'okdongja-watchlist'
+      || github.event.inputs.mode == 'update-dart'     && 'okdongja-dart'
+      || github.event.inputs.mode == 'morning'         && 'okdongja-s1'
       || 'okdongja-trading'
     }}
   cancel-in-progress: false   # 실행 중인 매매 절대 중단 금지
@@ -259,7 +256,7 @@ jobs:
   update-ma:
     name: MA 이평선 배치
     runs-on: ubuntu-latest
-    timeout-minutes: 120       # 최초 풀로딩 820일 대비 (증분 로딩 후엔 ~10분으로 단축됨)
+    timeout-minutes: 60        # 최초 풀로딩 820일 대비 (증분 로딩 후엔 ~10분으로 단축됨)
 
     permissions:
       contents: write           # git push 권한 필요
