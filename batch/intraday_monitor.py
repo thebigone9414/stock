@@ -48,8 +48,9 @@ TRAIL_STOP_PCT   = 0.10
 # ※ KODEX 2차전지산업레버리지 코드를 확인 후 아래 XXXXXX를 교체하세요
 _ETF_248_CONF = [
     ("122630", "KODEX 레버리지",             1, True ),
-    ("XXXXXX", "KODEX 2차전지산업레버리지",   8, False),  # TODO: 코드 확인 필요
+    ("462330", "KODEX 2차전지산업레버리지",   8, False),
     ("0190C0", "RISE 현대차고정피지컬AI",    1, False),
+    ("005380", "현대차",                     1, False),
 ]
 
 
