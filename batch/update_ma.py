@@ -231,6 +231,7 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
     ok, fail, skip, cache_hits = 0, 0, 0, 0
     consecutive_api_fails = 0
     CIRCUIT_BREAKER_LIMIT = 10  # 연속 실패 이 수 이상이면 API 장애로 판단, 배치 중단
+    long_trend_alerts: list = []  # 장기추세종목 감지 목록
 
     for i, stock in enumerate(S2_WATCHLIST, 1):
         code   = stock["code"]
@@ -344,6 +345,39 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
             )
             ok += 1
 
+            # ── 장기추세종목 감지 ──────────────────────────────────────
+            if has744:
+                # MA5>MA21>MA62>MA248 정렬 유지 중, MA248이 MA744 위로 첫 돌파
+                try:
+                    prev_upper = (
+                        entry["prev_ma5"] > entry["prev_ma21"] >
+                        entry["prev_ma62"] > entry["prev_ma248"]
+                    )
+                    ma248_broke_744 = (
+                        entry["prev_ma248"] < entry["prev_ma744"] and
+                        entry["ma248"] > entry["ma744"]
+                    )
+                    if entry["fully_aligned"] and prev_upper and ma248_broke_744:
+                        long_trend_alerts.append((code, name, "full", entry))
+                        logger.info(f"[장기추세감지] [{code}] {name} MA248>MA744 돌파 ★완전정배열")
+                except (TypeError, KeyError):
+                    pass
+            else:
+                # MA5>MA21>MA62 정렬 유지 중, MA62가 MA248 위로 첫 돌파 (부분정배열 달성)
+                try:
+                    prev_upper3 = (
+                        entry["prev_ma5"] > entry["prev_ma21"] > entry["prev_ma62"]
+                    )
+                    ma62_broke_248 = (
+                        entry["prev_ma62"] < entry["prev_ma248"] and
+                        entry["ma62"] > entry["ma248"]
+                    )
+                    if entry["partial_aligned"] and prev_upper3 and ma62_broke_248:
+                        long_trend_alerts.append((code, name, "partial", entry))
+                        logger.info(f"[장기추세감지] [{code}] {name} MA62>MA248 돌파 ★부분정배열")
+                except (TypeError, KeyError):
+                    pass
+
         except Exception as e:
             logger.warning(f"[{i:03d}/{len(S2_WATCHLIST)}] [{code}] {name} 실패: {e}")
             fail += 1
@@ -361,6 +395,24 @@ def run_batch(market, account=None, notifier: Notifier = None, force: bool = Fal
     logger.info(
         f" 완료: 성공:{ok} / 실패:{fail} / 데이터부족:{skip} / 캐시히트:{cache_hits}"
     )
+
+    # 장기추세종목 감지 텔레그램 알림
+    if long_trend_alerts and notifier:
+        now_kst = datetime.now(KST).strftime("%Y-%m-%d %H:%M")
+        lines = [f"[장기추세종목 감지] {now_kst}"]
+        for c, n, typ, e in long_trend_alerts:
+            if typ == "full":
+                lines.append(
+                    f"★ [{c}] {n}\n"
+                    f"   MA248({e['ma248']:,.0f}) > MA744({e['ma744']:,.0f}) 돌파 → 완전정배열 달성"
+                )
+            else:
+                lines.append(
+                    f"☆ [{c}] {n} (MA744 산정불가)\n"
+                    f"   MA62({e['ma62']:,.0f}) > MA248({e['ma248']:,.0f}) 돌파 → 부분정배열 달성"
+                )
+        notifier.notify("\n".join(lines))
+        logger.info(f"[장기추세감지] 알림 전송 완료: {len(long_trend_alerts)}종목")
 
     # OHLCV 캐시 저장 (다음 배치에서 증분 로딩에 사용)
     save_ohlcv_cache(ohlcv_cache)
