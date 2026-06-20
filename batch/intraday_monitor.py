@@ -14,7 +14,12 @@
   ① 손절:      현재가 ≤ 매수가 × 0.93
   ② MA5 하회:  현재가 < MA5
   ③ 시간스탑:  보유 21일 이상
+
+[248 ETF 전략 — 15:00 배치 전용]
+  전일 대비 N% 하락 → N×2×배율 주 매수
+  전일 대비 N% 상승 → N주 매도 (KODEX 레버리지만)
 """
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -38,6 +43,15 @@ RUNNER_THRESHOLD = 0.20
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 
+# ── 248 ETF 전략 설정 ────────────────────────────────────────────────
+# (code, 표시명, 매수배율, 매도가능여부)
+# ※ KODEX 2차전지산업레버리지 코드를 확인 후 아래 XXXXXX를 교체하세요
+_ETF_248_CONF = [
+    ("122630", "KODEX 레버리지",             1, True ),
+    ("XXXXXX", "KODEX 2차전지산업레버리지",   8, False),  # TODO: 코드 확인 필요
+    ("0190C0", "RISE 현대차고정피지컬AI",    1, False),
+]
+
 
 def _get_price(market, code: str) -> int:
     try:
@@ -45,6 +59,105 @@ def _get_price(market, code: str) -> int:
     except Exception as e:
         logger.warning(f"[장중모니터] [{code}] 현재가 조회 실패: {e}")
         return 0
+
+
+def _get_prev_close(market, code: str) -> int:
+    """전일 종가: ohlcv_cache → KIS API 순으로 조회"""
+    cache_path = Path("data/ohlcv_cache.json")
+    if cache_path.exists():
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+            closes = cache.get(code, {}).get("closes", [])
+            if closes:
+                return int(closes[-1])
+        except Exception:
+            pass
+    try:
+        df = market.get_ohlcv_long(code, days=5)
+        if not df.empty:
+            return int(df["close"].iloc[-1])
+    except Exception as e:
+        logger.warning(f"[248전략] [{code}] 전일종가 API 조회 실패: {e}")
+    return 0
+
+
+def _run_etf_248(market, order, notifier, now_str: str, is_paper: bool) -> list:
+    """248 ETF 전략 — 15:00 배치 전용
+    전일 대비 N% 하락 → N×2×배율 주 매수
+    전일 대비 N% 상승 → N주 매도 (can_sell=True 종목만)
+    """
+    msgs = []
+    lines = [f"[248 ETF 전략] {now_str}"]
+
+    for code, name, mult, can_sell in _ETF_248_CONF:
+        if code == "XXXXXX":
+            logger.warning(f"[248전략] {name} 코드 미설정 — 건너뜀")
+            continue
+
+        prev_close = _get_prev_close(market, code)
+        if prev_close <= 0:
+            logger.warning(f"[248전략] [{code}] {name} 전일종가 조회 실패 — 건너뜀")
+            continue
+
+        curr = _get_price(market, code)
+        if curr <= 0:
+            continue
+
+        pct = (curr - prev_close) / prev_close * 100
+        n   = min(int(abs(pct)), 10)
+
+        logger.info(
+            f"[248전략] [{code}] {name}  전일:{prev_close:,} 현재:{curr:,} {pct:+.2f}%"
+        )
+
+        if pct <= -1.0 and n >= 1:
+            qty = n * 2 * mult
+            action_msg = (
+                f"  매수 [{code}] {name}\n"
+                f"  전일:{prev_close:,} → 현재:{curr:,} ({pct:+.2f}%)  {qty}주 매수"
+            )
+            logger.info(f"[248매수] {action_msg.strip()}")
+            try:
+                if not is_paper:
+                    resp = order.buy_market(code, qty)
+                    logger.info(f"[248전략] 매수 응답: {resp}")
+                else:
+                    logger.info(f"[248전략] [{code}] 모의투자 — 매수 생략")
+                msgs.append(action_msg)
+                lines.append(action_msg)
+            except Exception as e:
+                logger.error(f"[248전략] [{code}] 매수 실패: {e}")
+
+        elif pct >= 1.0 and can_sell and n >= 1:
+            qty = n
+            action_msg = (
+                f"  매도 [{code}] {name}\n"
+                f"  전일:{prev_close:,} → 현재:{curr:,} ({pct:+.2f}%)  {qty}주 매도"
+            )
+            logger.info(f"[248매도] {action_msg.strip()}")
+            try:
+                if not is_paper:
+                    resp = order.sell_market(code, qty)
+                    logger.info(f"[248전략] 매도 응답: {resp}")
+                else:
+                    logger.info(f"[248전략] [{code}] 모의투자 — 매도 생략")
+                msgs.append(action_msg)
+                lines.append(action_msg)
+            except Exception as e:
+                logger.error(f"[248전략] [{code}] 매도 실패: {e}")
+
+        else:
+            no_action = (
+                f"  [{code}] {name}  {pct:+.2f}%  "
+                f"({'매수/매도 없음' if abs(pct) < 1 else '조건 미충족'})"
+            )
+            lines.append(no_action)
+
+    if notifier:
+        notifier.notify("\n".join(lines))
+
+    return msgs
 
 
 def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
@@ -246,6 +359,12 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
             gain = (current - entry_price) / entry_price
             holding_summary.append(f"[{code}]{name}(수동) {gain:+.2%}")
             logger.info(f"[장중수동] [{code}] {name}  현재:{current:,}  {gain:+.2%}")
+
+    # ── 248 ETF 전략 (15:00 배치 전용) ──────────────────────────────────
+    if now.hour == 15:
+        etf_msgs = _run_etf_248(market, order, notifier, now_str, is_paper)
+        if etf_msgs:
+            executed.extend(etf_msgs)
 
     # ── 완료 알림 (매도 없어도 heartbeat 전송) ───────────────────────────
     if executed:
