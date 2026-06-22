@@ -11919,9 +11919,10 @@
         "entry_date": "2026-06-18",
         "entry_price": 111500,
         "quantity": 44,
-        "peak_price": 130700,
-        "peak_gain_pct": 0.172197,
-        "early_gain_triggered": true
+        "peak_price": 134000,
+        "peak_gain_pct": 0.201794,
+        "early_gain_triggered": true,
+        "half_sold": true
       }
     },
     "462330": {
