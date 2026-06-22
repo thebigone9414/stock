@@ -11919,20 +11919,9 @@
         "entry_date": "2026-06-18",
         "entry_price": 111500,
         "quantity": 44,
-        "peak_price": 111500,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    },
-    "462330": {
-      "2026-06-18": {
-        "name": "KODEX 2차전지산업레버리지",
-        "entry_date": "2026-06-18",
-        "entry_price": 1590,
-        "quantity": 3000,
-        "peak_price": 1590,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
+        "peak_price": 130700,
+        "peak_gain_pct": 0.172197,
+        "early_gain_triggered": true
       }
     }
   },
