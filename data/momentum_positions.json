@@ -1,4 +1,24 @@
 {
-  "entry_pending": [],
-  "positions": {}
+  "entry_pending": [
+    {
+      "code": "402340",
+      "name": "SK스퀘어",
+      "buyer_type": "institution",
+      "consec_days": 5,
+      "vol_ratio": 1.358,
+      "ma5": 1709400,
+      "date": "2026-06-22"
+    },
+    {
+      "code": "067310",
+      "name": "하나마이크론",
+      "buyer_type": "foreign",
+      "consec_days": 5,
+      "vol_ratio": 3.211,
+      "ma5": 51640,
+      "date": "2026-06-22"
+    }
+  ],
+  "positions": {},
+  "updated_at": "2026-06-22"
 }
