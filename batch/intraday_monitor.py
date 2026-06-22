@@ -61,7 +61,10 @@ def _get_price(market, code: str) -> int:
 
 
 def _get_prev_close(market, code: str) -> int:
-    """전일 종가: ohlcv_cache → KIS API 순으로 조회"""
+    """전일 종가: ohlcv_cache → KIS API 순으로 조회
+    장중 API 호출 시 당일 불완전 데이터가 마지막 행에 포함될 수 있으므로
+    오늘 날짜 행을 제외하고 전 거래일 종가를 반환한다.
+    """
     cache_path = Path("data/ohlcv_cache.json")
     if cache_path.exists():
         try:
@@ -73,8 +76,12 @@ def _get_prev_close(market, code: str) -> int:
         except Exception:
             pass
     try:
+        today_str = datetime.now(KST).strftime("%Y-%m-%d")
         df = market.get_ohlcv_long(code, days=5)
         if not df.empty:
+            prev = df[df["date"].apply(lambda d: d.strftime("%Y-%m-%d")) < today_str]
+            if not prev.empty:
+                return int(prev["close"].iloc[-1])
             return int(df["close"].iloc[-1])
     except Exception as e:
         logger.warning(f"[248전략] [{code}] 전일종가 API 조회 실패: {e}")
