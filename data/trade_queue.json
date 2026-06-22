@@ -1,6 +1,19 @@
 {
-  "date": "2026-06-19",
-  "updated_at": "2026-06-19 20:01",
-  "sell": [],
+  "date": "2026-06-22",
+  "updated_at": "2026-06-22 20:01",
+  "sell": [
+    {
+      "code": "080220",
+      "name": "제주반도체",
+      "strategy": "S2",
+      "entry_date": "2026-06-18",
+      "reason": "부분익절(+20%)",
+      "quantity": 22,
+      "entry_price": 111500,
+      "close": 134000,
+      "gain": 0.201794,
+      "partial": true
+    }
+  ],
   "buy": []
 }
