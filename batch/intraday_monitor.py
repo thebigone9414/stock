@@ -51,8 +51,13 @@ _ETF_248_CONF = [
     ("0190C0", "RISE 현대차고정피지컬AI",    1, False),
 ]
 
-# 248 ETF 전략 종목은 일반 청산 로직(손절·트레일링·MA이탈 등)에서 제외
+# 자동 매도 금지 종목 — 248전략 운용 종목 + 별도 보유 보호 종목
+# 손절·부분익절·트레일링스탑·MA이탈·S5시간스탑 등 모든 자동 청산 로직에서 제외
 _ETF_248_CODES = {code for code, *_ in _ETF_248_CONF}
+_PROTECTED_CODES = _ETF_248_CODES | {
+    "122630",  # KODEX 레버리지
+    "005380",  # 현대차
+}
 
 
 def _get_price(market, code: str) -> int:
@@ -204,7 +209,7 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
     for strat, load_fn, upd_peak, mark_half, rm_pos, reduce_qty in common_strategies:
         positions = load_fn()
         for code, tranches in list(positions.items()):
-            if code in _ETF_248_CODES:
+            if code in _PROTECTED_CODES:
                 continue
             for entry_date, pos in list(tranches.items()):
                 entry_price = pos.get("entry_price", 0)
@@ -296,7 +301,7 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
     # ── S5 전용 청산 ──────────────────────────────────────────────────
     s5_positions = momentum_store.load_positions()
     for code, tranches in list(s5_positions.items()):
-        if code in _ETF_248_CODES:
+        if code in _PROTECTED_CODES:
             continue
         for entry_date, pos in list(tranches.items()):
             entry_price = pos.get("entry_price", 0)
@@ -360,7 +365,7 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
 
     # ── 수동 포지션 현황 (알림만, 매도 없음) ────────────────────────────
     for code, tranches in list(manual_store.load_positions().items()):
-        if code in _ETF_248_CODES:
+        if code in _PROTECTED_CODES:
             continue
         for entry_date, pos in list(tranches.items()):
             entry_price = pos.get("entry_price", 0)
