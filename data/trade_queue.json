@@ -1,20 +1,39 @@
 {
-  "date": "2026-06-22",
-  "updated_at": "2026-06-22 20:01",
+  "date": "2026-06-23",
+  "updated_at": "2026-06-23 20:01",
   "sell": [
     {
-      "code": "080220",
-      "name": "제주반도체",
-      "strategy": "S2",
+      "code": "122630",
+      "name": "KODEX 레버리지",
+      "strategy": "S4",
       "entry_date": "2026-06-18",
-      "reason": "부분익절(+20%)",
-      "quantity": 22,
-      "entry_price": 111500,
-      "close": 134000,
-      "gain": 0.201794,
-      "partial": true
+      "reason": "손절(-7%)",
+      "quantity": 20,
+      "entry_price": 231414,
+      "close": 188990,
+      "gain": -0.183325
+    },
+    {
+      "code": "005380",
+      "name": "현대차",
+      "strategy": "S4",
+      "entry_date": "2026-06-22",
+      "reason": "손절(-7%)",
+      "quantity": 3,
+      "entry_price": 586000,
+      "close": 511000,
+      "gain": -0.127986
     }
   ],
-  "buy": [],
-  "executed": true
+  "buy": [
+    {
+      "code": "034730",
+      "name": "SK",
+      "score": 5,
+      "rs_3m": 0.9583,
+      "date": "2026-06-23",
+      "strategy": "S3",
+      "per_slot_budget": 3000000
+    }
+  ]
 }
