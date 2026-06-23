@@ -87,6 +87,14 @@ class MorningTradeStrategy:
         quantity    = item["quantity"]
         entry_price = item["entry_price"]
         entry_date  = item.get("entry_date", "")
+
+        if code in manual_store.NO_AUTO_SELL_CODES:
+            logger.warning(
+                f"[morning] [{strategy}] [{code}] {name} — "
+                f"자동매도 보호 종목, 매도 건너뜀 (사유: {reason})"
+            )
+            return
+
         if not entry_date:
             logger.error(
                 f"[morning] [{strategy}] [{code}] 매도 큐에 entry_date 누락 — "
