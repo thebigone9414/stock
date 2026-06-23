@@ -44,18 +44,21 @@ TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 
 # ── 248 ETF 전략 설정 ────────────────────────────────────────────────
-# (code, 표시명, 매수배율, 매도가능여부)
-# ※ KODEX 2차전지산업레버리지 코드를 확인 후 아래 XXXXXX를 교체하세요
+# (code, 표시명, buy_factor, 매도가능여부)
+# N% 하락 시 매수 수량 = N × buy_factor
+#   KODEX 2차전지산업레버리지: 1%→16주, 2%→32주 (기존 n×2×8과 동일)
+#   RISE 현대차고정피지컬AI:   1%→2주,  2%→4주  (기존 n×2×1과 동일)
+#   KODEX 레버리지:            1%→1주,  2%→2주
 _ETF_248_CONF = [
-    ("462330", "KODEX 2차전지산업레버리지",   8, False),
-    ("0190C0", "RISE 현대차고정피지컬AI",    1, False),
+    ("122630", "KODEX 레버리지",              1,  False),
+    ("462330", "KODEX 2차전지산업레버리지",  16,  False),
+    ("0190C0", "RISE 현대차고정피지컬AI",     2,  False),
 ]
 
 # 자동 매도 금지 종목 — 248전략 운용 종목 + 별도 보유 보호 종목
 # 손절·부분익절·트레일링스탑·MA이탈·S5시간스탑 등 모든 자동 청산 로직에서 제외
 _ETF_248_CODES = {code for code, *_ in _ETF_248_CONF}
 _PROTECTED_CODES = _ETF_248_CODES | {
-    "122630",  # KODEX 레버리지
     "005380",  # 현대차
 }
 
@@ -98,13 +101,13 @@ def _get_prev_close(market, code: str) -> int:
 
 def _run_etf_248(market, order, notifier, now_str: str, is_paper: bool) -> list:
     """248 ETF 전략 — 15:00 배치 전용
-    전일 대비 N% 하락 → N×2×배율 주 매수
+    전일 대비 N% 하락 → N × buy_factor 주 매수
     전일 대비 N% 상승 → N주 매도 (can_sell=True 종목만)
     """
     msgs = []
     lines = [f"[248 ETF 전략] {now_str}"]
 
-    for code, name, mult, can_sell in _ETF_248_CONF:
+    for code, name, buy_factor, can_sell in _ETF_248_CONF:
         if code == "XXXXXX":
             logger.warning(f"[248전략] {name} 코드 미설정 — 건너뜀")
             continue
@@ -126,7 +129,7 @@ def _run_etf_248(market, order, notifier, now_str: str, is_paper: bool) -> list:
         )
 
         if pct <= -1.0 and n >= 1:
-            qty = n * 2 * mult
+            qty = n * buy_factor
             action_msg = (
                 f"  매수 [{code}] {name}\n"
                 f"  전일:{prev_close:,} → 현재:{curr:,} ({pct:+.2f}%)  {qty}주 매수"
