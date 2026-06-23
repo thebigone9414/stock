@@ -55,12 +55,10 @@ _ETF_248_CONF = [
     ("0190C0", "RISE 현대차고정피지컬AI",     2,  False),
 ]
 
-# 자동 매도 금지 종목 — 248전략 운용 종목 + 별도 보유 보호 종목
-# 손절·부분익절·트레일링스탑·MA이탈·S5시간스탑 등 모든 자동 청산 로직에서 제외
+# 248 전략 대상 코드 집합 (매수 로직용)
 _ETF_248_CODES = {code for code, *_ in _ETF_248_CONF}
-_PROTECTED_CODES = _ETF_248_CODES | {
-    "005380",  # 현대차
-}
+# 자동 청산 금지 — manual_store.NO_AUTO_SELL_CODES와 동기화
+_PROTECTED_CODES = _ETF_248_CODES | manual_store.NO_AUTO_SELL_CODES
 
 
 def _get_price(market, code: str) -> int:

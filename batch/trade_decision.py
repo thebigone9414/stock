@@ -126,6 +126,9 @@ def _decide_exits(today_str: str) -> list:
             continue
 
         for code, tranches in list(positions.items()):
+            if code in manual_store.NO_AUTO_SELL_CODES:
+                logger.info(f"[매매결정 {strat_name}] [{code}] 자동매도 보호 종목 — 건너뜀")
+                continue
             for entry_date, pos in list(tranches.items()):
                 entry_price = pos.get("entry_price", 0)
                 name        = pos.get("name", code)
@@ -228,6 +231,9 @@ def _decide_exits(today_str: str) -> list:
         logger.info("[매매결정 S5] 보유 포지션 없음")
     else:
         for code, tranches in list(s5_positions.items()):
+            if code in manual_store.NO_AUTO_SELL_CODES:
+                logger.info(f"[매매결정 S5] [{code}] 자동매도 보호 종목 — 건너뜀")
+                continue
             for entry_date, pos in list(tranches.items()):
                 entry_price = pos.get("entry_price", 0)
                 name        = pos.get("name", code)
