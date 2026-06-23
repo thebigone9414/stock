@@ -11924,6 +11924,17 @@
         "early_gain_triggered": true,
         "half_sold": true
       }
+    },
+    "462330": {
+      "2026-06-23": {
+        "name": "KODEX 2차전지산업레버리지",
+        "entry_date": "2026-06-23",
+        "entry_price": 1372,
+        "quantity": 2660,
+        "peak_price": 1372,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   },
   "base_capital": 10000000,
