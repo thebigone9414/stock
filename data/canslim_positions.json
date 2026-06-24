@@ -1,5 +1,17 @@
 {
-  "positions": {},
+  "positions": {
+    "034730": {
+      "2026-06-24": {
+        "name": "SK",
+        "entry_date": "2026-06-24",
+        "entry_price": 705000,
+        "quantity": 4,
+        "peak_price": 705000,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
+    }
+  },
   "entry_pending": [
     {
       "code": "034730",
