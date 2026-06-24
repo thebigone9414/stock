@@ -35,5 +35,6 @@
       "strategy": "S3",
       "per_slot_budget": 3000000
     }
-  ]
+  ],
+  "executed": true
 }
