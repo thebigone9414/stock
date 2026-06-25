@@ -8,7 +8,8 @@
         "quantity": 2,
         "peak_price": 847000,
         "peak_gain_pct": 0.201418,
-        "early_gain_triggered": true
+        "early_gain_triggered": true,
+        "half_sold": true
       }
     },
     "091230": {
