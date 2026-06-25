@@ -382,19 +382,19 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
             logger.info(f"[장중수동] [{code}] {name}  현재:{current:,}  {gain:+.2%}")
 
     # ── 248 ETF 전략 (15:00 배치 전용) ──────────────────────────────────
+    etf_buy_msgs: list[str] = []
     if now.hour == 15:
-        etf_msgs = _run_etf_248(market, order, notifier, now_str, is_paper)
-        if etf_msgs:
-            executed.extend(etf_msgs)
+        etf_buy_msgs = _run_etf_248(market, order, notifier, now_str, is_paper)
 
     # ── 완료 알림 (매도 없어도 heartbeat 전송) ───────────────────────────
-    if executed:
-        logger.info(f"[장중모니터] 완료 — {len(executed)}건 집행")
-
     summary_line = "  |  ".join(holding_summary) if holding_summary else "보유 없음"
     heartbeat = f"[장중모니터] {now_str}\n{summary_line}"
     if executed:
         heartbeat += f"\n매도 {len(executed)}건 집행"
+    if etf_buy_msgs:
+        heartbeat += f"\n248ETF 매수 {len(etf_buy_msgs)}건 집행"
+    if executed or etf_buy_msgs:
+        logger.info(f"[장중모니터] 완료 — 매도:{len(executed)}건  248매수:{len(etf_buy_msgs)}건")
     logger.info(heartbeat)
     if notifier:
         notifier.notify(heartbeat)

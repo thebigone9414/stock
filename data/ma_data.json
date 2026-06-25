@@ -11912,31 +11912,7 @@
       "candle_body_ratio": 0.004584
     }
   },
-  "positions": {
-    "080220": {
-      "2026-06-18": {
-        "name": "제주반도체",
-        "entry_date": "2026-06-18",
-        "entry_price": 111500,
-        "quantity": 22,
-        "peak_price": 134000,
-        "peak_gain_pct": 0.201794,
-        "early_gain_triggered": true,
-        "half_sold": true
-      }
-    },
-    "462330": {
-      "2026-06-23": {
-        "name": "KODEX 2차전지산업레버리지",
-        "entry_date": "2026-06-23",
-        "entry_price": 1372,
-        "quantity": 2660,
-        "peak_price": 1372,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    }
-  },
+  "positions": {},
   "base_capital": 10000000,
   "updated_at_kst": "2026-06-24 16:32",
   "entry_pending": []
