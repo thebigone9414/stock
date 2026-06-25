@@ -5,10 +5,10 @@
         "name": "SK",
         "entry_date": "2026-06-24",
         "entry_price": 705000,
-        "quantity": 4,
-        "peak_price": 705000,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
+        "quantity": 2,
+        "peak_price": 847000,
+        "peak_gain_pct": 0.201418,
+        "early_gain_triggered": true
       }
     },
     "091230": {
