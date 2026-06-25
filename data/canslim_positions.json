@@ -24,13 +24,5 @@
       }
     }
   },
-  "entry_pending": [
-    {
-      "code": "091230",
-      "name": "TIGER 반도체",
-      "score": 5,
-      "rs_3m": 0.7361,
-      "date": "2026-06-24"
-    }
-  ]
+  "entry_pending": []
 }

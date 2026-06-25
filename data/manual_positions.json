@@ -1,90 +1,45 @@
 {
   "positions": {
+    "122630": {
+      "2026-06-18": {
+        "name": "KODEX 레버리지",
+        "entry_date": "2026-06-18",
+        "entry_price": 237610,
+        "quantity": 100,
+        "peak_price": 237610,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
+    },
     "0190C0": {
       "2026-06-12": {
         "name": "RISE 현대차고정피지컬AI",
         "entry_date": "2026-06-12",
-        "entry_price": 12655,
-        "quantity": 420,
+        "entry_price": 11852,
+        "quantity": 424,
         "peak_price": 12655,
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
     },
-    "034020": {
-      "2026-06-12": {
-        "name": "두산에너빌리티",
-        "entry_date": "2026-06-12",
-        "entry_price": 94655,
-        "quantity": 50,
-        "peak_price": 94655,
+    "462330": {
+      "2026-06-23": {
+        "name": "KODEX 2차전지산업레버리지",
+        "entry_date": "2026-06-23",
+        "entry_price": 1342,
+        "quantity": 3462,
+        "peak_price": 1342,
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
     },
-    "305720": {
-      "2026-06-12": {
-        "name": "KODEX 2차전지산업",
-        "entry_date": "2026-06-12",
-        "entry_price": 17625,
-        "quantity": 300,
-        "peak_price": 17625,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    },
-    "403870": {
-      "2026-06-12": {
-        "name": "HPSP",
-        "entry_date": "2026-06-12",
-        "entry_price": 60040,
-        "quantity": 25,
-        "peak_price": 83500,
-        "peak_gain_pct": 0.39074,
-        "early_gain_triggered": true,
-        "half_sold": true
-      }
-    },
-    "003490": {
-      "2026-06-16": {
-        "name": "대한항공",
-        "entry_date": "2026-06-16",
-        "entry_price": 29200,
-        "quantity": 171,
-        "peak_price": 29200,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    },
-    "028260": {
-      "2026-06-16": {
-        "name": "삼성물산",
-        "entry_date": "2026-06-16",
-        "entry_price": 495500,
-        "quantity": 10,
-        "peak_price": 495500,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    },
-    "093370": {
-      "2026-06-15": {
-        "name": "후성",
-        "entry_date": "2026-06-15",
-        "entry_price": 19164,
-        "quantity": 260,
-        "peak_price": 19164,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    },
-    "023530": {
-      "2026-06-16": {
-        "name": "롯데쇼핑",
-        "entry_date": "2026-06-16",
-        "entry_price": 183300,
-        "quantity": 14,
-        "peak_price": 183300,
+    "005380": {
+      "2026-06-22": {
+        "name": "현대차",
+        "entry_date": "2026-06-22",
+        "entry_price": 537000,
+        "quantity": 8,
+        "peak_price": 537000,
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }

@@ -1,27 +1,4 @@
 {
   "entry_pending": [],
-  "positions": {
-    "122630": {
-      "2026-06-18": {
-        "name": "KODEX 레버리지",
-        "entry_date": "2026-06-18",
-        "entry_price": 231414,
-        "quantity": 20,
-        "peak_price": 231414,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    },
-    "005380": {
-      "2026-06-22": {
-        "name": "현대차",
-        "entry_date": "2026-06-22",
-        "entry_price": 586000,
-        "quantity": 3,
-        "peak_price": 586000,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    }
-  }
+  "positions": {}
 }
