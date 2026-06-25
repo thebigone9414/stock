@@ -52,7 +52,7 @@ from data.shared_slots import count_shared
 KST = pytz.timezone("Asia/Seoul")
 
 STOP_LOSS        = 0.07
-RUNNER_THRESHOLD = 0.20   # 부분익절 + 러너 진입 기준
+RUNNER_THRESHOLD = 0.15   # 부분익절 + 러너 진입 기준
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 MAX_BUY_AMOUNT   = 3_000_000  # 종목당 매수 한도 (300만원)

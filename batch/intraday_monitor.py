@@ -39,7 +39,7 @@ import data.manual_store as manual_store
 KST = pytz.timezone("Asia/Seoul")
 
 STOP_LOSS        = 0.07
-RUNNER_THRESHOLD = 0.20
+RUNNER_THRESHOLD = 0.15
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 
