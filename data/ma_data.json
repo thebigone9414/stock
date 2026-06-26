@@ -11915,5 +11915,13 @@
   "positions": {},
   "base_capital": 10000000,
   "updated_at_kst": "2026-06-26 16:32",
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "031980",
+      "name": "피에스케이홀딩스",
+      "candle_body_ratio": 0.059084,
+      "has_ma744": true,
+      "date": "2026-06-26"
+    }
+  ]
 }
