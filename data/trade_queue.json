@@ -1,25 +1,6 @@
 {
-  "date": "2026-06-26",
-  "updated_at": "2026-06-26 20:00",
+  "date": "2026-06-29",
+  "updated_at": "2026-06-29 20:00",
   "sell": [],
-  "buy": [
-    {
-      "code": "031980",
-      "name": "피에스케이홀딩스",
-      "candle_body_ratio": 0.059084,
-      "has_ma744": true,
-      "date": "2026-06-26",
-      "strategy": "S2",
-      "per_slot_budget": 3000000
-    },
-    {
-      "code": "095610",
-      "name": "테스",
-      "score": 5,
-      "rs_3m": 1.6798,
-      "date": "2026-06-26",
-      "strategy": "S3",
-      "per_slot_budget": 3000000
-    }
-  ]
+  "buy": []
 }
