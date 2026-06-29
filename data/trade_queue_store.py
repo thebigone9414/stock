@@ -49,11 +49,15 @@ def save_queue(data: dict) -> None:
 
 
 def get_today_queue(today: str) -> Optional[dict]:
-    """미실행 큐 반환 — executed=True 또는 2일 이상 경과 시 None (중복/지연 실행 방지)
-    trade_decision은 전날 저녁에 실행하므로 큐 날짜가 today와 같거나 하루 전이면 유효.
-    2일 이상 된 큐는 stale로 간주해 실행하지 않는다.
+    """미실행 큐 반환 — 큐 날짜와 오늘 사이에 거래일이 끼어 있으면 stale로 간주해 None.
+
+    trade_decision은 직전 거래일 저녁에 실행되므로 정상 케이스는
+      - 큐 날짜 == today (당일 결정·당일 실행)
+      - 큐 날짜 ~ today 사이의 모든 날이 휴장 (주말·연휴 직후 월요일 등)
+    뿐. 그 사이에 거래일이 하나라도 존재하면 매매결정 배치가 실패한 것이므로 실행 안 함.
     """
     from datetime import datetime, timedelta
+    from data.holidays import is_trading_day
     q = load_queue()
     if not q.get("date"):
         return None
@@ -62,11 +66,16 @@ def get_today_queue(today: str) -> Optional[dict]:
     try:
         queue_date = datetime.strptime(q["date"], "%Y-%m-%d").date()
         today_date = datetime.strptime(today, "%Y-%m-%d").date()
-        if (today_date - queue_date).days > 1:
-            logger.warning(
-                f"[매매큐] 큐 날짜 {q['date']}가 오늘({today})보다 2일 이상 오래됨 — stale 큐 실행 방지"
-            )
+        if today_date < queue_date:
             return None
+        d = queue_date + timedelta(days=1)
+        while d < today_date:
+            if is_trading_day(d):
+                logger.warning(
+                    f"[매매큐] 큐 날짜 {q['date']}와 오늘({today}) 사이에 거래일({d}) 존재 — stale 큐 실행 방지"
+                )
+                return None
+            d += timedelta(days=1)
     except (ValueError, KeyError):
         pass
     return q
