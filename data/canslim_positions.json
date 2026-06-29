@@ -24,13 +24,5 @@
       }
     }
   },
-  "entry_pending": [
-    {
-      "code": "095610",
-      "name": "테스",
-      "score": 5,
-      "rs_3m": 1.6798,
-      "date": "2026-06-26"
-    }
-  ]
+  "entry_pending": []
 }
