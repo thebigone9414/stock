@@ -1,5 +1,24 @@
 {
-  "entry_pending": [],
+  "entry_pending": [
+    {
+      "code": "031980",
+      "name": "피에스케이홀딩스",
+      "buyer_type": "institution",
+      "consec_days": 5,
+      "vol_ratio": 1.542,
+      "ma5": 136040,
+      "date": "2026-06-30"
+    },
+    {
+      "code": "095610",
+      "name": "테스",
+      "buyer_type": "institution",
+      "consec_days": 5,
+      "vol_ratio": 1.301,
+      "ma5": 179920,
+      "date": "2026-06-30"
+    }
+  ],
   "positions": {},
-  "updated_at": "2026-06-29"
+  "updated_at": "2026-06-30"
 }
