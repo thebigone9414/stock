@@ -1,7 +1,29 @@
 {
-  "date": "2026-06-30",
-  "updated_at": "2026-06-30 20:00",
+  "date": "2026-07-01",
+  "updated_at": "2026-07-01 20:00",
   "sell": [],
-  "buy": [],
-  "executed": true
+  "buy": [
+    {
+      "code": "084370",
+      "name": "유진테크",
+      "buyer_type": "institution",
+      "consec_days": 4,
+      "vol_ratio": 1.871,
+      "ma5": 178440,
+      "date": "2026-07-01",
+      "strategy": "S5",
+      "per_slot_budget": 3000000
+    },
+    {
+      "code": "131290",
+      "name": "티에스이",
+      "buyer_type": "institution",
+      "consec_days": 4,
+      "vol_ratio": 1.491,
+      "ma5": 237200,
+      "date": "2026-07-01",
+      "strategy": "S5",
+      "per_slot_budget": 3000000
+    }
+  ]
 }
