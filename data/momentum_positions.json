@@ -1,24 +1,24 @@
 {
   "entry_pending": [
     {
-      "code": "031980",
-      "name": "피에스케이홀딩스",
+      "code": "084370",
+      "name": "유진테크",
       "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.542,
-      "ma5": 136040,
-      "date": "2026-06-30"
+      "consec_days": 4,
+      "vol_ratio": 1.871,
+      "ma5": 178440,
+      "date": "2026-07-01"
     },
     {
-      "code": "095610",
-      "name": "테스",
+      "code": "131290",
+      "name": "티에스이",
       "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.301,
-      "ma5": 179920,
-      "date": "2026-06-30"
+      "consec_days": 4,
+      "vol_ratio": 1.491,
+      "ma5": 237200,
+      "date": "2026-07-01"
     }
   ],
   "positions": {},
-  "updated_at": "2026-06-30"
+  "updated_at": "2026-07-01"
 }
