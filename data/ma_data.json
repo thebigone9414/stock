@@ -11915,13 +11915,5 @@
   "positions": {},
   "base_capital": 10000000,
   "updated_at_kst": "2026-07-02 16:32",
-  "entry_pending": [
-    {
-      "code": "131290",
-      "name": "티에스이",
-      "candle_body_ratio": 0.059783,
-      "has_ma744": true,
-      "date": "2026-07-01"
-    }
-  ]
+  "entry_pending": []
 }
