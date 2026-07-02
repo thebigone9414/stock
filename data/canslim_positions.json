@@ -11,17 +11,6 @@
         "early_gain_triggered": true,
         "half_sold": true
       }
-    },
-    "091230": {
-      "2026-06-25": {
-        "name": "TIGER 반도체",
-        "entry_date": "2026-06-25",
-        "entry_price": 178260,
-        "quantity": 16,
-        "peak_price": 178260,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
     }
   },
   "entry_pending": [
