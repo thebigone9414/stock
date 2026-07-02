@@ -1,30 +1,18 @@
 {
-  "date": "2026-07-01",
-  "updated_at": "2026-07-01 20:00",
+  "date": "2026-07-02",
+  "updated_at": "2026-07-02 20:00",
   "sell": [],
   "buy": [
     {
-      "code": "084370",
-      "name": "유진테크",
+      "code": "161890",
+      "name": "한국콜마",
       "buyer_type": "institution",
-      "consec_days": 4,
-      "vol_ratio": 1.871,
-      "ma5": 178440,
-      "date": "2026-07-01",
-      "strategy": "S5",
-      "per_slot_budget": 3000000
-    },
-    {
-      "code": "131290",
-      "name": "티에스이",
-      "buyer_type": "institution",
-      "consec_days": 4,
-      "vol_ratio": 1.491,
-      "ma5": 237200,
-      "date": "2026-07-01",
+      "consec_days": 5,
+      "vol_ratio": 4.758,
+      "ma5": 102020,
+      "date": "2026-07-02",
       "strategy": "S5",
       "per_slot_budget": 3000000
     }
-  ],
-  "executed": true
+  ]
 }
