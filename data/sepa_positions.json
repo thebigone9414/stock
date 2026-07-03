@@ -12,18 +12,6 @@
         "early_gain_triggered": true,
         "half_sold": true
       }
-    },
-    "095610": {
-      "2026-06-29": {
-        "name": "테스",
-        "entry_date": "2026-06-29",
-        "entry_price": 186400,
-        "quantity": 8,
-        "peak_price": 229000,
-        "peak_gain_pct": 0.228541,
-        "early_gain_triggered": true,
-        "half_sold": true
-      }
     }
   }
 }
