@@ -23,6 +23,7 @@
 """
 import json
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -65,12 +66,23 @@ _ETF_248_CODES = {code for code, _ in _ETF_248_TARGETS}
 _PROTECTED_CODES = _ETF_248_CODES | manual_store.NO_AUTO_SELL_CODES
 
 
-def _get_price(market, code: str) -> int:
-    try:
-        return market.get_quote(code).price
-    except Exception as e:
-        logger.warning(f"[장중모니터] [{code}] 현재가 조회 실패: {e}")
-        return 0
+def _get_price(market, code: str, retries: int = 0) -> int:
+    """현재가 조회. retries>0이면 실패 시 짧게 재시도 (트리거 종목 등 중요 조회용)."""
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            price = market.get_quote(code).price
+            if price > 0:
+                return price
+            last_err = "price=0"
+        except Exception as e:
+            last_err = str(e)
+        if attempt < retries:
+            time.sleep(1.0 + attempt * 0.5)
+    logger.warning(
+        f"[장중모니터] [{code}] 현재가 조회 실패 (시도 {retries + 1}회): {last_err}"
+    )
+    return 0
 
 
 def _get_prev_close(market, code: str) -> int:
@@ -112,10 +124,16 @@ def _run_etf_248(market, order, notifier, now_str: str, is_paper: bool) -> list:
 
     trig_code, trig_name = _ETF_248_TRIGGER
     prev_close = _get_prev_close(market, trig_code)
-    curr = _get_price(market, trig_code)
+    curr = _get_price(market, trig_code, retries=3)
     if prev_close <= 0 or curr <= 0:
-        logger.warning(f"[248전략] 트리거 [{trig_code}] {trig_name} 시세 조회 실패 — 전체 건너뜀")
-        lines.append(f"  트리거 [{trig_code}] {trig_name} 시세 조회 실패 — 스킵")
+        logger.warning(
+            f"[248전략] 트리거 [{trig_code}] {trig_name} 시세 조회 실패 "
+            f"(prev_close={prev_close}, curr={curr}) — 전체 건너뜀"
+        )
+        lines.append(
+            f"  트리거 [{trig_code}] {trig_name} 시세 조회 실패 "
+            f"(전일:{prev_close} 현재:{curr}) — 스킵"
+        )
         if notifier:
             notifier.notify("\n".join(lines))
         return msgs
