@@ -1,17 +1,4 @@
 {
-  "positions": {
-    "034730": {
-      "2026-06-24": {
-        "name": "SK",
-        "entry_date": "2026-06-24",
-        "entry_price": 705000,
-        "quantity": 2,
-        "peak_price": 847000,
-        "peak_gain_pct": 0.201418,
-        "early_gain_triggered": true,
-        "half_sold": true
-      }
-    }
-  },
+  "positions": {},
   "entry_pending": []
 }
