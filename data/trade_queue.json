@@ -1,19 +1,6 @@
 {
-  "date": "2026-07-02",
-  "updated_at": "2026-07-02 20:00",
+  "date": "2026-07-03",
+  "updated_at": "2026-07-03 20:01",
   "sell": [],
-  "buy": [
-    {
-      "code": "161890",
-      "name": "한국콜마",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 4.758,
-      "ma5": 102020,
-      "date": "2026-07-02",
-      "strategy": "S5",
-      "per_slot_budget": 3000000
-    }
-  ],
-  "executed": true
+  "buy": []
 }
