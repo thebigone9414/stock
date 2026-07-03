@@ -16,8 +16,10 @@
   ③ 시간스탑:  보유 21일 이상
 
 [248 ETF 전략 — 15:00 배치 전용]
-  전일 대비 N% 하락 → N×2×배율 주 매수
-  전일 대비 N% 상승 → N주 매도 (KODEX 레버리지만)
+  트리거: 현대차(005380) 하락률만 본다.
+  현대차 N% 하락 → 현대차 N주 매수 → 필요 금액 = 현대차 현재가 × N
+  나머지 대상 종목은 그 필요 금액을 자기 현재가로 나눈 수량만큼 매수.
+  매도 없음.
 """
 import json
 import sys
@@ -44,19 +46,20 @@ TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 
 # ── 248 ETF 전략 설정 ────────────────────────────────────────────────
-# (code, 표시명, buy_factor, 매도가능여부)
-# N% 하락 시 매수 수량 = N × buy_factor
-#   KODEX 2차전지산업레버리지: 1%→16주, 2%→32주 (기존 n×2×8과 동일)
-#   RISE 현대차고정피지컬AI:   1%→2주,  2%→4주  (기존 n×2×1과 동일)
-#   KODEX 레버리지:            1%→1주,  2%→2주
-_ETF_248_CONF = [
-    ("122630", "KODEX 레버리지",              1,  False),
-    ("462330", "KODEX 2차전지산업레버리지",  16,  False),
-    ("0190C0", "RISE 현대차고정피지컬AI",     2,  False),
+# 트리거: 현대차(005380) 하락률 하나만 본다.
+#   현대차 N% 하락 → 현대차 N주 매수 → 필요 금액 = 현대차 현재가 × N
+#   나머지 대상 종목은 필요 금액을 자기 현재가로 나눈 수량만큼 매수 (버림)
+# 매도는 없다.
+_ETF_248_TRIGGER = ("005380", "현대차")
+_ETF_248_TARGETS = [
+    ("005380", "현대차"),
+    ("122630", "KODEX 레버리지"),
+    ("462330", "KODEX 2차전지산업레버리지"),
+    ("0190C0", "RISE 현대차고정피지컬AI"),
 ]
 
-# 248 전략 대상 코드 집합 (매수 로직용)
-_ETF_248_CODES = {code for code, *_ in _ETF_248_CONF}
+# 248 전략 대상 코드 집합 — 매수 로직·자동 청산 금지 양쪽 사용
+_ETF_248_CODES = {code for code, _ in _ETF_248_TARGETS}
 # 자동 청산 금지 — manual_store.NO_AUTO_SELL_CODES와 동기화
 _PROTECTED_CODES = _ETF_248_CODES | manual_store.NO_AUTO_SELL_CODES
 
@@ -99,75 +102,76 @@ def _get_prev_close(market, code: str) -> int:
 
 def _run_etf_248(market, order, notifier, now_str: str, is_paper: bool) -> list:
     """248 ETF 전략 — 15:00 배치 전용
-    전일 대비 N% 하락 → N × buy_factor 주 매수
-    전일 대비 N% 상승 → N주 매도 (can_sell=True 종목만)
+    트리거: 현대차 하락률 → 현대차 N주 매수 → 필요 금액 = 현대차 현재가 × N
+    나머지 대상 종목은 필요 금액을 자기 현재가로 나눈 수량만큼 매수 (버림).
+    매도 없음.
     """
     msgs = []
     lines = [f"[248 ETF 전략] {now_str}"]
 
-    for code, name, buy_factor, can_sell in _ETF_248_CONF:
-        if code == "XXXXXX":
-            logger.warning(f"[248전략] {name} 코드 미설정 — 건너뜀")
-            continue
+    trig_code, trig_name = _ETF_248_TRIGGER
+    prev_close = _get_prev_close(market, trig_code)
+    curr = _get_price(market, trig_code)
+    if prev_close <= 0 or curr <= 0:
+        logger.warning(f"[248전략] 트리거 [{trig_code}] {trig_name} 시세 조회 실패 — 전체 건너뜀")
+        lines.append(f"  트리거 [{trig_code}] {trig_name} 시세 조회 실패 — 스킵")
+        if notifier:
+            notifier.notify("\n".join(lines))
+        return msgs
 
-        prev_close = _get_prev_close(market, code)
-        if prev_close <= 0:
-            logger.warning(f"[248전략] [{code}] {name} 전일종가 조회 실패 — 건너뜀")
-            continue
+    pct = (curr - prev_close) / prev_close * 100
+    n   = min(int(abs(pct)), 10)
 
-        curr = _get_price(market, code)
-        if curr <= 0:
-            continue
+    logger.info(
+        f"[248전략] 트리거 [{trig_code}] {trig_name}  "
+        f"전일:{prev_close:,} 현재:{curr:,} {pct:+.2f}%"
+    )
+    lines.append(
+        f"  트리거 [{trig_code}] {trig_name}  "
+        f"전일:{prev_close:,} → 현재:{curr:,} ({pct:+.2f}%)"
+    )
 
-        pct = (curr - prev_close) / prev_close * 100
-        n   = min(int(abs(pct)), 10)
+    if not (pct <= -1.0 and n >= 1):
+        no_action = "  매수 조건 미충족 (현대차 -1% 미만)"
+        lines.append(no_action)
+        logger.info(f"[248전략] {no_action.strip()}")
+        if notifier:
+            notifier.notify("\n".join(lines))
+        return msgs
 
-        logger.info(
-            f"[248전략] [{code}] {name}  전일:{prev_close:,} 현재:{curr:,} {pct:+.2f}%"
-        )
+    budget = curr * n  # 현대차 현재가 × N (필요 금액)
+    lines.append(f"  → 현대차 {n}주 매수 기준액 {budget:,}원")
 
-        if pct <= -1.0 and n >= 1:
-            qty = n * buy_factor
-            action_msg = (
-                f"  매수 [{code}] {name}\n"
-                f"  전일:{prev_close:,} → 현재:{curr:,} ({pct:+.2f}%)  {qty}주 매수"
-            )
-            logger.info(f"[248매수] {action_msg.strip()}")
-            try:
-                if not is_paper:
-                    resp = order.buy_market(code, qty)
-                    logger.info(f"[248전략] 매수 응답: {resp}")
-                else:
-                    logger.info(f"[248전략] [{code}] 모의투자 — 매수 생략")
-                msgs.append(action_msg)
-                lines.append(action_msg)
-            except Exception as e:
-                logger.error(f"[248전략] [{code}] 매수 실패: {e}")
-
-        elif pct >= 1.0 and can_sell and n >= 1:
-            qty = n
-            action_msg = (
-                f"  매도 [{code}] {name}\n"
-                f"  전일:{prev_close:,} → 현재:{curr:,} ({pct:+.2f}%)  {qty}주 매도"
-            )
-            logger.info(f"[248매도] {action_msg.strip()}")
-            try:
-                if not is_paper:
-                    resp = order.sell_market(code, qty)
-                    logger.info(f"[248전략] 매도 응답: {resp}")
-                else:
-                    logger.info(f"[248전략] [{code}] 모의투자 — 매도 생략")
-                msgs.append(action_msg)
-                lines.append(action_msg)
-            except Exception as e:
-                logger.error(f"[248전략] [{code}] 매도 실패: {e}")
-
+    for code, name in _ETF_248_TARGETS:
+        if code == trig_code:
+            qty = n  # 현대차 자신은 N주 그대로
+            price = curr
         else:
-            no_action = (
-                f"  [{code}] {name}  {pct:+.2f}%  "
-                f"({'매수/매도 없음' if abs(pct) < 1 else '조건 미충족'})"
-            )
-            lines.append(no_action)
+            price = _get_price(market, code)
+            if price <= 0:
+                logger.warning(f"[248전략] [{code}] {name} 현재가 조회 실패 — 건너뜀")
+                lines.append(f"  [{code}] {name}  현재가 조회 실패 — 스킵")
+                continue
+            qty = budget // price
+            if qty < 1:
+                lines.append(f"  [{code}] {name}  현재가:{price:,}  기준액 부족 — 스킵")
+                continue
+
+        action_msg = (
+            f"  매수 [{code}] {name}\n"
+            f"  현재가:{price:,}  {qty}주 매수  약 {price * qty:,}원"
+        )
+        logger.info(f"[248매수] {action_msg.strip()}")
+        try:
+            if not is_paper:
+                resp = order.buy_market(code, qty)
+                logger.info(f"[248전략] 매수 응답: {resp}")
+            else:
+                logger.info(f"[248전략] [{code}] 모의투자 — 매수 생략")
+            msgs.append(action_msg)
+            lines.append(action_msg)
+        except Exception as e:
+            logger.error(f"[248전략] [{code}] 매수 실패: {e}")
 
     if notifier:
         notifier.notify("\n".join(lines))
