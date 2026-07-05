@@ -6,8 +6,8 @@
 
 [S2/S3/S4/수동 조건]
   ① 손절:       현재가 ≤ 매수가 × 0.93
-  ② 부분익절:   현재가 ≥ 매수가 × 1.20 (처음) → 절반 매도
-  ③ 러너 MA이탈: 고점 ≥ +20% 후 MA21 < MA62 AND MA62 5일 하락
+  ② 부분익절:   현재가 ≥ 매수가 × 1.15 (처음) → 절반 매도
+  ③ 러너 MA이탈: 고점 ≥ +15% 후 MA21 < MA62 AND MA62 5일 하락
   ④ 트레일링스탑: 고점 ≥ +10% 후 현재가 < 고점 × 0.90
 
 [S5 조건]
@@ -15,13 +15,9 @@
   ② MA5 하회:  현재가 < MA5
   ③ 시간스탑:  보유 21일 이상
 
-[248 ETF 전략 — 15:00 배치 전용]
-  트리거: 현대차(005380) 하락률만 본다.
-  현대차 N% 하락 → 현대차 N주 매수 → 필요 금액 = 현대차 현재가 × N
-  나머지 대상 종목은 그 필요 금액을 자기 현재가로 나눈 수량만큼 매수.
-  매도 없음.
+[자동 매도 금지 종목]
+  manual_store.NO_AUTO_SELL_CODES 에 등록된 종목은 모든 청산 로직에서 제외.
 """
-import json
 import sys
 import time
 from datetime import datetime
@@ -46,28 +42,12 @@ RUNNER_THRESHOLD = 0.15
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 
-# ── 248 ETF 전략 설정 ────────────────────────────────────────────────
-# 트리거: 현대차(005380) 하락률 하나만 본다.
-#   현대차 N% 하락 → 현대차 N주 매수 → 필요 금액 = 현대차 현재가 × N
-#   나머지 대상 종목은 필요 금액을 자기 현재가로 나눈 수량만큼 매수 (버림)
-# 매도는 없다.
-_ETF_248_TRIGGER = ("005380", "현대차")
-_ETF_248_TARGETS = [
-    ("005380", "현대차"),
-    ("122630", "KODEX 레버리지"),
-    ("462330", "KODEX 2차전지산업레버리지"),
-    ("0190C0", "RISE 현대차고정피지컬AI"),
-    ("034020", "두산에너빌리티"),
-]
-
-# 248 전략 대상 코드 집합 — 매수 로직·자동 청산 금지 양쪽 사용
-_ETF_248_CODES = {code for code, _ in _ETF_248_TARGETS}
 # 자동 청산 금지 — manual_store.NO_AUTO_SELL_CODES와 동기화
-_PROTECTED_CODES = _ETF_248_CODES | manual_store.NO_AUTO_SELL_CODES
+_PROTECTED_CODES = set(manual_store.NO_AUTO_SELL_CODES)
 
 
 def _get_price(market, code: str, retries: int = 0) -> int:
-    """현재가 조회. retries>0이면 실패 시 짧게 재시도 (트리거 종목 등 중요 조회용)."""
+    """현재가 조회. retries>0이면 실패 시 짧게 재시도."""
     last_err = None
     for attempt in range(retries + 1):
         try:
@@ -83,119 +63,6 @@ def _get_price(market, code: str, retries: int = 0) -> int:
         f"[장중모니터] [{code}] 현재가 조회 실패 (시도 {retries + 1}회): {last_err}"
     )
     return 0
-
-
-def _get_prev_close(market, code: str) -> int:
-    """전일 종가: ohlcv_cache → KIS API 순으로 조회
-    장중 API 호출 시 당일 불완전 데이터가 마지막 행에 포함될 수 있으므로
-    오늘 날짜 행을 제외하고 전 거래일 종가를 반환한다.
-    """
-    cache_path = Path("data/ohlcv_cache.json")
-    if cache_path.exists():
-        try:
-            with open(cache_path, "r", encoding="utf-8") as f:
-                cache = json.load(f)
-            closes = cache.get(code, {}).get("closes", [])
-            if closes:
-                return int(closes[-1])
-        except Exception:
-            pass
-    try:
-        today_str = datetime.now(KST).strftime("%Y-%m-%d")
-        df = market.get_ohlcv_long(code, days=5)
-        if not df.empty:
-            prev = df[df["date"].apply(lambda d: d.strftime("%Y-%m-%d")) < today_str]
-            if not prev.empty:
-                return int(prev["close"].iloc[-1])
-            return int(df["close"].iloc[-1])
-    except Exception as e:
-        logger.warning(f"[248전략] [{code}] 전일종가 API 조회 실패: {e}")
-    return 0
-
-
-def _run_etf_248(market, order, notifier, now_str: str, is_paper: bool) -> list:
-    """248 ETF 전략 — 15:00 배치 전용
-    트리거: 현대차 하락률 → 현대차 N주 매수 → 필요 금액 = 현대차 현재가 × N
-    나머지 대상 종목은 필요 금액을 자기 현재가로 나눈 수량만큼 매수 (버림).
-    매도 없음.
-    """
-    msgs = []
-    lines = [f"[248 ETF 전략] {now_str}"]
-
-    trig_code, trig_name = _ETF_248_TRIGGER
-    prev_close = _get_prev_close(market, trig_code)
-    curr = _get_price(market, trig_code, retries=3)
-    if prev_close <= 0 or curr <= 0:
-        logger.warning(
-            f"[248전략] 트리거 [{trig_code}] {trig_name} 시세 조회 실패 "
-            f"(prev_close={prev_close}, curr={curr}) — 전체 건너뜀"
-        )
-        lines.append(
-            f"  트리거 [{trig_code}] {trig_name} 시세 조회 실패 "
-            f"(전일:{prev_close} 현재:{curr}) — 스킵"
-        )
-        if notifier:
-            notifier.notify("\n".join(lines))
-        return msgs
-
-    pct = (curr - prev_close) / prev_close * 100
-    n   = min(int(abs(pct)), 10)
-
-    logger.info(
-        f"[248전략] 트리거 [{trig_code}] {trig_name}  "
-        f"전일:{prev_close:,} 현재:{curr:,} {pct:+.2f}%"
-    )
-    lines.append(
-        f"  트리거 [{trig_code}] {trig_name}  "
-        f"전일:{prev_close:,} → 현재:{curr:,} ({pct:+.2f}%)"
-    )
-
-    if not (pct <= -1.0 and n >= 1):
-        no_action = "  매수 조건 미충족 (현대차 -1% 미만)"
-        lines.append(no_action)
-        logger.info(f"[248전략] {no_action.strip()}")
-        if notifier:
-            notifier.notify("\n".join(lines))
-        return msgs
-
-    budget = curr * n  # 현대차 현재가 × N (필요 금액)
-    lines.append(f"  → 현대차 {n}주 매수 기준액 {budget:,}원")
-
-    for code, name in _ETF_248_TARGETS:
-        if code == trig_code:
-            qty = n  # 현대차 자신은 N주 그대로
-            price = curr
-        else:
-            price = _get_price(market, code)
-            if price <= 0:
-                logger.warning(f"[248전략] [{code}] {name} 현재가 조회 실패 — 건너뜀")
-                lines.append(f"  [{code}] {name}  현재가 조회 실패 — 스킵")
-                continue
-            qty = budget // price
-            if qty < 1:
-                lines.append(f"  [{code}] {name}  현재가:{price:,}  기준액 부족 — 스킵")
-                continue
-
-        action_msg = (
-            f"  매수 [{code}] {name}\n"
-            f"  현재가:{price:,}  {qty}주 매수  약 {price * qty:,}원"
-        )
-        logger.info(f"[248매수] {action_msg.strip()}")
-        try:
-            if not is_paper:
-                resp = order.buy_market(code, qty)
-                logger.info(f"[248전략] 매수 응답: {resp}")
-            else:
-                logger.info(f"[248전략] [{code}] 모의투자 — 매수 생략")
-            msgs.append(action_msg)
-            lines.append(action_msg)
-        except Exception as e:
-            logger.error(f"[248전략] [{code}] 매수 실패: {e}")
-
-    if notifier:
-        notifier.notify("\n".join(lines))
-
-    return msgs
 
 
 def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
@@ -404,20 +271,12 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
             holding_summary.append(f"[{code}]{name}(수동) {gain:+.2%}")
             logger.info(f"[장중수동] [{code}] {name}  현재:{current:,}  {gain:+.2%}")
 
-    # ── 248 ETF 전략 (15:00 배치 전용) ──────────────────────────────────
-    etf_buy_msgs: list[str] = []
-    if now.hour == 15:
-        etf_buy_msgs = _run_etf_248(market, order, notifier, now_str, is_paper)
-
     # ── 완료 알림 (매도 없어도 heartbeat 전송) ───────────────────────────
     summary_line = "  |  ".join(holding_summary) if holding_summary else "보유 없음"
     heartbeat = f"[장중모니터] {now_str}\n{summary_line}"
     if executed:
         heartbeat += f"\n매도 {len(executed)}건 집행"
-    if etf_buy_msgs:
-        heartbeat += f"\n248ETF 매수 {len(etf_buy_msgs)}건 집행"
-    if executed or etf_buy_msgs:
-        logger.info(f"[장중모니터] 완료 — 매도:{len(executed)}건  248매수:{len(etf_buy_msgs)}건")
+        logger.info(f"[장중모니터] 완료 — 매도:{len(executed)}건")
     logger.info(heartbeat)
     if notifier:
         notifier.notify(heartbeat)
