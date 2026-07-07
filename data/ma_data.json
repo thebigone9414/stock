@@ -11915,5 +11915,13 @@
   "positions": {},
   "base_capital": 10000000,
   "updated_at_kst": "2026-07-07 16:33",
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "161390",
+      "name": "한국타이어앤테크놀로지",
+      "candle_body_ratio": 0.044534,
+      "has_ma744": true,
+      "date": "2026-07-07"
+    }
+  ]
 }
