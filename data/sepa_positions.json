@@ -1,18 +1,6 @@
 {
   "entry_pending": [],
   "positions": {
-    "031980": {
-      "2026-06-29": {
-        "name": "피에스케이홀딩스",
-        "entry_date": "2026-06-29",
-        "entry_price": 134000,
-        "quantity": 11,
-        "peak_price": 167600,
-        "peak_gain_pct": 0.250746,
-        "early_gain_triggered": true,
-        "half_sold": true
-      }
-    },
     "028050": {
       "2026-07-06": {
         "name": "삼성E&A",
