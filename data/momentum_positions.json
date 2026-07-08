@@ -1,18 +1,5 @@
 {
   "entry_pending": [],
-  "positions": {
-    "161890": {
-      "2026-07-03": {
-        "name": "한국콜마",
-        "entry_date": "2026-07-03",
-        "entry_price": 113700,
-        "quantity": 26,
-        "peak_price": 113700,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false,
-        "buyer_type": "institution"
-      }
-    }
-  },
+  "positions": {},
   "updated_at": "2026-07-07"
 }
