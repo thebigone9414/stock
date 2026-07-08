@@ -11912,7 +11912,19 @@
       "candle_body_ratio": 0.006817
     }
   },
-  "positions": {},
+  "positions": {
+    "161390": {
+      "2026-07-08": {
+        "name": "한국타이어앤테크놀로지",
+        "entry_date": "2026-07-08",
+        "entry_price": 74100,
+        "quantity": 40,
+        "peak_price": 74100,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
+    }
+  },
   "base_capital": 10000000,
   "updated_at_kst": "2026-07-07 16:33",
   "entry_pending": [
