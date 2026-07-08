@@ -1,16 +1,4 @@
 {
   "entry_pending": [],
-  "positions": {
-    "028050": {
-      "2026-07-06": {
-        "name": "삼성E&A",
-        "entry_date": "2026-07-06",
-        "entry_price": 48500,
-        "quantity": 150,
-        "peak_price": 48500,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    }
-  }
+  "positions": {}
 }
