@@ -1,17 +1,6 @@
 {
-  "date": "2026-07-07",
-  "updated_at": "2026-07-07 20:01",
+  "date": "2026-07-09",
+  "updated_at": "2026-07-09 20:01",
   "sell": [],
-  "buy": [
-    {
-      "code": "161390",
-      "name": "한국타이어앤테크놀로지",
-      "candle_body_ratio": 0.044534,
-      "has_ma744": true,
-      "date": "2026-07-07",
-      "strategy": "S2",
-      "per_slot_budget": 3000000
-    }
-  ],
-  "executed": true
+  "buy": []
 }
