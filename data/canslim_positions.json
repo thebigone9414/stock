@@ -1,4 +1,12 @@
 {
   "positions": {},
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "131290",
+      "name": "티에스이",
+      "score": 5,
+      "rs_3m": 1.3455,
+      "date": "2026-07-10"
+    }
+  ]
 }
