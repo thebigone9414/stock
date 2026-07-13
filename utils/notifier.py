@@ -13,13 +13,13 @@ class TelegramNotifier:
         try:
             resp = requests.post(
                 f"{self._base_url}/sendMessage",
-                json={"chat_id": self.chat_id, "text": message, "parse_mode": "HTML"},
+                json={"chat_id": self.chat_id, "text": message},
                 timeout=10,
             )
             resp.raise_for_status()
             return True
         except Exception as e:
-            logger.warning(f"Telegram 알림 전송 실패: {e}")
+            logger.warning(f"Telegram 알림 전송 실패: {e} — 메시지 앞부분: {message[:200]}")
             return False
 
 
