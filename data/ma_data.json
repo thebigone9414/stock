@@ -11923,6 +11923,17 @@
         "peak_gain_pct": 0.0,
         "early_gain_triggered": false
       }
+    },
+    "091220": {
+      "2026-07-13": {
+        "name": "TIGER 200금융",
+        "entry_date": "2026-07-13",
+        "entry_price": 17080,
+        "quantity": 175,
+        "peak_price": 17080,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false
+      }
     }
   },
   "base_capital": 10000000,
