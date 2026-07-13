@@ -10,6 +10,19 @@
       "date": "2026-07-10"
     }
   ],
-  "positions": {},
+  "positions": {
+    "105560": {
+      "2026-07-13": {
+        "name": "KB금융",
+        "entry_date": "2026-07-13",
+        "entry_price": 184400,
+        "quantity": 16,
+        "peak_price": 184400,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false,
+        "buyer_type": "institution"
+      }
+    }
+  },
   "updated_at": "2026-07-10"
 }
