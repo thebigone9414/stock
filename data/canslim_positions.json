@@ -1,17 +1,5 @@
 {
-  "positions": {
-    "131290": {
-      "2026-07-13": {
-        "name": "티에스이",
-        "entry_date": "2026-07-13",
-        "entry_price": 269500,
-        "quantity": 11,
-        "peak_price": 269500,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    }
-  },
+  "positions": {},
   "entry_pending": [
     {
       "code": "131290",
