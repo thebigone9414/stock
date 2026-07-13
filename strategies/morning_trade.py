@@ -88,7 +88,7 @@ class MorningTradeStrategy:
         entry_price = item["entry_price"]
         entry_date  = item.get("entry_date", "")
 
-        if code in manual_store.NO_AUTO_SELL_CODES:
+        if code in manual_store.NO_AUTO_TRADE_CODES:
             logger.warning(
                 f"[morning] [{strategy}] [{code}] {name} — "
                 f"자동매도 보호 종목, 매도 건너뜀 (사유: {reason})"
@@ -161,6 +161,13 @@ class MorningTradeStrategy:
         name     = item["name"]
         strategy = item["strategy"]
         budget   = item["per_slot_budget"]
+
+        if code in manual_store.NO_AUTO_TRADE_CODES:
+            logger.warning(
+                f"[morning] [{strategy}] [{code}] {name} — "
+                f"자동매매 금지 종목, 매수 건너뜀"
+            )
+            return
 
         try:
             price = self.market.get_quote(code).price

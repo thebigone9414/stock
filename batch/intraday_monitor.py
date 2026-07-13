@@ -16,7 +16,7 @@
   ③ 시간스탑:  보유 21일 이상
 
 [자동 매도 금지 종목]
-  manual_store.NO_AUTO_SELL_CODES 에 등록된 종목은 모든 청산 로직에서 제외.
+  manual_store.NO_AUTO_TRADE_CODES 에 등록된 종목은 모든 청산 로직에서 제외.
 """
 import sys
 import time
@@ -42,8 +42,8 @@ RUNNER_THRESHOLD = 0.15
 TRAIL_STOP_MIN   = 0.10
 TRAIL_STOP_PCT   = 0.10
 
-# 자동 청산 금지 — manual_store.NO_AUTO_SELL_CODES와 동기화
-_PROTECTED_CODES = set(manual_store.NO_AUTO_SELL_CODES)
+# 자동 청산 금지 — manual_store.NO_AUTO_TRADE_CODES와 동기화
+_PROTECTED_CODES = set(manual_store.NO_AUTO_TRADE_CODES)
 
 
 def _get_price(market, code: str, retries: int = 0) -> int:

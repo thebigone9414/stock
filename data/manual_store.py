@@ -17,18 +17,21 @@ from loguru import logger
 MANUAL_POS_PATH = Path("data/manual_positions.json")
 
 # 잔고동기화 시 자동으로 수동 포지션으로 분류할 종목 코드
+# → 매수·매도 자동매매에서도 자동 제외 (NO_AUTO_TRADE_CODES에 포함)
 MANUAL_CODES = {"034020", "0190C0", "305720", "028050"}
 
-# 자동 매도 완전 금지 종목 — trade_decision·intraday_monitor 공통 적용
-# 손절·익절·트레일링스탑·MA이탈·S5시간스탑 등 모든 청산 로직에서 제외
+# 자동 매도 완전 금지 종목 — MANUAL_CODES 외에 추가로 보호할 종목만 등록
+# (MANUAL_CODES는 자동으로 NO_AUTO_TRADE_CODES에 포함되므로 여기 중복 등록 불필요)
 NO_AUTO_SELL_CODES = {
     "122630",  # KODEX 레버리지
     "462330",  # KODEX 2차전지산업레버리지
-    "0190C0",  # RISE 현대차고정피지컬AI
     "005380",  # 현대차
-    "034020",  # 두산에너빌리티
-    "028050",  # 삼성 E&A
 }
+
+# 자동매매 완전 금지 종목 — trade_decision·morning_trade·intraday_monitor 공통 적용
+# 매수 후보 제외 + 매도 로직 제외 + 잔고동기화 시 수동 분류
+# = MANUAL_CODES ∪ NO_AUTO_SELL_CODES
+NO_AUTO_TRADE_CODES = MANUAL_CODES | NO_AUTO_SELL_CODES
 
 
 def _migrate_positions(positions: dict) -> tuple:

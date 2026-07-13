@@ -126,7 +126,7 @@ def _decide_exits(today_str: str) -> list:
             continue
 
         for code, tranches in list(positions.items()):
-            if code in manual_store.NO_AUTO_SELL_CODES:
+            if code in manual_store.NO_AUTO_TRADE_CODES:
                 logger.info(f"[매매결정 {strat_name}] [{code}] 자동매도 보호 종목 — 건너뜀")
                 continue
             for entry_date, pos in list(tranches.items()):
@@ -231,7 +231,7 @@ def _decide_exits(today_str: str) -> list:
         logger.info("[매매결정 S5] 보유 포지션 없음")
     else:
         for code, tranches in list(s5_positions.items()):
-            if code in manual_store.NO_AUTO_SELL_CODES:
+            if code in manual_store.NO_AUTO_TRADE_CODES:
                 logger.info(f"[매매결정 S5] [{code}] 자동매도 보호 종목 — 건너뜀")
                 continue
             for entry_date, pos in list(tranches.items()):
@@ -318,23 +318,25 @@ def _collect_entries(today_str: str) -> list:
 
     all_candidates: list = []
 
+    no_trade = manual_store.NO_AUTO_TRADE_CODES
+
     for e in sepa_store.get_entry_pending():
-        if e.get("date") != today_str or e["code"] in s4_today:
+        if e.get("date") != today_str or e["code"] in s4_today or e["code"] in no_trade:
             continue
         all_candidates.append({**e, "strategy": "S4", "_sort_key": e.get("rs_score", 0)})
 
     for e in momentum_store.get_entry_pending():
-        if e.get("date") != today_str or e["code"] in s5_today:
+        if e.get("date") != today_str or e["code"] in s5_today or e["code"] in no_trade:
             continue
         all_candidates.append({**e, "strategy": "S5", "_sort_key": e.get("consec_days", 0)})
 
     for e in canslim_store.get_entry_pending():
-        if e.get("date") != today_str or e["code"] in s3_today:
+        if e.get("date") != today_str or e["code"] in s3_today or e["code"] in no_trade:
             continue
         all_candidates.append({**e, "strategy": "S3", "_sort_key": e.get("score", 0)})
 
     for e in ma_store.get_entry_pending():
-        if e.get("date") != today_str or e["code"] in s2_today:
+        if e.get("date") != today_str or e["code"] in s2_today or e["code"] in no_trade:
             continue
         all_candidates.append({
             **e, "strategy": "S2",
