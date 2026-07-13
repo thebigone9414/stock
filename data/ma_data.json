@@ -11938,20 +11938,5 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-07-13 16:32",
-  "entry_pending": [
-    {
-      "code": "001450",
-      "name": "현대해상",
-      "candle_body_ratio": 0.047182,
-      "has_ma744": true,
-      "date": "2026-07-10"
-    },
-    {
-      "code": "091220",
-      "name": "TIGER 200금융",
-      "candle_body_ratio": 0.033958,
-      "has_ma744": true,
-      "date": "2026-07-10"
-    }
-  ]
+  "entry_pending": []
 }
