@@ -1,46 +1,27 @@
 {
-  "date": "2026-07-10",
-  "updated_at": "2026-07-10 20:01",
+  "date": "2026-07-13",
+  "updated_at": "2026-07-13 22:38",
   "sell": [],
   "buy": [
     {
-      "code": "105560",
-      "name": "KB금융",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.386,
-      "ma5": 174180,
-      "date": "2026-07-10",
-      "strategy": "S5",
-      "per_slot_budget": 3000000
-    },
-    {
-      "code": "131290",
-      "name": "티에스이",
+      "code": "161890",
+      "name": "한국콜마",
       "score": 5,
-      "rs_3m": 1.3455,
-      "date": "2026-07-10",
+      "rs_3m": 0.477,
+      "date": "2026-07-13",
       "strategy": "S3",
       "per_slot_budget": 3000000
     },
     {
-      "code": "001450",
-      "name": "현대해상",
-      "candle_body_ratio": 0.047182,
-      "has_ma744": true,
-      "date": "2026-07-10",
-      "strategy": "S2",
-      "per_slot_budget": 3000000
-    },
-    {
-      "code": "091220",
-      "name": "TIGER 200금융",
-      "candle_body_ratio": 0.033958,
-      "has_ma744": true,
-      "date": "2026-07-10",
-      "strategy": "S2",
+      "code": "086790",
+      "name": "하나금융지주",
+      "buyer_type": "institution",
+      "consec_days": 5,
+      "vol_ratio": 1.528,
+      "ma5": 126580,
+      "date": "2026-07-13",
+      "strategy": "S5",
       "per_slot_budget": 3000000
     }
-  ],
-  "executed": true
+  ]
 }
