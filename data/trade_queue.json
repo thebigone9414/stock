@@ -1,28 +1,6 @@
 {
-  "date": "2026-07-13",
-  "updated_at": "2026-07-13 22:38",
+  "date": "2026-07-14",
+  "updated_at": "2026-07-14 20:01",
   "sell": [],
-  "buy": [
-    {
-      "code": "161890",
-      "name": "한국콜마",
-      "score": 5,
-      "rs_3m": 0.477,
-      "date": "2026-07-13",
-      "strategy": "S3",
-      "per_slot_budget": 3000000
-    },
-    {
-      "code": "086790",
-      "name": "하나금융지주",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.528,
-      "ma5": 126580,
-      "date": "2026-07-13",
-      "strategy": "S5",
-      "per_slot_budget": 3000000
-    }
-  ],
-  "executed": true
+  "buy": []
 }
