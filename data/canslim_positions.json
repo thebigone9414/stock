@@ -1,17 +1,5 @@
 {
-  "positions": {
-    "161890": {
-      "2026-07-14": {
-        "name": "한국콜마",
-        "entry_date": "2026-07-14",
-        "entry_price": 115800,
-        "quantity": 25,
-        "peak_price": 115800,
-        "peak_gain_pct": 0.0,
-        "early_gain_triggered": false
-      }
-    }
-  },
+  "positions": {},
   "entry_pending": [
     {
       "code": "161890",
