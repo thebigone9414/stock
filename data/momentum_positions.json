@@ -22,6 +22,18 @@
         "early_gain_triggered": false,
         "buyer_type": "institution"
       }
+    },
+    "086790": {
+      "2026-07-14": {
+        "name": "하나금융지주",
+        "entry_date": "2026-07-14",
+        "entry_price": 132600,
+        "quantity": 22,
+        "peak_price": 132600,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false,
+        "buyer_type": "institution"
+      }
     }
   },
   "updated_at": "2026-07-13"
