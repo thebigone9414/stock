@@ -11940,11 +11940,11 @@
   "updated_at_kst": "2026-07-15 16:32",
   "entry_pending": [
     {
-      "code": "131290",
-      "name": "티에스이",
-      "candle_body_ratio": 0.083032,
+      "code": "010950",
+      "name": "S-Oil",
+      "candle_body_ratio": 0.060541,
       "has_ma744": true,
-      "date": "2026-07-14"
+      "date": "2026-07-15"
     }
   ]
 }
