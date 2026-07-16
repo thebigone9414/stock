@@ -11940,11 +11940,11 @@
   "updated_at_kst": "2026-07-16 16:32",
   "entry_pending": [
     {
-      "code": "010950",
-      "name": "S-Oil",
-      "candle_body_ratio": 0.060541,
+      "code": "000810",
+      "name": "삼성화재",
+      "candle_body_ratio": 0.059914,
       "has_ma744": true,
-      "date": "2026-07-15"
+      "date": "2026-07-16"
     }
   ]
 }
