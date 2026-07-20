@@ -11938,13 +11938,5 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-07-20 16:32",
-  "entry_pending": [
-    {
-      "code": "000810",
-      "name": "삼성화재",
-      "candle_body_ratio": 0.059914,
-      "has_ma744": true,
-      "date": "2026-07-17"
-    }
-  ]
+  "entry_pending": []
 }
