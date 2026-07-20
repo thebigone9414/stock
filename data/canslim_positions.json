@@ -1,4 +1,12 @@
 {
   "positions": {},
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "078930",
+      "name": "GS",
+      "score": 5,
+      "rs_3m": 0.1508,
+      "date": "2026-07-20"
+    }
+  ]
 }
