@@ -1,15 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "010950",
-      "name": "S-Oil",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.285,
-      "ma5": 140580,
-      "date": "2026-07-20"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -24,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-07-20"
+  "updated_at": "2026-07-21"
 }
