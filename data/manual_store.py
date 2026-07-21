@@ -16,6 +16,11 @@ from loguru import logger
 
 MANUAL_POS_PATH = Path("data/manual_positions.json")
 
+# 자동매매 마스터 스위치 — False면 모든 자동 매수·매도 중지
+# (trade_decision·morning_trade·intraday_monitor 매도 실행 모두 스킵)
+# 사용자가 재개 지시할 때 True로 전환.
+AUTO_TRADE_ENABLED = False
+
 # 잔고동기화 시 자동으로 수동 포지션으로 분류할 종목 코드
 # → 매수·매도 자동매매에서도 자동 제외 (NO_AUTO_TRADE_CODES에 포함)
 MANUAL_CODES = {"034020", "0190C0", "305720", "028050"}

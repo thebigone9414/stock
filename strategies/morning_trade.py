@@ -33,6 +33,14 @@ class MorningTradeStrategy:
         self.is_paper = is_paper
 
     def run(self) -> None:
+        if not manual_store.AUTO_TRADE_ENABLED:
+            today_str = datetime.now(KST).strftime("%Y-%m-%d")
+            msg = f"[morning] {today_str} 자동매매 일시 중지 상태 — 아침 매매 실행 건너뜀"
+            logger.info(msg)
+            if self.notifier:
+                self.notifier.notify(msg)
+            return
+
         _now_dt  = datetime.now(KST)
         _open_dt = _now_dt.replace(hour=9, minute=0, second=0, microsecond=0)
 

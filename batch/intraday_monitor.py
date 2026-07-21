@@ -158,6 +158,18 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
                     continue
 
                 pnl = (current - entry_price) * sell_qty
+
+                if not manual_store.AUTO_TRADE_ENABLED:
+                    alert = (
+                        f"[매도조건감지-자동매매중지] [{strat}] [{code}] {name}  {reason}\n"
+                        f"매수:{entry_price:,} → 현재:{current:,}  "
+                        f"{gain:+.2%} ({pnl:+,}원)  ※ 수동 대응 필요"
+                    )
+                    logger.info(alert)
+                    if notifier:
+                        notifier.notify(alert)
+                    continue
+
                 try:
                     if not is_paper:
                         resp = order.sell_market(code, sell_qty)
@@ -232,6 +244,18 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
                 continue
 
             pnl = (current - entry_price) * quantity
+
+            if not manual_store.AUTO_TRADE_ENABLED:
+                alert = (
+                    f"[매도조건감지-자동매매중지] [S5] [{code}] {name}  {reason}\n"
+                    f"매수:{entry_price:,} → 현재:{current:,}  "
+                    f"{gain:+.2%} ({pnl:+,}원)  ※ 수동 대응 필요"
+                )
+                logger.info(alert)
+                if notifier:
+                    notifier.notify(alert)
+                continue
+
             try:
                 if not is_paper:
                     resp = order.sell_market(code, quantity)
@@ -274,6 +298,8 @@ def run_monitor(market, order, notifier=None, is_paper: bool = True) -> None:
     # ── 완료 알림 (매도 없어도 heartbeat 전송) ───────────────────────────
     summary_line = "  |  ".join(holding_summary) if holding_summary else "보유 없음"
     heartbeat = f"[장중모니터] {now_str}\n{summary_line}"
+    if not manual_store.AUTO_TRADE_ENABLED:
+        heartbeat += "\n※ 자동매매 중지 중 — 매도 조건 감지 시 알림만 전송"
     if executed:
         heartbeat += f"\n매도 {len(executed)}건 집행"
         logger.info(f"[장중모니터] 완료 — 매도:{len(executed)}건")

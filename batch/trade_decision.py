@@ -360,6 +360,16 @@ def run_decision(account, notifier: Notifier = None, force: bool = False) -> Non
         logger.info(f"[매매결정] {today} 휴장일 — 실행 건너뜀")
         return
 
+    if not manual_store.AUTO_TRADE_ENABLED:
+        msg = (
+            f"[매매결정] {today} 자동매매 일시 중지 상태 — 매도/매수 결정 건너뜀\n"
+            f"재개 시 manual_store.AUTO_TRADE_ENABLED = True 로 전환"
+        )
+        logger.info(msg)
+        if notifier:
+            notifier.notify(msg)
+        return
+
     logger.info(f"[매매결정] 시작 {datetime.now(KST).strftime('%Y-%m-%d %H:%M')}")
 
     try:
