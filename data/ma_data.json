@@ -11938,5 +11938,13 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-07-21 18:02",
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "241710",
+      "name": "코스메카코리아",
+      "candle_body_ratio": 0.039506,
+      "has_ma744": true,
+      "date": "2026-07-21"
+    }
+  ]
 }
