@@ -10,6 +10,19 @@
       "date": "2026-07-20"
     }
   ],
-  "positions": {},
+  "positions": {
+    "010950": {
+      "2026-07-21": {
+        "name": "S-Oil",
+        "entry_date": "2026-07-21",
+        "entry_price": 146700,
+        "quantity": 20,
+        "peak_price": 146700,
+        "peak_gain_pct": 0.0,
+        "early_gain_triggered": false,
+        "buyer_type": "institution"
+      }
+    }
+  },
   "updated_at": "2026-07-20"
 }
