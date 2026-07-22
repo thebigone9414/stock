@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-07-21",
-  "market_uptrend": true,
+  "updated_at": "2026-07-22",
+  "market_uptrend": false,
   "stocks": {
     "005930": {
       "name": "삼성전자",
@@ -9,13 +9,13 @@
       "S": false,
       "L": true,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 259000,
+      "close": 260500,
       "hi_52w": 362500,
-      "vol_ratio": 0.633,
-      "rs_3m": 0.1908
+      "vol_ratio": 0.661,
+      "rs_3m": 0.206
     },
     "000660": {
       "name": "SK하이닉스",
@@ -24,13 +24,13 @@
       "S": false,
       "L": true,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 1836000,
+      "close": 1830000,
       "hi_52w": 2919000,
-      "vol_ratio": 0.78,
-      "rs_3m": 0.5896
+      "vol_ratio": 0.804,
+      "rs_3m": 0.6223
     },
     "402340": {
       "name": "SK스퀘어",
@@ -39,13 +39,13 @@
       "S": false,
       "L": true,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 1253000,
+      "close": 1230000,
       "hi_52w": 1970000,
-      "vol_ratio": 0.606,
-      "rs_3m": 0.8159
+      "vol_ratio": 0.76,
+      "rs_3m": 0.8035
     },
     "009150": {
       "name": "삼성전기",
@@ -54,13 +54,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 1310000,
+      "close": 1345000,
       "hi_52w": 2270000,
-      "vol_ratio": 0.523,
-      "rs_3m": 1.0501
+      "vol_ratio": 0.632,
+      "rs_3m": 0.9809
     },
     "005380": {
       "name": "현대차",
@@ -68,14 +68,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 399000,
+      "close": 418000,
       "hi_52w": 750000,
-      "vol_ratio": 0.588,
-      "rs_3m": -0.2528
+      "vol_ratio": 0.474,
+      "rs_3m": -0.223
     },
     "373220": {
       "name": "LG에너지솔루션",
@@ -84,13 +84,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 317000,
+      "close": 321000,
       "hi_52w": 514000,
-      "vol_ratio": 0.438,
-      "rs_3m": -0.238
+      "vol_ratio": 0.43,
+      "rs_3m": -0.2321
     },
     "032830": {
       "name": "삼성생명",
@@ -99,13 +99,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 316000,
+      "close": 320000,
       "hi_52w": 497000,
-      "vol_ratio": 0.867,
-      "rs_3m": 0.2248
+      "vol_ratio": 0.655,
+      "rs_3m": 0.2623
     },
     "329180": {
       "name": "HD현대중공업",
@@ -114,28 +114,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 451500,
+      "close": 464500,
       "hi_52w": 745000,
-      "vol_ratio": 0.591,
-      "rs_3m": -0.0851
+      "vol_ratio": 0.556,
+      "rs_3m": -0.0963
     },
     "028260": {
       "name": "삼성물산",
       "sector": "금융/지주",
       "N": false,
       "S": false,
-      "L": false,
+      "L": true,
       "I": false,
-      "M": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 343500,
+      "close": 354000,
       "hi_52w": 535000,
-      "vol_ratio": 0.84,
-      "rs_3m": 0.1225
+      "vol_ratio": 0.738,
+      "rs_3m": 0.1741
     },
     "000270": {
       "name": "기아",
@@ -144,13 +144,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 144600,
+      "close": 146800,
       "hi_52w": 206000,
-      "vol_ratio": 0.603,
-      "rs_3m": -0.0842
+      "vol_ratio": 0.546,
+      "rs_3m": -0.0779
     },
     "207940": {
       "name": "삼성바이오로직스",
@@ -159,13 +159,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 1395000,
+      "close": 1372000,
       "hi_52w": 1965000,
-      "vol_ratio": 0.812,
-      "rs_3m": -0.1368
+      "vol_ratio": 0.594,
+      "rs_3m": -0.143
     },
     "034020": {
       "name": "두산에너빌리티",
@@ -174,13 +174,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 66800,
+      "close": 69200,
       "hi_52w": 136400,
-      "vol_ratio": 0.725,
-      "rs_3m": -0.3971
+      "vol_ratio": 0.836,
+      "rs_3m": -0.3622
     },
     "105560": {
       "name": "KB금융",
@@ -189,13 +189,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 174000,
+      "close": 175100,
       "hi_52w": 186200,
-      "vol_ratio": 0.64,
-      "rs_3m": 0.0721
+      "vol_ratio": 0.536,
+      "rs_3m": 0.0789
     },
     "012450": {
       "name": "한화에어로스페이스",
@@ -204,28 +204,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 899000,
+      "close": 891000,
       "hi_52w": 1537000,
-      "vol_ratio": 0.745,
-      "rs_3m": -0.4082
+      "vol_ratio": 0.73,
+      "rs_3m": -0.3739
     },
     "012330": {
       "name": "현대모비스",
       "sector": "기타",
       "N": false,
       "S": false,
-      "L": false,
+      "L": true,
       "I": true,
-      "M": true,
+      "M": false,
       "score": 2,
       "all_pass": false,
-      "close": 479500,
+      "close": 513000,
       "hi_52w": 768000,
-      "vol_ratio": 0.437,
-      "rs_3m": 0.123
+      "vol_ratio": 0.712,
+      "rs_3m": 0.2014
     },
     "055550": {
       "name": "신한지주",
@@ -234,13 +234,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 104700,
+      "close": 104500,
       "hi_52w": 109200,
       "vol_ratio": 0.705,
-      "rs_3m": 0.048
+      "rs_3m": 0.0492
     },
     "034730": {
       "name": "SK",
@@ -249,13 +249,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 596000,
+      "close": 624000,
       "hi_52w": 858000,
-      "vol_ratio": 0.558,
-      "rs_3m": 0.6065
+      "vol_ratio": 0.657,
+      "rs_3m": 0.6934
     },
     "006400": {
       "name": "삼성SDI",
@@ -263,14 +263,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 416500,
+      "close": 419000,
       "hi_52w": 712000,
-      "vol_ratio": 0.501,
-      "rs_3m": -0.1296
+      "vol_ratio": 0.481,
+      "rs_3m": -0.1832
     },
     "066570": {
       "name": "LG전자",
@@ -279,13 +279,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 173200,
+      "close": 182700,
       "hi_52w": 392500,
-      "vol_ratio": 0.368,
-      "rs_3m": 0.3746
+      "vol_ratio": 0.557,
+      "rs_3m": 0.471
     },
     "267260": {
       "name": "HD현대일렉트릭",
@@ -294,13 +294,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 778000,
+      "close": 795000,
       "hi_52w": 1420000,
-      "vol_ratio": 0.694,
-      "rs_3m": -0.2829
+      "vol_ratio": 0.491,
+      "rs_3m": -0.2686
     },
     "035420": {
       "name": "NAVER",
@@ -309,13 +309,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 193000,
+      "close": 196900,
       "hi_52w": 287000,
-      "vol_ratio": 0.477,
-      "rs_3m": -0.1167
+      "vol_ratio": 0.487,
+      "rs_3m": -0.0905
     },
     "068270": {
       "name": "셀트리온",
@@ -324,13 +324,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 171600,
+      "close": 170100,
       "hi_52w": 236862,
-      "vol_ratio": 0.661,
-      "rs_3m": -0.1386
+      "vol_ratio": 0.549,
+      "rs_3m": -0.14
     },
     "010120": {
       "name": "LS ELECTRIC",
@@ -339,13 +339,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 189100,
+      "close": 190600,
       "hi_52w": 318500,
-      "vol_ratio": 0.556,
-      "rs_3m": 0.0027
+      "vol_ratio": 0.565,
+      "rs_3m": 0.022
     },
     "042660": {
       "name": "한화오션",
@@ -354,13 +354,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 81900,
+      "close": 83900,
       "hi_52w": 149900,
-      "vol_ratio": 0.623,
-      "rs_3m": -0.3791
+      "vol_ratio": 0.746,
+      "rs_3m": -0.3546
     },
     "298040": {
       "name": "효성중공업",
@@ -369,13 +369,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 2578000,
+      "close": 2679000,
       "hi_52w": 4601000,
-      "vol_ratio": 0.784,
-      "rs_3m": -0.1378
+      "vol_ratio": 0.653,
+      "rs_3m": -0.101
     },
     "086790": {
       "name": "하나금융지주",
@@ -384,13 +384,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 132600,
+      "close": 131600,
       "hi_52w": 136800,
-      "vol_ratio": 0.991,
-      "rs_3m": 0.0824
+      "vol_ratio": 0.605,
+      "rs_3m": 0.0656
     },
     "005490": {
       "name": "POSCO홀딩스",
@@ -399,13 +399,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
       "close": 303000,
       "hi_52w": 535000,
-      "vol_ratio": 0.519,
-      "rs_3m": -0.1811
+      "vol_ratio": 0.526,
+      "rs_3m": -0.213
     },
     "006800": {
       "name": "미래에셋증권",
@@ -414,13 +414,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 37250,
+      "close": 37600,
       "hi_52w": 83800,
-      "vol_ratio": 0.545,
-      "rs_3m": -0.4776
+      "vol_ratio": 0.459,
+      "rs_3m": -0.4659
     },
     "000810": {
       "name": "삼성화재",
@@ -429,13 +429,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 618000,
+      "close": 630000,
       "hi_52w": 730000,
-      "vol_ratio": 0.544,
-      "rs_3m": 0.2612
+      "vol_ratio": 0.471,
+      "rs_3m": 0.3125
     },
     "042700": {
       "name": "한미반도체",
@@ -444,13 +444,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 224000,
+      "close": 215000,
       "hi_52w": 409500,
-      "vol_ratio": 0.564,
-      "rs_3m": -0.2329
+      "vol_ratio": 0.701,
+      "rs_3m": -0.2496
     },
     "009540": {
       "name": "HD한국조선해양",
@@ -459,13 +459,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 338000,
+      "close": 353500,
       "hi_52w": 479500,
-      "vol_ratio": 0.643,
-      "rs_3m": -0.1716
+      "vol_ratio": 0.697,
+      "rs_3m": -0.1573
     },
     "000150": {
       "name": "두산",
@@ -474,13 +474,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 1123000,
+      "close": 1215000,
       "hi_52w": 2203000,
-      "vol_ratio": 0.488,
-      "rs_3m": -0.1588
+      "vol_ratio": 1.031,
+      "rs_3m": -0.0865
     },
     "011070": {
       "name": "LG이노텍",
@@ -489,13 +489,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 629000,
+      "close": 647000,
       "hi_52w": 1530000,
-      "vol_ratio": 0.43,
-      "rs_3m": 0.6596
+      "vol_ratio": 0.449,
+      "rs_3m": 0.6421
     },
     "010130": {
       "name": "고려아연",
@@ -504,13 +504,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 955000,
+      "close": 994000,
       "hi_52w": 2115000,
-      "vol_ratio": 0.51,
-      "rs_3m": -0.4362
+      "vol_ratio": 0.648,
+      "rs_3m": -0.408
     },
     "015760": {
       "name": "한국전력",
@@ -519,13 +519,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 33700,
+      "close": 33900,
       "hi_52w": 67900,
-      "vol_ratio": 0.547,
-      "rs_3m": -0.2642
+      "vol_ratio": 0.585,
+      "rs_3m": -0.2614
     },
     "017670": {
       "name": "SK텔레콤",
@@ -534,13 +534,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 85100,
+      "close": 94100,
       "hi_52w": 125200,
-      "vol_ratio": 0.626,
-      "rs_3m": -0.1126
+      "vol_ratio": 1.256,
+      "rs_3m": -0.0427
     },
     "010140": {
       "name": "삼성중공업",
@@ -548,14 +548,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 21250,
+      "close": 21600,
       "hi_52w": 34400,
-      "vol_ratio": 0.463,
-      "rs_3m": -0.2596
+      "vol_ratio": 0.517,
+      "rs_3m": -0.2565
     },
     "051910": {
       "name": "LG화학",
@@ -564,13 +564,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 250500,
+      "close": 252000,
       "hi_52w": 429500,
-      "vol_ratio": 0.759,
-      "rs_3m": -0.2993
+      "vol_ratio": 0.403,
+      "rs_3m": -0.3
     },
     "316140": {
       "name": "우리금융지주",
@@ -579,13 +579,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 30500,
+      "close": 30650,
       "hi_52w": 40800,
-      "vol_ratio": 0.816,
-      "rs_3m": -0.1445
+      "vol_ratio": 0.635,
+      "rs_3m": -0.1415
     },
     "064350": {
       "name": "현대로템",
@@ -593,14 +593,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 153100,
+      "close": 155800,
       "hi_52w": 269000,
-      "vol_ratio": 0.737,
-      "rs_3m": -0.2879
+      "vol_ratio": 0.564,
+      "rs_3m": -0.2787
     },
     "307950": {
       "name": "현대오토에버",
@@ -609,13 +609,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 376500,
+      "close": 401500,
       "hi_52w": 938000,
-      "vol_ratio": 0.292,
-      "rs_3m": -0.1384
+      "vol_ratio": 0.68,
+      "rs_3m": -0.0706
     },
     "267250": {
       "name": "HD현대",
@@ -624,13 +624,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 198000,
+      "close": 212000,
       "hi_52w": 310500,
-      "vol_ratio": 0.755,
-      "rs_3m": -0.2355
+      "vol_ratio": 0.867,
+      "rs_3m": -0.183
     },
     "033780": {
       "name": "KT&G",
@@ -639,13 +639,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 178200,
+      "close": 176600,
       "hi_52w": 189000,
-      "vol_ratio": 0.528,
-      "rs_3m": 0.0421
+      "vol_ratio": 0.773,
+      "rs_3m": 0.0309
     },
     "138040": {
       "name": "메리츠금융지주",
@@ -654,13 +654,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 113000,
+      "close": 114400,
       "hi_52w": 146200,
-      "vol_ratio": 0.694,
-      "rs_3m": -0.0496
+      "vol_ratio": 0.486,
+      "rs_3m": -0.028
     },
     "018260": {
       "name": "삼성에스디에스",
@@ -669,13 +669,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 191500,
+      "close": 196000,
       "hi_52w": 362000,
-      "vol_ratio": 0.337,
-      "rs_3m": 0.0026
+      "vol_ratio": 0.338,
+      "rs_3m": 0.074
     },
     "096770": {
       "name": "SK이노베이션",
@@ -684,13 +684,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 116300,
+      "close": 118400,
       "hi_52w": 149800,
-      "vol_ratio": 0.681,
-      "rs_3m": -0.0806
+      "vol_ratio": 1.222,
+      "rs_3m": -0.085
     },
     "011200": {
       "name": "HMM",
@@ -699,13 +699,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 20100,
+      "close": 20300,
       "hi_52w": 25950,
-      "vol_ratio": 0.56,
-      "rs_3m": -0.0519
+      "vol_ratio": 0.726,
+      "rs_3m": -0.0379
     },
     "272210": {
       "name": "한화시스템",
@@ -714,13 +714,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 60600,
+      "close": 61900,
       "hi_52w": 162700,
-      "vol_ratio": 0.593,
-      "rs_3m": -0.5402
+      "vol_ratio": 0.508,
+      "rs_3m": -0.522
     },
     "003670": {
       "name": "포스코퓨처엠",
@@ -729,13 +729,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 138600,
+      "close": 141100,
       "hi_52w": 296000,
-      "vol_ratio": 0.549,
-      "rs_3m": -0.3799
+      "vol_ratio": 0.447,
+      "rs_3m": -0.3983
     },
     "079550": {
       "name": "LIG디펜스앤에어로스페이스",
@@ -744,13 +744,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 672000,
+      "close": 667000,
       "hi_52w": 1020000,
-      "vol_ratio": 0.537,
-      "rs_3m": -0.239
+      "vol_ratio": 0.532,
+      "rs_3m": -0.2386
     },
     "035720": {
       "name": "카카오",
@@ -759,13 +759,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 35300,
+      "close": 35500,
       "hi_52w": 67700,
-      "vol_ratio": 0.568,
-      "rs_3m": -0.3024
+      "vol_ratio": 0.745,
+      "rs_3m": -0.29
     },
     "003550": {
       "name": "LG",
@@ -774,13 +774,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 97300,
+      "close": 99100,
       "hi_52w": 165800,
-      "vol_ratio": 0.24,
-      "rs_3m": 0.0373
+      "vol_ratio": 0.201,
+      "rs_3m": 0.0454
     },
     "024110": {
       "name": "기업은행",
@@ -789,13 +789,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 20550,
+      "close": 20700,
       "hi_52w": 28550,
-      "vol_ratio": 0.945,
-      "rs_3m": -0.1007
+      "vol_ratio": 0.442,
+      "rs_3m": -0.082
     },
     "278470": {
       "name": "에이피알",
@@ -803,14 +803,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 365000,
+      "close": 357500,
       "hi_52w": 459000,
-      "vol_ratio": 0.433,
-      "rs_3m": -0.1194
+      "vol_ratio": 0.727,
+      "rs_3m": -0.1478
     },
     "000720": {
       "name": "현대건설",
@@ -819,13 +819,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 93800,
+      "close": 98600,
       "hi_52w": 188700,
-      "vol_ratio": 0.412,
-      "rs_3m": -0.4774
+      "vol_ratio": 0.593,
+      "rs_3m": -0.4429
     },
     "086280": {
       "name": "현대글로비스",
@@ -834,13 +834,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 189700,
+      "close": 194800,
       "hi_52w": 290500,
-      "vol_ratio": 0.515,
-      "rs_3m": -0.1716
+      "vol_ratio": 0.525,
+      "rs_3m": -0.1437
     },
     "030200": {
       "name": "KT",
@@ -849,13 +849,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 52700,
+      "close": 52300,
       "hi_52w": 68900,
-      "vol_ratio": 0.624,
-      "rs_3m": -0.1714
+      "vol_ratio": 0.915,
+      "rs_3m": -0.1815
     },
     "047810": {
       "name": "한국항공우주",
@@ -864,13 +864,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 142500,
+      "close": 149300,
       "hi_52w": 202000,
-      "vol_ratio": 0.852,
-      "rs_3m": -0.2496
+      "vol_ratio": 0.636,
+      "rs_3m": -0.2075
     },
     "071050": {
       "name": "한국금융지주",
@@ -879,13 +879,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 219000,
+      "close": 215000,
       "hi_52w": 292500,
-      "vol_ratio": 0.443,
-      "rs_3m": -0.1479
+      "vol_ratio": 0.49,
+      "rs_3m": -0.1634
     },
     "006260": {
       "name": "LS",
@@ -894,13 +894,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 275000,
+      "close": 284500,
       "hi_52w": 553000,
-      "vol_ratio": 0.576,
-      "rs_3m": -0.1766
+      "vol_ratio": 0.585,
+      "rs_3m": -0.1366
     },
     "010950": {
       "name": "S-Oil",
@@ -909,13 +909,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 4,
+      "M": false,
+      "score": 3,
       "all_pass": false,
-      "close": 141600,
+      "close": 141700,
       "hi_52w": 146700,
-      "vol_ratio": 0.781,
-      "rs_3m": 0.199
+      "vol_ratio": 0.84,
+      "rs_3m": 0.208
     },
     "323410": {
       "name": "카카오뱅크",
@@ -924,13 +924,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 22200,
+      "close": 21550,
       "hi_52w": 32000,
-      "vol_ratio": 0.832,
-      "rs_3m": -0.1345
+      "vol_ratio": 0.867,
+      "rs_3m": -0.1499
     },
     "005940": {
       "name": "NH투자증권",
@@ -939,13 +939,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 29750,
+      "close": 29050,
       "hi_52w": 39200,
-      "vol_ratio": 0.626,
-      "rs_3m": -0.1548
+      "vol_ratio": 0.741,
+      "rs_3m": -0.1771
     },
     "259960": {
       "name": "크래프톤",
@@ -954,13 +954,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 234500,
-      "hi_52w": 360000,
-      "vol_ratio": 0.68,
-      "rs_3m": -0.0858
+      "close": 231000,
+      "hi_52w": 354000,
+      "vol_ratio": 0.446,
+      "rs_3m": -0.1233
     },
     "016360": {
       "name": "삼성증권",
@@ -969,13 +969,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 103100,
+      "close": 101600,
       "hi_52w": 149500,
-      "vol_ratio": 0.525,
-      "rs_3m": -0.0678
+      "vol_ratio": 0.539,
+      "rs_3m": -0.0764
     },
     "443060": {
       "name": "HD현대마린솔루션",
@@ -984,13 +984,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 184300,
+      "close": 200500,
       "hi_52w": 280500,
-      "vol_ratio": 0.636,
-      "rs_3m": 0.0138
+      "vol_ratio": 0.459,
+      "rs_3m": 0.0608
     },
     "047050": {
       "name": "포스코인터내셔널",
@@ -999,13 +999,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 52600,
+      "close": 51700,
       "hi_52w": 87300,
-      "vol_ratio": 0.774,
-      "rs_3m": -0.2775
+      "vol_ratio": 0.658,
+      "rs_3m": -0.3088
     },
     "003490": {
       "name": "대한항공",
@@ -1014,13 +1014,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 25350,
+      "close": 24900,
       "hi_52w": 30000,
-      "vol_ratio": 0.554,
-      "rs_3m": 0.006
+      "vol_ratio": 0.717,
+      "rs_3m": -0.006
     },
     "064400": {
       "name": "LG씨엔에스",
@@ -1029,13 +1029,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 62500,
+      "close": 64600,
       "hi_52w": 143700,
-      "vol_ratio": 0.262,
-      "rs_3m": -0.0686
+      "vol_ratio": 0.407,
+      "rs_3m": -0.0256
     },
     "005830": {
       "name": "DB손해보험",
@@ -1044,13 +1044,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 161700,
+      "close": 165400,
       "hi_52w": 205500,
-      "vol_ratio": 0.777,
-      "rs_3m": -0.0488
+      "vol_ratio": 0.781,
+      "rs_3m": -0.0456
     },
     "028050": {
       "name": "삼성E&A",
@@ -1059,13 +1059,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
       "close": 41300,
       "hi_52w": 64400,
-      "vol_ratio": 0.55,
-      "rs_3m": -0.1806
+      "vol_ratio": 0.619,
+      "rs_3m": -0.1665
     },
     "039490": {
       "name": "키움증권",
@@ -1074,13 +1074,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 305500,
+      "close": 303500,
       "hi_52w": 495500,
-      "vol_ratio": 0.577,
-      "rs_3m": -0.3351
+      "vol_ratio": 0.632,
+      "rs_3m": -0.3225
     },
     "161390": {
       "name": "한국타이어앤테크놀로지",
@@ -1089,13 +1089,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 4,
+      "M": false,
+      "score": 3,
       "all_pass": false,
-      "close": 70900,
+      "close": 72400,
       "hi_52w": 75900,
-      "vol_ratio": 0.523,
-      "rs_3m": 0.1738
+      "vol_ratio": 0.484,
+      "rs_3m": 0.2168
     },
     "047040": {
       "name": "대우건설",
@@ -1104,13 +1104,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 14800,
+      "close": 15270,
       "hi_52w": 37150,
-      "vol_ratio": 0.376,
-      "rs_3m": -0.4825
+      "vol_ratio": 0.435,
+      "rs_3m": -0.4679
     },
     "352820": {
       "name": "하이브",
@@ -1119,13 +1119,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 198400,
+      "close": 199600,
       "hi_52w": 404500,
-      "vol_ratio": 0.742,
-      "rs_3m": -0.2597
+      "vol_ratio": 0.514,
+      "rs_3m": -0.2396
     },
     "003230": {
       "name": "삼양식품",
@@ -1134,13 +1134,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 1117000,
+      "close": 1109000,
       "hi_52w": 1630000,
-      "vol_ratio": 1.139,
-      "rs_3m": -0.1841
+      "vol_ratio": 0.749,
+      "rs_3m": -0.194
     },
     "007660": {
       "name": "이수페타시스",
@@ -1149,13 +1149,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 88600,
+      "close": 91600,
       "hi_52w": 161400,
-      "vol_ratio": 0.452,
-      "rs_3m": -0.2779
+      "vol_ratio": 0.41,
+      "rs_3m": -0.2386
     },
     "000880": {
       "name": "한화",
@@ -1164,13 +1164,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 86700,
+      "close": 90900,
       "hi_52w": 150900,
-      "vol_ratio": 0.515,
-      "rs_3m": -0.351
+      "vol_ratio": 0.554,
+      "rs_3m": -0.3093
     },
     "180640": {
       "name": "한진칼",
@@ -1179,13 +1179,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 102800,
+      "close": 101500,
       "hi_52w": 173000,
-      "vol_ratio": 0.52,
-      "rs_3m": -0.1229
+      "vol_ratio": 0.42,
+      "rs_3m": -0.1325
     },
     "001440": {
       "name": "대한전선",
@@ -1194,13 +1194,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 26550,
+      "close": 27450,
       "hi_52w": 72300,
-      "vol_ratio": 0.386,
-      "rs_3m": -0.3694
+      "vol_ratio": 0.388,
+      "rs_3m": -0.3015
     },
     "454910": {
       "name": "두산로보틱스",
@@ -1209,13 +1209,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 63900,
+      "close": 67600,
       "hi_52w": 166700,
-      "vol_ratio": 0.34,
-      "rs_3m": -0.3209
+      "vol_ratio": 1.098,
+      "rs_3m": -0.277
     },
     "062040": {
       "name": "산일전기",
@@ -1224,13 +1224,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 164800,
+      "close": 166700,
       "hi_52w": 333500,
-      "vol_ratio": 0.484,
-      "rs_3m": -0.128
+      "vol_ratio": 0.42,
+      "rs_3m": -0.1585
     },
     "326030": {
       "name": "SK바이오팜",
@@ -1239,28 +1239,43 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 77600,
+      "close": 76800,
       "hi_52w": 140700,
-      "vol_ratio": 0.364,
-      "rs_3m": -0.2707
+      "vol_ratio": 0.337,
+      "rs_3m": -0.272
     },
     "078930": {
       "name": "GS",
       "sector": "금융/지주",
       "N": true,
       "S": false,
-      "L": false,
+      "L": true,
       "I": true,
-      "M": true,
+      "M": false,
       "score": 3,
       "all_pass": false,
-      "close": 82500,
-      "hi_52w": 83200,
-      "vol_ratio": 0.775,
-      "rs_3m": 0.1301
+      "close": 84200,
+      "hi_52w": 84200,
+      "vol_ratio": 0.975,
+      "rs_3m": 0.1711
+    },
+    "034220": {
+      "name": "LG디스플레이",
+      "sector": "기타",
+      "N": false,
+      "S": false,
+      "L": false,
+      "I": false,
+      "M": false,
+      "score": 0,
+      "all_pass": false,
+      "close": 10110,
+      "hi_52w": 16690,
+      "vol_ratio": 0.4,
+      "rs_3m": -0.2984
     },
     "090430": {
       "name": "아모레퍼시픽",
@@ -1269,13 +1284,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 119700,
+      "close": 116900,
       "hi_52w": 165100,
-      "vol_ratio": 0.453,
-      "rs_3m": -0.1014
+      "vol_ratio": 0.516,
+      "rs_3m": -0.1184
     },
     "021240": {
       "name": "코웨이",
@@ -1284,13 +1299,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 93500,
+      "close": 91800,
       "hi_52w": 113200,
-      "vol_ratio": 0.41,
-      "rs_3m": 0.1224
+      "vol_ratio": 0.354,
+      "rs_3m": 0.102
     },
     "011790": {
       "name": "SKC",
@@ -1299,13 +1314,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 79300,
+      "close": 79700,
       "hi_52w": 174100,
-      "vol_ratio": 0.267,
-      "rs_3m": -0.35
+      "vol_ratio": 0.241,
+      "rs_3m": -0.299
     },
     "009830": {
       "name": "한화솔루션",
@@ -1314,13 +1329,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 26600,
+      "close": 27150,
       "hi_52w": 58500,
-      "vol_ratio": 0.949,
-      "rs_3m": -0.3995
+      "vol_ratio": 0.831,
+      "rs_3m": -0.3837
     },
     "004170": {
       "name": "신세계",
@@ -1329,13 +1344,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 562000,
+      "close": 547000,
       "hi_52w": 776000,
-      "vol_ratio": 0.47,
-      "rs_3m": 0.4967
+      "vol_ratio": 0.505,
+      "rs_3m": 0.4433
     },
     "032640": {
       "name": "LG유플러스",
@@ -1344,13 +1359,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 14400,
+      "close": 14640,
       "hi_52w": 17810,
-      "vol_ratio": 0.538,
-      "rs_3m": -0.1594
+      "vol_ratio": 0.475,
+      "rs_3m": -0.1682
     },
     "241560": {
       "name": "두산밥캣",
@@ -1359,13 +1374,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 60700,
+      "close": 63700,
       "hi_52w": 76700,
-      "vol_ratio": 0.436,
-      "rs_3m": -0.1402
+      "vol_ratio": 0.541,
+      "rs_3m": -0.1078
     },
     "000100": {
       "name": "유한양행",
@@ -1374,13 +1389,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 69600,
+      "close": 70200,
       "hi_52w": 135800,
-      "vol_ratio": 0.58,
-      "rs_3m": -0.2876
+      "vol_ratio": 0.796,
+      "rs_3m": -0.28
     },
     "377300": {
       "name": "카카오페이",
@@ -1389,13 +1404,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 40800,
+      "close": 41200,
       "hi_52w": 86700,
-      "vol_ratio": 0.583,
-      "rs_3m": -0.2662
+      "vol_ratio": 0.633,
+      "rs_3m": -0.2734
     },
     "036570": {
       "name": "NC",
@@ -1404,13 +1419,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 213500,
+      "close": 218000,
       "hi_52w": 338000,
-      "vol_ratio": 0.724,
-      "rs_3m": -0.1989
+      "vol_ratio": 0.339,
+      "rs_3m": -0.1695
     },
     "023530": {
       "name": "롯데쇼핑",
@@ -1419,13 +1434,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 130400,
+      "close": 134400,
       "hi_52w": 203500,
-      "vol_ratio": 0.489,
-      "rs_3m": 0.0715
+      "vol_ratio": 0.526,
+      "rs_3m": 0.108
     },
     "128940": {
       "name": "한미약품",
@@ -1434,13 +1449,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 372500,
+      "close": 369000,
       "hi_52w": 626000,
-      "vol_ratio": 0.517,
-      "rs_3m": -0.2945
+      "vol_ratio": 0.676,
+      "rs_3m": -0.3077
     },
     "029780": {
       "name": "삼성카드",
@@ -1448,14 +1463,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 47350,
+      "close": 47500,
       "hi_52w": 67400,
-      "vol_ratio": 0.35,
-      "rs_3m": -0.1344
+      "vol_ratio": 0.398,
+      "rs_3m": -0.1268
     },
     "138930": {
       "name": "BNK금융지주",
@@ -1464,13 +1479,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 18100,
+      "close": 17780,
       "hi_52w": 22650,
-      "vol_ratio": 0.635,
-      "rs_3m": -0.0548
+      "vol_ratio": 0.538,
+      "rs_3m": -0.072
     },
     "271560": {
       "name": "오리온",
@@ -1479,13 +1494,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 128000,
+      "close": 128600,
       "hi_52w": 146000,
-      "vol_ratio": 0.865,
-      "rs_3m": -0.0704
+      "vol_ratio": 0.653,
+      "rs_3m": -0.0606
     },
     "066970": {
       "name": "엘앤에프",
@@ -1494,13 +1509,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 82800,
+      "close": 82400,
       "hi_52w": 213000,
-      "vol_ratio": 0.411,
-      "rs_3m": -0.5115
+      "vol_ratio": 0.598,
+      "rs_3m": -0.556
     },
     "010060": {
       "name": "OCI홀딩스",
@@ -1508,14 +1523,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 195000,
+      "close": 190000,
       "hi_52w": 388000,
-      "vol_ratio": 0.498,
-      "rs_3m": -0.35
+      "vol_ratio": 0.705,
+      "rs_3m": -0.2897
     },
     "001040": {
       "name": "CJ",
@@ -1524,13 +1539,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 130100,
+      "close": 131900,
       "hi_52w": 232000,
-      "vol_ratio": 0.421,
-      "rs_3m": -0.3906
+      "vol_ratio": 0.389,
+      "rs_3m": -0.3851
     },
     "175330": {
       "name": "JB금융지주",
@@ -1539,13 +1554,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 26000,
+      "close": 26600,
       "hi_52w": 37500,
-      "vol_ratio": 0.335,
-      "rs_3m": -0.1626
+      "vol_ratio": 0.417,
+      "rs_3m": -0.1419
     },
     "052690": {
       "name": "한전기술",
@@ -1554,13 +1569,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 87400,
+      "close": 90400,
       "hi_52w": 194800,
-      "vol_ratio": 0.551,
-      "rs_3m": -0.5378
+      "vol_ratio": 0.541,
+      "rs_3m": -0.506
     },
     "004020": {
       "name": "현대제철",
@@ -1569,13 +1584,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 25300,
+      "close": 25800,
       "hi_52w": 46500,
-      "vol_ratio": 0.423,
-      "rs_3m": -0.3635
+      "vol_ratio": 0.594,
+      "rs_3m": -0.3402
     },
     "082740": {
       "name": "한화엔진",
@@ -1584,13 +1599,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 44400,
+      "close": 47050,
       "hi_52w": 89500,
-      "vol_ratio": 0.713,
-      "rs_3m": -0.0788
+      "vol_ratio": 1.008,
+      "rs_3m": -0.1613
     },
     "002380": {
       "name": "KCC",
@@ -1599,13 +1614,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 408500,
+      "close": 419500,
       "hi_52w": 680000,
-      "vol_ratio": 0.655,
-      "rs_3m": -0.2705
+      "vol_ratio": 0.59,
+      "rs_3m": -0.2246
     },
     "022100": {
       "name": "포스코DX",
@@ -1614,13 +1629,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 17600,
+      "close": 18940,
       "hi_52w": 42850,
-      "vol_ratio": 0.654,
-      "rs_3m": -0.4707
+      "vol_ratio": 0.858,
+      "rs_3m": -0.4304
     },
     "450080": {
       "name": "에코프로머티",
@@ -1629,13 +1644,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 33400,
+      "close": 34350,
       "hi_52w": 86400,
-      "vol_ratio": 0.525,
-      "rs_3m": -0.5342
+      "vol_ratio": 0.502,
+      "rs_3m": -0.5339
     },
     "069960": {
       "name": "현대백화점",
@@ -1644,13 +1659,13 @@
       "S": false,
       "L": true,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 140100,
+      "close": 139100,
       "hi_52w": 207000,
-      "vol_ratio": 0.75,
-      "rs_3m": 0.5362
+      "vol_ratio": 0.816,
+      "rs_3m": 0.5421
     },
     "051900": {
       "name": "LG생활건강",
@@ -1659,13 +1674,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 245000,
+      "close": 244000,
       "hi_52w": 339000,
-      "vol_ratio": 0.482,
-      "rs_3m": -0.0335
+      "vol_ratio": 0.456,
+      "rs_3m": -0.0431
     },
     "111770": {
       "name": "영원무역",
@@ -1674,13 +1689,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 86800,
+      "close": 85300,
       "hi_52w": 98000,
-      "vol_ratio": 0.531,
-      "rs_3m": 0.0236
+      "vol_ratio": 0.62,
+      "rs_3m": 0.0047
     },
     "251270": {
       "name": "넷마블",
@@ -1689,13 +1704,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 35000,
+      "close": 35550,
       "hi_52w": 68000,
-      "vol_ratio": 0.652,
-      "rs_3m": -0.3256
+      "vol_ratio": 0.635,
+      "rs_3m": -0.311
     },
     "011170": {
       "name": "롯데케미칼",
@@ -1704,13 +1719,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 56600,
+      "close": 59200,
       "hi_52w": 118000,
-      "vol_ratio": 0.681,
-      "rs_3m": -0.3662
+      "vol_ratio": 0.482,
+      "rs_3m": -0.3326
     },
     "035250": {
       "name": "강원랜드",
@@ -1719,28 +1734,28 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 14110,
+      "close": 14180,
       "hi_52w": 20550,
-      "vol_ratio": 0.48,
-      "rs_3m": -0.1768
+      "vol_ratio": 0.438,
+      "rs_3m": -0.1703
     },
     "001450": {
       "name": "현대해상",
       "sector": "기타",
-      "N": true,
+      "N": false,
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 4,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 37150,
+      "close": 37100,
       "hi_52w": 41250,
-      "vol_ratio": 0.401,
-      "rs_3m": 0.218
+      "vol_ratio": 0.516,
+      "rs_3m": 0.2204
     },
     "036460": {
       "name": "한국가스공사",
@@ -1749,13 +1764,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 32250,
+      "close": 32400,
       "hi_52w": 46150,
-      "vol_ratio": 0.515,
-      "rs_3m": -0.1103
+      "vol_ratio": 0.322,
+      "rs_3m": -0.1172
     },
     "302440": {
       "name": "SK바이오사이언스",
@@ -1764,13 +1779,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 33000,
+      "close": 32750,
       "hi_52w": 60100,
-      "vol_ratio": 0.577,
-      "rs_3m": -0.2609
+      "vol_ratio": 0.438,
+      "rs_3m": -0.2972
     },
     "005850": {
       "name": "에스엘",
@@ -1779,13 +1794,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 52700,
+      "close": 54200,
       "hi_52w": 76200,
-      "vol_ratio": 0.304,
-      "rs_3m": -0.1246
+      "vol_ratio": 0.378,
+      "rs_3m": -0.1144
     },
     "017800": {
       "name": "현대엘리베이터",
@@ -1794,13 +1809,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 67000,
+      "close": 67700,
       "hi_52w": 111700,
-      "vol_ratio": 0.414,
-      "rs_3m": -0.3266
+      "vol_ratio": 0.486,
+      "rs_3m": -0.335
     },
     "014680": {
       "name": "한솔케미칼",
@@ -1809,13 +1824,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 229000,
+      "close": 225000,
       "hi_52w": 338000,
-      "vol_ratio": 0.557,
-      "rs_3m": -0.1965
+      "vol_ratio": 0.373,
+      "rs_3m": -0.2188
     },
     "011780": {
       "name": "금호석유화학",
@@ -1824,13 +1839,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 118000,
+      "close": 117700,
       "hi_52w": 153400,
-      "vol_ratio": 0.43,
-      "rs_3m": -0.1431
+      "vol_ratio": 0.473,
+      "rs_3m": -0.1446
     },
     "097950": {
       "name": "CJ제일제당",
@@ -1838,14 +1853,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 186200,
+      "close": 185500,
       "hi_52w": 260000,
-      "vol_ratio": 0.56,
-      "rs_3m": -0.216
+      "vol_ratio": 0.605,
+      "rs_3m": -0.2173
     },
     "383220": {
       "name": "F&F",
@@ -1854,13 +1869,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 75400,
+      "close": 74000,
       "hi_52w": 86100,
-      "vol_ratio": 0.492,
-      "rs_3m": 0.1304
+      "vol_ratio": 0.827,
+      "rs_3m": 0.1061
     },
     "375500": {
       "name": "DL이앤씨",
@@ -1869,13 +1884,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 59000,
+      "close": 61400,
       "hi_52w": 102500,
-      "vol_ratio": 0.32,
-      "rs_3m": -0.404
+      "vol_ratio": 0.57,
+      "rs_3m": -0.3715
     },
     "139130": {
       "name": "iM금융지주",
@@ -1884,13 +1899,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 18140,
+      "close": 17510,
       "hi_52w": 21650,
-      "vol_ratio": 0.386,
-      "rs_3m": -0.0305
+      "vol_ratio": 0.638,
+      "rs_3m": -0.0636
     },
     "012750": {
       "name": "에스원",
@@ -1899,13 +1914,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 70100,
+      "close": 70900,
       "hi_52w": 94100,
-      "vol_ratio": 0.583,
-      "rs_3m": -0.2364
+      "vol_ratio": 0.465,
+      "rs_3m": -0.231
     },
     "009420": {
       "name": "한올바이오파마",
@@ -1913,14 +1928,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 48150,
+      "close": 48000,
       "hi_52w": 70700,
-      "vol_ratio": 0.743,
-      "rs_3m": -0.0163
+      "vol_ratio": 0.581,
+      "rs_3m": -0.0123
     },
     "004990": {
       "name": "롯데지주",
@@ -1929,13 +1944,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 22200,
+      "close": 22300,
       "hi_52w": 38600,
-      "vol_ratio": 0.503,
-      "rs_3m": -0.2397
+      "vol_ratio": 0.439,
+      "rs_3m": -0.2297
     },
     "026960": {
       "name": "동서",
@@ -1944,13 +1959,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 24750,
+      "close": 25600,
       "hi_52w": 31700,
-      "vol_ratio": 0.499,
-      "rs_3m": -0.1049
+      "vol_ratio": 0.891,
+      "rs_3m": -0.0758
     },
     "000240": {
       "name": "한국앤컴퍼니",
@@ -1959,13 +1974,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 25150,
+      "close": 24700,
       "hi_52w": 34650,
-      "vol_ratio": 0.366,
-      "rs_3m": -0.0098
+      "vol_ratio": 0.486,
+      "rs_3m": -0.012
     },
     "007340": {
       "name": "DN오토모티브",
@@ -1974,13 +1989,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 36500,
+      "close": 38250,
       "hi_52w": 51200,
-      "vol_ratio": 0.892,
-      "rs_3m": -0.0228
+      "vol_ratio": 1.06,
+      "rs_3m": -0.0292
     },
     "457190": {
       "name": "이수스페셜티케미컬",
@@ -1989,13 +2004,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 54800,
+      "close": 55500,
       "hi_52w": 130100,
-      "vol_ratio": 0.73,
-      "rs_3m": -0.469
+      "vol_ratio": 0.507,
+      "rs_3m": -0.5022
     },
     "009970": {
       "name": "영원무역홀딩스",
@@ -2004,13 +2019,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 190900,
+      "close": 191000,
       "hi_52w": 250000,
-      "vol_ratio": 0.339,
-      "rs_3m": -0.1142
+      "vol_ratio": 0.447,
+      "rs_3m": -0.0948
     },
     "204320": {
       "name": "HL만도",
@@ -2018,14 +2033,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 43200,
+      "close": 46000,
       "hi_52w": 76900,
-      "vol_ratio": 0.349,
-      "rs_3m": -0.1895
+      "vol_ratio": 1.172,
+      "rs_3m": -0.1304
     },
     "139480": {
       "name": "이마트",
@@ -2033,29 +2048,29 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 79900,
+      "close": 81700,
       "hi_52w": 127600,
-      "vol_ratio": 0.777,
-      "rs_3m": -0.228
+      "vol_ratio": 0.82,
+      "rs_3m": -0.1967
     },
     "006360": {
       "name": "GS건설",
       "sector": "기타",
       "N": false,
-      "S": false,
+      "S": true,
       "L": false,
       "I": true,
-      "M": true,
+      "M": false,
       "score": 2,
       "all_pass": false,
-      "close": 25600,
+      "close": 29100,
       "hi_52w": 43100,
-      "vol_ratio": 0.537,
-      "rs_3m": -0.3527
+      "vol_ratio": 1.896,
+      "rs_3m": -0.2538
     },
     "004370": {
       "name": "농심",
@@ -2064,13 +2079,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 348500,
+      "close": 351000,
       "hi_52w": 522000,
-      "vol_ratio": 0.547,
-      "rs_3m": -0.0865
+      "vol_ratio": 0.454,
+      "rs_3m": -0.0763
     },
     "282330": {
       "name": "BGF리테일",
@@ -2079,13 +2094,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 123700,
+      "close": 116500,
       "hi_52w": 147800,
-      "vol_ratio": 0.475,
-      "rs_3m": -0.0997
+      "vol_ratio": 1.089,
+      "rs_3m": -0.1273
     },
     "071970": {
       "name": "HD현대마린엔진",
@@ -2094,13 +2109,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 58200,
+      "close": 64600,
       "hi_52w": 115500,
-      "vol_ratio": 0.963,
-      "rs_3m": -0.3193
+      "vol_ratio": 1.475,
+      "rs_3m": -0.2917
     },
     "008770": {
       "name": "호텔신라",
@@ -2109,28 +2124,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 45700,
+      "close": 47300,
       "hi_52w": 69400,
-      "vol_ratio": 0.285,
-      "rs_3m": -0.1506
+      "vol_ratio": 0.678,
+      "rs_3m": -0.1059
     },
     "120110": {
       "name": "코오롱인더",
       "sector": "기타",
       "N": false,
-      "S": true,
+      "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 49600,
+      "close": 51500,
       "hi_52w": 100900,
-      "vol_ratio": 2.088,
-      "rs_3m": -0.4331
+      "vol_ratio": 0.673,
+      "rs_3m": -0.4039
     },
     "081660": {
       "name": "미스토홀딩스",
@@ -2139,13 +2154,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 46000,
+      "close": 45000,
       "hi_52w": 54200,
-      "vol_ratio": 0.62,
-      "rs_3m": 0.0673
+      "vol_ratio": 0.487,
+      "rs_3m": 0.0563
     },
     "051600": {
       "name": "한전KPS",
@@ -2154,13 +2169,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 42550,
+      "close": 43650,
       "hi_52w": 67500,
-      "vol_ratio": 0.418,
-      "rs_3m": -0.2885
+      "vol_ratio": 0.762,
+      "rs_3m": -0.2688
     },
     "030000": {
       "name": "제일기획",
@@ -2169,13 +2184,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 18530,
+      "close": 18540,
       "hi_52w": 23150,
-      "vol_ratio": 0.361,
-      "rs_3m": -0.0651
+      "vol_ratio": 0.353,
+      "rs_3m": -0.066
     },
     "008930": {
       "name": "한미사이언스",
@@ -2184,13 +2199,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 33000,
+      "close": 33250,
       "hi_52w": 51900,
-      "vol_ratio": 0.97,
-      "rs_3m": -0.1781
+      "vol_ratio": 1.098,
+      "rs_3m": -0.1708
     },
     "011210": {
       "name": "현대위아",
@@ -2199,13 +2214,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 55800,
+      "close": 58000,
       "hi_52w": 101300,
-      "vol_ratio": 0.353,
-      "rs_3m": -0.3458
+      "vol_ratio": 0.277,
+      "rs_3m": -0.3029
     },
     "103140": {
       "name": "풍산",
@@ -2214,28 +2229,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 59800,
+      "close": 61400,
       "hi_52w": 165000,
-      "vol_ratio": 0.653,
-      "rs_3m": -0.4143
+      "vol_ratio": 0.545,
+      "rs_3m": -0.3974
     },
     "161890": {
       "name": "한국콜마",
       "sector": "기타",
       "N": false,
       "S": false,
-      "L": true,
+      "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 101700,
+      "close": 98300,
       "hi_52w": 117800,
-      "vol_ratio": 0.564,
-      "rs_3m": 0.2036
+      "vol_ratio": 1.119,
+      "rs_3m": 0.1325
     },
     "007070": {
       "name": "GS리테일",
@@ -2244,13 +2259,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 25750,
+      "close": 24450,
       "hi_52w": 29450,
-      "vol_ratio": 0.678,
-      "rs_3m": 0.0865
+      "vol_ratio": 1.048,
+      "rs_3m": 0.0449
     },
     "192820": {
       "name": "코스맥스",
@@ -2259,13 +2274,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 172200,
+      "close": 169200,
       "hi_52w": 266000,
-      "vol_ratio": 0.534,
-      "rs_3m": -0.1538
+      "vol_ratio": 0.556,
+      "rs_3m": -0.2075
     },
     "000120": {
       "name": "CJ대한통운",
@@ -2274,13 +2289,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 71300,
+      "close": 72100,
       "hi_52w": 145700,
-      "vol_ratio": 0.397,
-      "rs_3m": -0.3242
+      "vol_ratio": 0.484,
+      "rs_3m": -0.3249
     },
     "002790": {
       "name": "아모레퍼시픽홀딩스",
@@ -2289,13 +2304,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 24100,
+      "close": 23500,
       "hi_52w": 35050,
-      "vol_ratio": 0.437,
-      "rs_3m": -0.1377
+      "vol_ratio": 0.44,
+      "rs_3m": -0.1562
     },
     "112610": {
       "name": "씨에스윈드",
@@ -2303,14 +2318,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 38700,
+      "close": 39550,
       "hi_52w": 76900,
-      "vol_ratio": 0.427,
-      "rs_3m": -0.4189
+      "vol_ratio": 0.592,
+      "rs_3m": -0.3915
     },
     "093370": {
       "name": "후성",
@@ -2319,13 +2334,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 10670,
+      "close": 11050,
       "hi_52w": 22400,
-      "vol_ratio": 0.523,
-      "rs_3m": -0.0558
+      "vol_ratio": 0.663,
+      "rs_3m": -0.2004
     },
     "001430": {
       "name": "세아베스틸지주",
@@ -2334,13 +2349,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 30950,
+      "close": 32450,
       "hi_52w": 90300,
-      "vol_ratio": 0.294,
-      "rs_3m": -0.561
+      "vol_ratio": 0.388,
+      "rs_3m": -0.5679
     },
     "017960": {
       "name": "한국카본",
@@ -2349,13 +2364,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 22050,
+      "close": 22500,
       "hi_52w": 52200,
-      "vol_ratio": 0.386,
-      "rs_3m": -0.5693
+      "vol_ratio": 0.43,
+      "rs_3m": -0.5681
     },
     "001800": {
       "name": "오리온홀딩스",
@@ -2364,13 +2379,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 25150,
+      "close": 25100,
       "hi_52w": 28300,
-      "vol_ratio": 0.407,
-      "rs_3m": 0.01
+      "vol_ratio": 0.361,
+      "rs_3m": 0.0183
     },
     "192080": {
       "name": "더블유게임즈",
@@ -2379,13 +2394,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 59200,
+      "close": 59900,
       "hi_52w": 74600,
-      "vol_ratio": 0.645,
-      "rs_3m": 0.1407
+      "vol_ratio": 0.599,
+      "rs_3m": 0.1475
     },
     "006280": {
       "name": "녹십자",
@@ -2394,13 +2409,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 118600,
+      "close": 118700,
       "hi_52w": 180300,
-      "vol_ratio": 1.058,
-      "rs_3m": -0.2072
+      "vol_ratio": 0.643,
+      "rs_3m": -0.2149
     },
     "006040": {
       "name": "동원산업",
@@ -2409,28 +2424,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 33200,
-      "hi_52w": 50500,
-      "vol_ratio": 0.472,
-      "rs_3m": -0.1606
+      "close": 33450,
+      "hi_52w": 50000,
+      "vol_ratio": 0.517,
+      "rs_3m": -0.1532
     },
     "298020": {
       "name": "효성티앤씨",
       "sector": "기타",
       "N": false,
-      "S": true,
+      "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 3,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 315000,
+      "close": 304000,
       "hi_52w": 535000,
-      "vol_ratio": 2.298,
-      "rs_3m": -0.37
+      "vol_ratio": 1.009,
+      "rs_3m": -0.3764
     },
     "361610": {
       "name": "SK아이이테크놀로지",
@@ -2439,13 +2454,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 13260,
+      "close": 13500,
       "hi_52w": 34300,
-      "vol_ratio": 0.559,
-      "rs_3m": -0.4393
+      "vol_ratio": 0.485,
+      "rs_3m": -0.4421
     },
     "069620": {
       "name": "대웅제약",
@@ -2454,13 +2469,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 121800,
+      "close": 119700,
       "hi_52w": 194000,
-      "vol_ratio": 0.529,
-      "rs_3m": -0.2217
+      "vol_ratio": 0.766,
+      "rs_3m": -0.2232
     },
     "007310": {
       "name": "오뚜기",
@@ -2469,13 +2484,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 306000,
+      "close": 309500,
       "hi_52w": 433000,
-      "vol_ratio": 0.656,
-      "rs_3m": -0.1763
+      "vol_ratio": 0.674,
+      "rs_3m": -0.1612
     },
     "004000": {
       "name": "롯데정밀화학",
@@ -2484,13 +2499,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 45450,
+      "close": 45050,
       "hi_52w": 71200,
-      "vol_ratio": 0.699,
-      "rs_3m": -0.1599
+      "vol_ratio": 0.694,
+      "rs_3m": -0.1719
     },
     "000080": {
       "name": "하이트진로",
@@ -2499,13 +2514,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 14620,
+      "close": 14710,
       "hi_52w": 22000,
-      "vol_ratio": 0.458,
-      "rs_3m": -0.1646
+      "vol_ratio": 0.468,
+      "rs_3m": -0.1585
     },
     "000210": {
       "name": "DL",
@@ -2514,13 +2529,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
       "close": 46000,
       "hi_52w": 76800,
-      "vol_ratio": 0.79,
-      "rs_3m": -0.2756
+      "vol_ratio": 0.704,
+      "rs_3m": -0.2879
     },
     "300720": {
       "name": "한일시멘트",
@@ -2529,13 +2544,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 13710,
+      "close": 13580,
       "hi_52w": 21300,
-      "vol_ratio": 0.614,
-      "rs_3m": -0.2143
+      "vol_ratio": 0.633,
+      "rs_3m": -0.2012
     },
     "003240": {
       "name": "태광산업",
@@ -2544,13 +2559,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 823000,
+      "close": 844000,
       "hi_52w": 1570000,
-      "vol_ratio": 1.22,
-      "rs_3m": -0.3625
+      "vol_ratio": 0.721,
+      "rs_3m": -0.3317
     },
     "003090": {
       "name": "대웅",
@@ -2559,13 +2574,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 16170,
+      "close": 15880,
       "hi_52w": 29350,
-      "vol_ratio": 0.659,
-      "rs_3m": -0.3206
+      "vol_ratio": 0.714,
+      "rs_3m": -0.3342
     },
     "185750": {
       "name": "종근당",
@@ -2574,13 +2589,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 66000,
+      "close": 66100,
       "hi_52w": 97700,
-      "vol_ratio": 0.485,
-      "rs_3m": -0.2707
+      "vol_ratio": 0.493,
+      "rs_3m": -0.268
     },
     "005300": {
       "name": "롯데칠성",
@@ -2589,13 +2604,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 96800,
+      "close": 95900,
       "hi_52w": 148200,
-      "vol_ratio": 0.67,
-      "rs_3m": -0.1987
+      "vol_ratio": 0.699,
+      "rs_3m": -0.2126
     },
     "280360": {
       "name": "롯데웰푸드",
@@ -2604,13 +2619,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 100500,
+      "close": 99500,
       "hi_52w": 135600,
-      "vol_ratio": 0.824,
-      "rs_3m": -0.1268
+      "vol_ratio": 0.998,
+      "rs_3m": -0.1437
     },
     "298050": {
       "name": "HS효성첨단소재",
@@ -2619,13 +2634,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 144400,
+      "close": 146000,
       "hi_52w": 277500,
-      "vol_ratio": 0.737,
-      "rs_3m": -0.3539
+      "vol_ratio": 0.656,
+      "rs_3m": -0.3409
     },
     "000670": {
       "name": "영풍",
@@ -2634,13 +2649,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 33650,
+      "close": 34100,
       "hi_52w": 70000,
-      "vol_ratio": 1.278,
-      "rs_3m": -0.4607
+      "vol_ratio": 0.675,
+      "rs_3m": -0.477
     },
     "071320": {
       "name": "지역난방공사",
@@ -2649,13 +2664,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 63700,
+      "close": 64000,
       "hi_52w": 112400,
-      "vol_ratio": 0.67,
-      "rs_3m": -0.1662
+      "vol_ratio": 0.913,
+      "rs_3m": -0.1645
     },
     "006650": {
       "name": "대한유화",
@@ -2663,14 +2678,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
       "close": 96300,
       "hi_52w": 190700,
-      "vol_ratio": 0.75,
-      "rs_3m": -0.3694
+      "vol_ratio": 0.361,
+      "rs_3m": -0.3791
     },
     "009240": {
       "name": "한샘",
@@ -2679,13 +2694,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 35300,
+      "close": 36450,
       "hi_52w": 51400,
-      "vol_ratio": 0.454,
-      "rs_3m": -0.1164
+      "vol_ratio": 0.578,
+      "rs_3m": -0.0807
     },
     "004490": {
       "name": "세방전지",
@@ -2694,13 +2709,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 52600,
+      "close": 52700,
       "hi_52w": 74400,
-      "vol_ratio": 0.434,
-      "rs_3m": -0.1433
+      "vol_ratio": 0.414,
+      "rs_3m": -0.1417
     },
     "285130": {
       "name": "SK케미칼",
@@ -2709,13 +2724,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 37200,
+      "close": 37600,
       "hi_52w": 79800,
-      "vol_ratio": 0.678,
-      "rs_3m": -0.3758
+      "vol_ratio": 0.398,
+      "rs_3m": -0.3659
     },
     "001680": {
       "name": "대상",
@@ -2724,13 +2739,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 17130,
+      "close": 16900,
       "hi_52w": 24600,
-      "vol_ratio": 0.449,
-      "rs_3m": -0.2014
+      "vol_ratio": 0.403,
+      "rs_3m": -0.2047
     },
     "069260": {
       "name": "TKG휴켐스",
@@ -2739,13 +2754,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 15110,
+      "close": 15000,
       "hi_52w": 21200,
-      "vol_ratio": 0.286,
-      "rs_3m": -0.1693
+      "vol_ratio": 0.213,
+      "rs_3m": -0.1699
     },
     "014820": {
       "name": "동원시스템즈",
@@ -2754,13 +2769,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 18640,
+      "close": 19130,
       "hi_52w": 32300,
-      "vol_ratio": 0.827,
-      "rs_3m": -0.2761
+      "vol_ratio": 0.561,
+      "rs_3m": -0.2614
     },
     "003030": {
       "name": "세아제강지주",
@@ -2769,13 +2784,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 97100,
+      "close": 98500,
       "hi_52w": 253000,
-      "vol_ratio": 0.897,
-      "rs_3m": -0.5596
+      "vol_ratio": 1.092,
+      "rs_3m": -0.5429
     },
     "002840": {
       "name": "미원상사",
@@ -2784,13 +2799,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 120400,
+      "close": 121100,
       "hi_52w": 167200,
-      "vol_ratio": 1.238,
-      "rs_3m": -0.1363
+      "vol_ratio": 1.182,
+      "rs_3m": -0.1344
     },
     "268280": {
       "name": "미원에스씨",
@@ -2799,13 +2814,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 114100,
+      "close": 113900,
       "hi_52w": 155000,
-      "vol_ratio": 0.605,
-      "rs_3m": -0.0872
+      "vol_ratio": 0.448,
+      "rs_3m": -0.0946
     },
     "008730": {
       "name": "율촌화학",
@@ -2814,13 +2829,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 12830,
+      "close": 12860,
       "hi_52w": 38150,
-      "vol_ratio": 0.749,
-      "rs_3m": -0.5177
+      "vol_ratio": 0.599,
+      "rs_3m": -0.5138
     },
     "002030": {
       "name": "아세아",
@@ -2829,13 +2844,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 176500,
+      "close": 176100,
       "hi_52w": 396500,
-      "vol_ratio": 1.321,
-      "rs_3m": -0.3365
+      "vol_ratio": 0.762,
+      "rs_3m": -0.3367
     },
     "196170": {
       "name": "알테오젠",
@@ -2844,13 +2859,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 273000,
+      "close": 268000,
       "hi_52w": 559000,
-      "vol_ratio": 0.574,
-      "rs_3m": -0.2612
+      "vol_ratio": 0.537,
+      "rs_3m": -0.2678
     },
     "298380": {
       "name": "에이비엘바이오",
@@ -2859,13 +2874,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 69300,
+      "close": 69400,
       "hi_52w": 245500,
-      "vol_ratio": 0.936,
-      "rs_3m": -0.5772
+      "vol_ratio": 0.729,
+      "rs_3m": -0.5703
     },
     "000250": {
       "name": "삼천당제약",
@@ -2874,28 +2889,28 @@
       "S": true,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 167800,
+      "close": 152800,
       "hi_52w": 1184000,
-      "vol_ratio": 7.501,
-      "rs_3m": -0.6677
+      "vol_ratio": 2.693,
+      "rs_3m": -0.6853
     },
     "028300": {
       "name": "HLB",
       "sector": "바이오/제약",
       "N": false,
-      "S": false,
+      "S": true,
       "L": false,
       "I": false,
-      "M": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 30400,
+      "close": 28300,
       "hi_52w": 68200,
-      "vol_ratio": 1.07,
-      "rs_3m": -0.5228
+      "vol_ratio": 1.785,
+      "rs_3m": -0.5486
     },
     "141080": {
       "name": "리가켐바이오",
@@ -2904,13 +2919,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 93600,
+      "close": 93900,
       "hi_52w": 213500,
-      "vol_ratio": 1.373,
-      "rs_3m": -0.5273
+      "vol_ratio": 0.602,
+      "rs_3m": -0.5243
     },
     "087010": {
       "name": "펩트론",
@@ -2919,13 +2934,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 106300,
+      "close": 103600,
       "hi_52w": 386000,
-      "vol_ratio": 0.692,
-      "rs_3m": -0.6034
+      "vol_ratio": 0.595,
+      "rs_3m": -0.6076
     },
     "214450": {
       "name": "파마리서치",
@@ -2934,28 +2949,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 341500,
+      "close": 322500,
       "hi_52w": 711000,
-      "vol_ratio": 1.052,
-      "rs_3m": 0.1016
+      "vol_ratio": 0.766,
+      "rs_3m": 0.032
     },
     "214370": {
       "name": "케어젠",
       "sector": "바이오/제약",
       "N": false,
-      "S": true,
+      "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 56500,
+      "close": 55100,
       "hi_52w": 150100,
-      "vol_ratio": 1.528,
-      "rs_3m": -0.4299
+      "vol_ratio": 0.623,
+      "rs_3m": -0.4561
     },
     "214150": {
       "name": "클래시스",
@@ -2964,13 +2979,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 43750,
+      "close": 43400,
       "hi_52w": 75600,
-      "vol_ratio": 0.482,
-      "rs_3m": -0.2405
+      "vol_ratio": 0.863,
+      "rs_3m": -0.2543
     },
     "347850": {
       "name": "디앤디파마텍",
@@ -2979,13 +2994,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 61000,
+      "close": 59000,
       "hi_52w": 111200,
-      "vol_ratio": 0.773,
-      "rs_3m": -0.2525
+      "vol_ratio": 0.742,
+      "rs_3m": -0.2522
     },
     "310210": {
       "name": "보로노이",
@@ -2994,13 +3009,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 126200,
+      "close": 125400,
       "hi_52w": 363500,
-      "vol_ratio": 1.155,
-      "rs_3m": -0.5807
+      "vol_ratio": 0.685,
+      "rs_3m": -0.5915
     },
     "140410": {
       "name": "메지온",
@@ -3008,14 +3023,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 54900,
+      "close": 51300,
       "hi_52w": 172700,
-      "vol_ratio": 1.12,
-      "rs_3m": -0.4013
+      "vol_ratio": 0.731,
+      "rs_3m": -0.4406
     },
     "145020": {
       "name": "휴젤",
@@ -3023,14 +3038,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 228500,
-      "hi_52w": 361000,
-      "vol_ratio": 0.47,
-      "rs_3m": -0.1279
+      "close": 221500,
+      "hi_52w": 360000,
+      "vol_ratio": 0.866,
+      "rs_3m": -0.1781
     },
     "237690": {
       "name": "에스티팜",
@@ -3039,13 +3054,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 114000,
+      "close": 113000,
       "hi_52w": 168700,
-      "vol_ratio": 0.669,
-      "rs_3m": -0.2229
+      "vol_ratio": 0.404,
+      "rs_3m": -0.1986
     },
     "068760": {
       "name": "셀트리온제약",
@@ -3054,13 +3069,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 38250,
+      "close": 38000,
       "hi_52w": 75700,
-      "vol_ratio": 0.818,
-      "rs_3m": -0.345
+      "vol_ratio": 0.631,
+      "rs_3m": -0.3504
     },
     "226950": {
       "name": "올릭스",
@@ -3069,13 +3084,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 109200,
+      "close": 103000,
       "hi_52w": 207000,
-      "vol_ratio": 1.048,
-      "rs_3m": -0.4023
+      "vol_ratio": 0.894,
+      "rs_3m": -0.4063
     },
     "039200": {
       "name": "오스코텍",
@@ -3084,28 +3099,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 30150,
+      "close": 29300,
       "hi_52w": 62000,
-      "vol_ratio": 0.791,
-      "rs_3m": -0.4673
+      "vol_ratio": 0.363,
+      "rs_3m": -0.4644
     },
     "290650": {
       "name": "엘앤씨바이오",
       "sector": "바이오/제약",
       "N": false,
-      "S": false,
+      "S": true,
       "L": false,
       "I": true,
-      "M": true,
+      "M": false,
       "score": 2,
       "all_pass": false,
-      "close": 66800,
+      "close": 61000,
       "hi_52w": 118300,
-      "vol_ratio": 0.458,
-      "rs_3m": -0.0912
+      "vol_ratio": 1.55,
+      "rs_3m": -0.1469
     },
     "195940": {
       "name": "HK이노엔",
@@ -3114,28 +3129,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 37800,
+      "close": 37300,
       "hi_52w": 57600,
-      "vol_ratio": 0.556,
-      "rs_3m": -0.2854
+      "vol_ratio": 0.592,
+      "rs_3m": -0.2868
     },
     "007390": {
       "name": "네이처셀",
       "sector": "바이오/제약",
       "N": false,
       "S": false,
-      "L": true,
+      "L": false,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 24750,
+      "close": 22650,
       "hi_52w": 37800,
-      "vol_ratio": 0.733,
-      "rs_3m": 0.2015
+      "vol_ratio": 0.584,
+      "rs_3m": 0.0995
     },
     "096530": {
       "name": "씨젠",
@@ -3144,13 +3159,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 27200,
+      "close": 26900,
       "hi_52w": 32550,
-      "vol_ratio": 0.527,
-      "rs_3m": 0.0924
+      "vol_ratio": 0.469,
+      "rs_3m": -0.0165
     },
     "086900": {
       "name": "메디톡스",
@@ -3159,13 +3174,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 69000,
-      "hi_52w": 169300,
-      "vol_ratio": 0.498,
-      "rs_3m": -0.3545
+      "close": 68300,
+      "hi_52w": 167800,
+      "vol_ratio": 0.386,
+      "rs_3m": -0.3629
     },
     "086450": {
       "name": "동국제약",
@@ -3174,13 +3189,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 18820,
+      "close": 18200,
       "hi_52w": 29900,
-      "vol_ratio": 0.494,
-      "rs_3m": -0.2938
+      "vol_ratio": 0.533,
+      "rs_3m": -0.2959
     },
     "247540": {
       "name": "에코프로비엠",
@@ -3189,13 +3204,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 105900,
+      "close": 107500,
       "hi_52w": 246000,
-      "vol_ratio": 0.418,
-      "rs_3m": -0.4834
+      "vol_ratio": 0.438,
+      "rs_3m": -0.4832
     },
     "086520": {
       "name": "에코프로",
@@ -3204,13 +3219,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 75200,
+      "close": 77100,
       "hi_52w": 185000,
-      "vol_ratio": 0.545,
-      "rs_3m": -0.496
+      "vol_ratio": 0.523,
+      "rs_3m": -0.4924
     },
     "058470": {
       "name": "리노공업",
@@ -3219,13 +3234,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 70000,
+      "close": 71800,
       "hi_52w": 127000,
-      "vol_ratio": 0.45,
-      "rs_3m": -0.3913
+      "vol_ratio": 0.525,
+      "rs_3m": -0.3773
     },
     "240810": {
       "name": "원익IPS",
@@ -3234,13 +3249,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 116100,
+      "close": 111700,
       "hi_52w": 183300,
-      "vol_ratio": 0.752,
-      "rs_3m": -0.0397
+      "vol_ratio": 1.369,
+      "rs_3m": -0.0784
     },
     "039030": {
       "name": "이오테크닉스",
@@ -3249,13 +3264,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 317500,
+      "close": 308500,
       "hi_52w": 612000,
-      "vol_ratio": 0.835,
-      "rs_3m": -0.328
+      "vol_ratio": 0.566,
+      "rs_3m": -0.3443
     },
     "403870": {
       "name": "HPSP",
@@ -3264,13 +3279,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 39100,
+      "close": 38800,
       "hi_52w": 83500,
-      "vol_ratio": 0.419,
-      "rs_3m": -0.1144
+      "vol_ratio": 0.406,
+      "rs_3m": -0.1281
     },
     "357780": {
       "name": "솔브레인",
@@ -3279,13 +3294,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 280000,
+      "close": 276500,
       "hi_52w": 501000,
-      "vol_ratio": 0.288,
-      "rs_3m": -0.3511
+      "vol_ratio": 0.323,
+      "rs_3m": -0.354
     },
     "095340": {
       "name": "ISC",
@@ -3294,13 +3309,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 139200,
+      "close": 140500,
       "hi_52w": 271000,
-      "vol_ratio": 0.483,
-      "rs_3m": -0.373
+      "vol_ratio": 0.536,
+      "rs_3m": -0.3865
     },
     "005290": {
       "name": "동진쎄미켐",
@@ -3309,13 +3324,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 42150,
+      "close": 42300,
       "hi_52w": 66000,
-      "vol_ratio": 0.285,
-      "rs_3m": -0.2579
+      "vol_ratio": 0.474,
+      "rs_3m": -0.2351
     },
     "064760": {
       "name": "티씨케이",
@@ -3323,14 +3338,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 209500,
+      "close": 199400,
       "hi_52w": 348500,
-      "vol_ratio": 0.639,
-      "rs_3m": -0.3109
+      "vol_ratio": 0.655,
+      "rs_3m": -0.3473
     },
     "098460": {
       "name": "고영",
@@ -3339,13 +3354,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 25600,
+      "close": 26500,
       "hi_52w": 43500,
-      "vol_ratio": 0.465,
-      "rs_3m": -0.1351
+      "vol_ratio": 0.559,
+      "rs_3m": -0.197
     },
     "178320": {
       "name": "서진시스템",
@@ -3354,13 +3369,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 36200,
+      "close": 36250,
       "hi_52w": 80800,
-      "vol_ratio": 0.639,
-      "rs_3m": -0.2789
+      "vol_ratio": 0.373,
+      "rs_3m": -0.2779
     },
     "084370": {
       "name": "유진테크",
@@ -3369,13 +3384,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 125800,
+      "close": 118300,
       "hi_52w": 206500,
-      "vol_ratio": 0.779,
-      "rs_3m": -0.0675
+      "vol_ratio": 1.21,
+      "rs_3m": -0.1078
     },
     "065350": {
       "name": "신성델타테크",
@@ -3384,13 +3399,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 26150,
-      "hi_52w": 80100,
-      "vol_ratio": 0.554,
-      "rs_3m": -0.5699
+      "close": 26000,
+      "hi_52w": 79700,
+      "vol_ratio": 0.557,
+      "rs_3m": -0.5681
     },
     "067310": {
       "name": "하나마이크론",
@@ -3399,13 +3414,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 37000,
+      "close": 35500,
       "hi_52w": 56800,
-      "vol_ratio": 0.543,
-      "rs_3m": 0.0678
+      "vol_ratio": 0.96,
+      "rs_3m": -0.0153
     },
     "140860": {
       "name": "파크시스템스",
@@ -3414,13 +3429,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 246500,
+      "close": 244500,
       "hi_52w": 339500,
-      "vol_ratio": 0.665,
-      "rs_3m": -0.039
+      "vol_ratio": 0.623,
+      "rs_3m": -0.0686
     },
     "036930": {
       "name": "주성엔지니어링",
@@ -3429,13 +3444,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 169200,
+      "close": 162000,
       "hi_52w": 250500,
-      "vol_ratio": 0.441,
-      "rs_3m": 1.3402
+      "vol_ratio": 0.559,
+      "rs_3m": 1.3011
     },
     "101490": {
       "name": "에스앤에스텍",
@@ -3444,13 +3459,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 40350,
+      "close": 39550,
       "hi_52w": 105100,
-      "vol_ratio": 0.667,
-      "rs_3m": -0.5924
+      "vol_ratio": 0.998,
+      "rs_3m": -0.6237
     },
     "089030": {
       "name": "테크윙",
@@ -3459,13 +3474,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 46800,
+      "close": 46200,
       "hi_52w": 71100,
-      "vol_ratio": 0.429,
-      "rs_3m": -0.1847
+      "vol_ratio": 0.45,
+      "rs_3m": -0.1794
     },
     "031980": {
       "name": "피에스케이홀딩스",
@@ -3474,13 +3489,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 135000,
+      "close": 122000,
       "hi_52w": 166500,
-      "vol_ratio": 0.715,
-      "rs_3m": 0.094
+      "vol_ratio": 0.68,
+      "rs_3m": 0.0261
     },
     "204270": {
       "name": "제이앤티씨",
@@ -3488,14 +3503,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": false,
-      "M": true,
+      "I": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 13480,
+      "close": 14100,
       "hi_52w": 29450,
-      "vol_ratio": 0.907,
-      "rs_3m": -0.2957
+      "vol_ratio": 0.702,
+      "rs_3m": -0.2595
     },
     "319400": {
       "name": "피에스케이",
@@ -3504,13 +3519,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 18900,
+      "close": 19730,
       "hi_52w": 46350,
-      "vol_ratio": 0.524,
-      "rs_3m": -0.3893
+      "vol_ratio": 1.082,
+      "rs_3m": -0.391
     },
     "161580": {
       "name": "필옵틱스",
@@ -3519,13 +3534,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 26150,
+      "close": 26000,
       "hi_52w": 63000,
-      "vol_ratio": 0.336,
-      "rs_3m": -0.4309
+      "vol_ratio": 0.263,
+      "rs_3m": -0.4131
     },
     "166090": {
       "name": "하나머티리얼즈",
@@ -3534,13 +3549,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 53300,
+      "close": 53200,
       "hi_52w": 81100,
-      "vol_ratio": 0.442,
-      "rs_3m": -0.2597
+      "vol_ratio": 0.584,
+      "rs_3m": -0.2621
     },
     "131970": {
       "name": "두산테스나",
@@ -3549,13 +3564,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 81900,
+      "close": 80000,
       "hi_52w": 190100,
-      "vol_ratio": 0.489,
-      "rs_3m": -0.1851
+      "vol_ratio": 0.532,
+      "rs_3m": -0.2844
     },
     "183300": {
       "name": "코미코",
@@ -3564,13 +3579,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 69200,
+      "close": 65300,
       "hi_52w": 139200,
-      "vol_ratio": 0.381,
-      "rs_3m": -0.1002
+      "vol_ratio": 0.548,
+      "rs_3m": -0.1723
     },
     "080220": {
       "name": "제주반도체",
@@ -3579,13 +3594,13 @@
       "S": false,
       "L": true,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 78300,
+      "close": 75000,
       "hi_52w": 134000,
-      "vol_ratio": 0.363,
-      "rs_3m": 0.8021
+      "vol_ratio": 0.515,
+      "rs_3m": 0.7321
     },
     "056190": {
       "name": "에스에프에이",
@@ -3594,13 +3609,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 19970,
+      "close": 20050,
       "hi_52w": 35650,
-      "vol_ratio": 0.662,
-      "rs_3m": -0.3265
+      "vol_ratio": 0.632,
+      "rs_3m": -0.3203
     },
     "095610": {
       "name": "테스",
@@ -3609,13 +3624,13 @@
       "S": false,
       "L": true,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 165700,
+      "close": 156500,
       "hi_52w": 217500,
-      "vol_ratio": 0.849,
-      "rs_3m": 0.8452
+      "vol_ratio": 1.062,
+      "rs_3m": 0.7784
     },
     "218410": {
       "name": "RFHIC",
@@ -3624,13 +3639,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 43550,
+      "close": 44950,
       "hi_52w": 112500,
-      "vol_ratio": 0.463,
-      "rs_3m": -0.5337
+      "vol_ratio": 0.638,
+      "rs_3m": -0.5182
     },
     "213420": {
       "name": "덕산네오룩스",
@@ -3639,13 +3654,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 30000,
+      "close": 29150,
       "hi_52w": 55800,
-      "vol_ratio": 0.749,
-      "rs_3m": -0.4585
+      "vol_ratio": 0.811,
+      "rs_3m": -0.4776
     },
     "036830": {
       "name": "솔브레인홀딩스",
@@ -3654,13 +3669,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 30150,
+      "close": 30650,
       "hi_52w": 79600,
-      "vol_ratio": 0.7,
-      "rs_3m": -0.4417
+      "vol_ratio": 0.515,
+      "rs_3m": -0.4376
     },
     "189300": {
       "name": "인텔리안테크",
@@ -3669,13 +3684,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 59100,
+      "close": 60200,
       "hi_52w": 172400,
-      "vol_ratio": 0.408,
-      "rs_3m": -0.5622
+      "vol_ratio": 0.308,
+      "rs_3m": -0.5724
     },
     "131290": {
       "name": "티에스이",
@@ -3684,13 +3699,13 @@
       "S": false,
       "L": true,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 251000,
+      "close": 240000,
       "hi_52w": 284500,
-      "vol_ratio": 0.892,
-      "rs_3m": 0.6789
+      "vol_ratio": 0.945,
+      "rs_3m": 0.4679
     },
     "036810": {
       "name": "에프에스티",
@@ -3699,13 +3714,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 20350,
+      "close": 19880,
       "hi_52w": 49550,
-      "vol_ratio": 0.609,
-      "rs_3m": -0.5251
+      "vol_ratio": 0.358,
+      "rs_3m": -0.5446
     },
     "348210": {
       "name": "넥스틴",
@@ -3714,13 +3729,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 35150,
+      "close": 34200,
       "hi_52w": 98500,
-      "vol_ratio": 0.804,
-      "rs_3m": -0.5411
+      "vol_ratio": 0.456,
+      "rs_3m": -0.5541
     },
     "399720": {
       "name": "가온칩스",
@@ -3729,13 +3744,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 45200,
+      "close": 43100,
       "hi_52w": 79900,
-      "vol_ratio": 0.746,
-      "rs_3m": -0.2756
+      "vol_ratio": 0.751,
+      "rs_3m": -0.3202
     },
     "214430": {
       "name": "아이쓰리시스템",
@@ -3744,13 +3759,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 55700,
+      "close": 58300,
       "hi_52w": 130000,
-      "vol_ratio": 0.46,
-      "rs_3m": -0.4222
+      "vol_ratio": 0.467,
+      "rs_3m": -0.4057
     },
     "074600": {
       "name": "원익QnC",
@@ -3759,13 +3774,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 27500,
+      "close": 26850,
       "hi_52w": 42150,
-      "vol_ratio": 0.666,
-      "rs_3m": -0.2382
+      "vol_ratio": 0.503,
+      "rs_3m": -0.2479
     },
     "171090": {
       "name": "선익시스템",
@@ -3774,13 +3789,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 51800,
+      "close": 53400,
       "hi_52w": 131000,
-      "vol_ratio": 0.368,
-      "rs_3m": -0.4687
+      "vol_ratio": 0.476,
+      "rs_3m": -0.4512
     },
     "272290": {
       "name": "이녹스첨단소재",
@@ -3789,13 +3804,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 20100,
+      "close": 20050,
       "hi_52w": 42050,
-      "vol_ratio": 0.555,
-      "rs_3m": -0.4207
+      "vol_ratio": 0.511,
+      "rs_3m": -0.4559
     },
     "059090": {
       "name": "미코",
@@ -3804,13 +3819,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 14720,
+      "close": 14750,
       "hi_52w": 27900,
-      "vol_ratio": 0.23,
-      "rs_3m": -0.2889
+      "vol_ratio": 0.257,
+      "rs_3m": -0.2822
     },
     "348370": {
       "name": "엔켐",
@@ -3819,13 +3834,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 19770,
+      "close": 18650,
       "hi_52w": 97900,
-      "vol_ratio": 0.765,
-      "rs_3m": -0.5413
+      "vol_ratio": 1.144,
+      "rs_3m": -0.5538
     },
     "281740": {
       "name": "레이크머티리얼즈",
@@ -3834,13 +3849,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 11170,
+      "close": 11470,
       "hi_52w": 27550,
-      "vol_ratio": 0.403,
-      "rs_3m": -0.4876
+      "vol_ratio": 0.463,
+      "rs_3m": -0.4902
     },
     "078600": {
       "name": "대주전자재료",
@@ -3849,13 +3864,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 72300,
+      "close": 73000,
       "hi_52w": 182800,
-      "vol_ratio": 0.239,
-      "rs_3m": -0.4543
+      "vol_ratio": 0.257,
+      "rs_3m": -0.4503
     },
     "417200": {
       "name": "LS머트리얼즈",
@@ -3864,13 +3879,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 10780,
+      "close": 11120,
       "hi_52w": 31250,
-      "vol_ratio": 0.369,
-      "rs_3m": -0.5262
+      "vol_ratio": 0.544,
+      "rs_3m": -0.4968
     },
     "009520": {
       "name": "포스코엠텍",
@@ -3879,13 +3894,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
       "close": 10210,
       "hi_52w": 21450,
-      "vol_ratio": 0.999,
-      "rs_3m": -0.4427
+      "vol_ratio": 0.778,
+      "rs_3m": -0.4769
     },
     "137400": {
       "name": "피엔티",
@@ -3894,13 +3909,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 27950,
+      "close": 28350,
       "hi_52w": 60900,
-      "vol_ratio": 0.613,
-      "rs_3m": -0.4726
+      "vol_ratio": 0.534,
+      "rs_3m": -0.475
     },
     "121600": {
       "name": "나노신소재",
@@ -3909,13 +3924,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 40300,
+      "close": 40600,
       "hi_52w": 88800,
-      "vol_ratio": 0.432,
-      "rs_3m": -0.4732
+      "vol_ratio": 0.481,
+      "rs_3m": -0.4727
     },
     "278280": {
       "name": "천보",
@@ -3924,13 +3939,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 32000,
+      "close": 31750,
       "hi_52w": 79400,
-      "vol_ratio": 0.336,
-      "rs_3m": -0.4961
+      "vol_ratio": 0.237,
+      "rs_3m": -0.5189
     },
     "383310": {
       "name": "에코프로에이치엔",
@@ -3939,58 +3954,58 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
       "close": 24450,
       "hi_52w": 44050,
-      "vol_ratio": 0.594,
-      "rs_3m": -0.2087
+      "vol_ratio": 0.479,
+      "rs_3m": -0.225
     },
     "277810": {
       "name": "레인보우로보틱스",
       "sector": "중공업/기계",
       "N": false,
-      "S": false,
+      "S": true,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 411500,
+      "close": 478500,
       "hi_52w": 880000,
-      "vol_ratio": 1.281,
-      "rs_3m": -0.332
+      "vol_ratio": 2.508,
+      "rs_3m": -0.222
     },
     "108490": {
       "name": "로보티즈",
       "sector": "중공업/기계",
       "N": false,
-      "S": false,
+      "S": true,
       "L": false,
       "I": false,
-      "M": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 197000,
+      "close": 219500,
       "hi_52w": 405000,
-      "vol_ratio": 0.599,
-      "rs_3m": -0.2744
+      "vol_ratio": 1.528,
+      "rs_3m": -0.196
     },
     "058610": {
       "name": "에스피지",
       "sector": "중공업/기계",
       "N": false,
-      "S": false,
+      "S": true,
       "L": false,
       "I": true,
-      "M": true,
+      "M": false,
       "score": 2,
       "all_pass": false,
-      "close": 66000,
+      "close": 82600,
       "hi_52w": 158100,
-      "vol_ratio": 0.82,
-      "rs_3m": -0.4211
+      "vol_ratio": 4.582,
+      "rs_3m": -0.2792
     },
     "083650": {
       "name": "비에이치아이",
@@ -3999,28 +4014,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 40550,
+      "close": 42950,
       "hi_52w": 109500,
-      "vol_ratio": 0.492,
-      "rs_3m": -0.5837
+      "vol_ratio": 0.95,
+      "rs_3m": -0.5648
     },
     "056080": {
       "name": "유진로봇",
       "sector": "중공업/기계",
       "N": false,
-      "S": false,
+      "S": true,
       "L": false,
       "I": true,
-      "M": true,
+      "M": false,
       "score": 2,
       "all_pass": false,
-      "close": 11880,
+      "close": 12420,
       "hi_52w": 45700,
-      "vol_ratio": 0.696,
-      "rs_3m": -0.5377
+      "vol_ratio": 2.284,
+      "rs_3m": -0.5214
     },
     "014620": {
       "name": "성광벤드",
@@ -4029,13 +4044,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 24050,
+      "close": 24700,
       "hi_52w": 48300,
-      "vol_ratio": 0.752,
-      "rs_3m": -0.3729
+      "vol_ratio": 0.523,
+      "rs_3m": -0.3601
     },
     "041510": {
       "name": "에스엠",
@@ -4044,13 +4059,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 67100,
+      "close": 67000,
       "hi_52w": 153000,
-      "vol_ratio": 0.762,
-      "rs_3m": -0.3082
+      "vol_ratio": 0.801,
+      "rs_3m": -0.2925
     },
     "035900": {
       "name": "JYP Ent.",
@@ -4059,13 +4074,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 44350,
+      "close": 43750,
       "hi_52w": 85000,
-      "vol_ratio": 0.904,
-      "rs_3m": -0.296
+      "vol_ratio": 0.771,
+      "rs_3m": -0.3078
     },
     "035760": {
       "name": "CJ ENM",
@@ -4074,13 +4089,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 28900,
+      "close": 29200,
       "hi_52w": 80000,
-      "vol_ratio": 0.596,
-      "rs_3m": -0.4793
+      "vol_ratio": 0.577,
+      "rs_3m": -0.4767
     },
     "253450": {
       "name": "스튜디오드래곤",
@@ -4089,13 +4104,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 19710,
+      "close": 19700,
       "hi_52w": 50300,
-      "vol_ratio": 0.566,
-      "rs_3m": -0.4585
+      "vol_ratio": 0.554,
+      "rs_3m": -0.4573
     },
     "122870": {
       "name": "와이지엔터테인먼트",
@@ -4104,13 +4119,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 38350,
+      "close": 37800,
       "hi_52w": 107400,
-      "vol_ratio": 0.723,
-      "rs_3m": -0.309
+      "vol_ratio": 0.66,
+      "rs_3m": -0.3238
     },
     "376300": {
       "name": "디어유",
@@ -4119,13 +4134,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 19100,
-      "hi_52w": 61100,
-      "vol_ratio": 0.583,
-      "rs_3m": -0.4456
+      "close": 19160,
+      "hi_52w": 60600,
+      "vol_ratio": 0.486,
+      "rs_3m": -0.4462
     },
     "263750": {
       "name": "펄어비스",
@@ -4134,13 +4149,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 33350,
+      "close": 33050,
       "hi_52w": 72000,
-      "vol_ratio": 0.315,
-      "rs_3m": -0.3969
+      "vol_ratio": 0.308,
+      "rs_3m": -0.3891
     },
     "112040": {
       "name": "위메이드",
@@ -4149,13 +4164,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 15390,
+      "close": 15160,
       "hi_52w": 34150,
-      "vol_ratio": 0.683,
-      "rs_3m": -0.302
+      "vol_ratio": 0.647,
+      "rs_3m": -0.303
     },
     "042000": {
       "name": "카페24",
@@ -4164,13 +4179,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 15610,
-      "hi_52w": 46300,
-      "vol_ratio": 0.419,
-      "rs_3m": -0.4365
+      "close": 15640,
+      "hi_52w": 45950,
+      "vol_ratio": 0.501,
+      "rs_3m": -0.4333
     },
     "067160": {
       "name": "SOOP",
@@ -4179,13 +4194,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 45650,
+      "close": 46450,
       "hi_52w": 95400,
-      "vol_ratio": 1.085,
-      "rs_3m": -0.2467
+      "vol_ratio": 0.724,
+      "rs_3m": -0.2271
     },
     "032190": {
       "name": "다우데이타",
@@ -4194,13 +4209,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 17600,
+      "close": 18050,
       "hi_52w": 30600,
-      "vol_ratio": 0.501,
-      "rs_3m": -0.3016
+      "vol_ratio": 0.711,
+      "rs_3m": -0.2809
     },
     "052400": {
       "name": "코나아이",
@@ -4209,13 +4224,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 40200,
+      "close": 39050,
       "hi_52w": 71100,
-      "vol_ratio": 0.27,
-      "rs_3m": -0.4346
+      "vol_ratio": 0.268,
+      "rs_3m": -0.4198
     },
     "060250": {
       "name": "NHN KCP",
@@ -4224,13 +4239,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 11600,
+      "close": 11880,
       "hi_52w": 23800,
-      "vol_ratio": 0.47,
-      "rs_3m": -0.4476
+      "vol_ratio": 0.507,
+      "rs_3m": -0.4176
     },
     "053800": {
       "name": "안랩",
@@ -4239,13 +4254,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 52800,
+      "close": 54000,
       "hi_52w": 69000,
-      "vol_ratio": 0.932,
-      "rs_3m": -0.2348
+      "vol_ratio": 0.985,
+      "rs_3m": -0.2024
     },
     "095660": {
       "name": "네오위즈",
@@ -4254,13 +4269,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 17150,
+      "close": 17010,
       "hi_52w": 30950,
-      "vol_ratio": 0.585,
-      "rs_3m": -0.2899
+      "vol_ratio": 0.498,
+      "rs_3m": -0.2913
     },
     "030520": {
       "name": "한글과컴퓨터",
@@ -4269,13 +4284,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 15810,
+      "close": 15890,
       "hi_52w": 29850,
-      "vol_ratio": 0.415,
-      "rs_3m": -0.2489
+      "vol_ratio": 0.375,
+      "rs_3m": -0.2342
     },
     "069080": {
       "name": "웹젠",
@@ -4284,13 +4299,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 12010,
+      "close": 11750,
       "hi_52w": 17990,
-      "vol_ratio": 1.109,
-      "rs_3m": -0.0566
+      "vol_ratio": 0.89,
+      "rs_3m": -0.0733
     },
     "078340": {
       "name": "컴투스",
@@ -4299,13 +4314,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
       "close": 24500,
       "hi_52w": 42000,
-      "vol_ratio": 0.668,
-      "rs_3m": -0.2762
+      "vol_ratio": 0.57,
+      "rs_3m": -0.2697
     },
     "194480": {
       "name": "데브시스터즈",
@@ -4314,13 +4329,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 15620,
+      "close": 15980,
       "hi_52w": 56400,
-      "vol_ratio": 0.814,
-      "rs_3m": -0.3339
+      "vol_ratio": 0.58,
+      "rs_3m": -0.3142
     },
     "304100": {
       "name": "솔트룩스",
@@ -4329,13 +4344,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 10320,
-      "hi_52w": 45450,
-      "vol_ratio": 0.235,
-      "rs_3m": -0.5945
+      "close": 10610,
+      "hi_52w": 44850,
+      "vol_ratio": 0.205,
+      "rs_3m": -0.5652
     },
     "058970": {
       "name": "엠로",
@@ -4344,13 +4359,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 13520,
+      "close": 13830,
       "hi_52w": 50800,
-      "vol_ratio": 0.176,
-      "rs_3m": -0.5493
+      "vol_ratio": 0.168,
+      "rs_3m": -0.5223
     },
     "257720": {
       "name": "실리콘투",
@@ -4359,13 +4374,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 35650,
+      "close": 35000,
       "hi_52w": 56100,
-      "vol_ratio": 0.718,
-      "rs_3m": -0.2399
+      "vol_ratio": 0.653,
+      "rs_3m": -0.2569
     },
     "241710": {
       "name": "코스메카코리아",
@@ -4374,13 +4389,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 81000,
+      "close": 76400,
       "hi_52w": 103000,
-      "vol_ratio": 1.098,
-      "rs_3m": -0.038
+      "vol_ratio": 1.128,
+      "rs_3m": -0.1001
     },
     "251970": {
       "name": "펌텍코리아",
@@ -4389,13 +4404,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 39500,
+      "close": 38350,
       "hi_52w": 73300,
-      "vol_ratio": 0.632,
-      "rs_3m": -0.1153
+      "vol_ratio": 0.942,
+      "rs_3m": -0.1392
     },
     "018290": {
       "name": "브이티",
@@ -4404,13 +4419,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 11190,
+      "close": 11030,
       "hi_52w": 39150,
-      "vol_ratio": 0.685,
-      "rs_3m": -0.3024
+      "vol_ratio": 0.802,
+      "rs_3m": -0.3162
     },
     "352480": {
       "name": "씨앤씨인터내셔널",
@@ -4419,13 +4434,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 18460,
+      "close": 17850,
       "hi_52w": 48300,
-      "vol_ratio": 0.519,
-      "rs_3m": -0.3213
+      "vol_ratio": 0.753,
+      "rs_3m": -0.3485
     },
     "215200": {
       "name": "메가스터디교육",
@@ -4434,13 +4449,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 37700,
+      "close": 38100,
       "hi_52w": 52000,
-      "vol_ratio": 0.864,
-      "rs_3m": -0.1613
+      "vol_ratio": 0.417,
+      "rs_3m": -0.1457
     },
     "215000": {
       "name": "골프존",
@@ -4449,13 +4464,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 38950,
+      "close": 39000,
       "hi_52w": 76400,
-      "vol_ratio": 0.492,
-      "rs_3m": -0.2363
+      "vol_ratio": 1.025,
+      "rs_3m": -0.2456
     },
     "033100": {
       "name": "제룡전기",
@@ -4464,13 +4479,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 42650,
+      "close": 43100,
       "hi_52w": 91500,
-      "vol_ratio": 0.523,
-      "rs_3m": -0.175
+      "vol_ratio": 0.546,
+      "rs_3m": -0.1566
     },
     "032500": {
       "name": "케이엠더블유",
@@ -4478,14 +4493,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 14150,
+      "close": 14710,
       "hi_52w": 38200,
-      "vol_ratio": 0.217,
-      "rs_3m": -0.5299
+      "vol_ratio": 0.298,
+      "rs_3m": -0.5224
     },
     "069500": {
       "name": "KODEX 200",
@@ -4494,13 +4509,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 108140,
+      "close": 108315,
       "hi_52w": 148355,
-      "vol_ratio": 0.872,
-      "rs_3m": 0.1469
+      "vol_ratio": 0.783,
+      "rs_3m": 0.1568
     },
     "102780": {
       "name": "TIGER 200",
@@ -4509,13 +4524,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 24855,
+      "close": 25160,
       "hi_52w": 34765,
-      "vol_ratio": 0.783,
-      "rs_3m": 0.1813
+      "vol_ratio": 0.545,
+      "rs_3m": 0.186
     },
     "152100": {
       "name": "ARIRANG 200",
@@ -4524,43 +4539,43 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 109595,
+      "close": 109990,
       "hi_52w": 150355,
-      "vol_ratio": 0.742,
-      "rs_3m": 0.1439
+      "vol_ratio": 0.307,
+      "rs_3m": 0.1564
     },
     "278530": {
       "name": "KODEX 200TR",
       "sector": "ETF/지수",
       "N": false,
       "S": false,
-      "L": false,
+      "L": true,
       "I": false,
-      "M": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 39005,
+      "close": 39185,
       "hi_52w": 53515,
-      "vol_ratio": 0.868,
-      "rs_3m": 0.1437
+      "vol_ratio": 1.01,
+      "rs_3m": 0.1579
     },
     "122630": {
       "name": "KODEX 레버리지",
       "sector": "ETF/레버리지",
       "N": false,
       "S": false,
-      "L": false,
+      "L": true,
       "I": false,
-      "M": true,
+      "M": false,
       "score": 1,
       "all_pass": false,
-      "close": 118065,
+      "close": 118480,
       "hi_52w": 239000,
-      "vol_ratio": 0.831,
-      "rs_3m": 0.1448
+      "vol_ratio": 0.834,
+      "rs_3m": 0.1625
     },
     "229200": {
       "name": "KODEX 코스닥150",
@@ -4569,13 +4584,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 12650,
+      "close": 12525,
       "hi_52w": 21074,
-      "vol_ratio": 0.927,
-      "rs_3m": -0.3521
+      "vol_ratio": 0.7,
+      "rs_3m": -0.3585
     },
     "232080": {
       "name": "TIGER 코스닥150",
@@ -4584,28 +4599,28 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 12900,
+      "close": 12755,
       "hi_52w": 21483,
-      "vol_ratio": 0.586,
-      "rs_3m": -0.352
+      "vol_ratio": 0.582,
+      "rs_3m": -0.3594
     },
     "091160": {
       "name": "KODEX 반도체",
       "sector": "ETF/반도체",
       "N": false,
       "S": false,
-      "L": true,
-      "I": false,
-      "M": true,
-      "score": 2,
+      "L": false,
+      "I": true,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 128025,
+      "close": 126930,
       "hi_52w": 188345,
-      "vol_ratio": 0.392,
-      "rs_3m": 0.1584
+      "vol_ratio": 0.297,
+      "rs_3m": 0.1508
     },
     "139260": {
       "name": "TIGER 200IT",
@@ -4614,28 +4629,28 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 140070,
+      "close": 139000,
       "hi_52w": 211340,
-      "vol_ratio": 0.364,
-      "rs_3m": 0.4202
+      "vol_ratio": 0.23,
+      "rs_3m": 0.4009
     },
     "091230": {
       "name": "TIGER 반도체",
       "sector": "ETF/반도체",
       "N": false,
       "S": false,
-      "L": true,
-      "I": false,
-      "M": true,
-      "score": 2,
+      "L": false,
+      "I": true,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 134520,
+      "close": 133100,
       "hi_52w": 196640,
-      "vol_ratio": 0.391,
-      "rs_3m": 0.1587
+      "vol_ratio": 0.275,
+      "rs_3m": 0.1425
     },
     "305720": {
       "name": "KODEX 2차전지산업",
@@ -4644,13 +4659,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 12790,
+      "close": 12805,
       "hi_52w": 22790,
-      "vol_ratio": 0.249,
-      "rs_3m": -0.2983
+      "vol_ratio": 0.302,
+      "rs_3m": -0.3176
     },
     "305540": {
       "name": "TIGER 2차전지테마",
@@ -4659,13 +4674,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 16040,
+      "close": 16275,
       "hi_52w": 28500,
-      "vol_ratio": 0.198,
-      "rs_3m": -0.2908
+      "vol_ratio": 0.235,
+      "rs_3m": -0.3026
     },
     "091180": {
       "name": "KODEX 자동차",
@@ -4674,13 +4689,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 28765,
+      "close": 29835,
       "hi_52w": 41515,
-      "vol_ratio": 0.24,
-      "rs_3m": -0.1017
+      "vol_ratio": 0.281,
+      "rs_3m": -0.0749
     },
     "227540": {
       "name": "TIGER 헬스케어",
@@ -4689,13 +4704,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 17410,
+      "close": 17315,
       "hi_52w": 25547,
-      "vol_ratio": 0.453,
-      "rs_3m": -0.2149
+      "vol_ratio": 0.161,
+      "rs_3m": -0.2164
     },
     "143860": {
       "name": "TIGER 헬스케어바이오",
@@ -4704,13 +4719,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 33670,
+      "close": 33040,
       "hi_52w": 55639,
-      "vol_ratio": 0.218,
-      "rs_3m": -0.3168
+      "vol_ratio": 0.591,
+      "rs_3m": -0.3269
     },
     "091170": {
       "name": "KODEX 은행",
@@ -4719,13 +4734,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
       "close": 15910,
       "hi_52w": 17266,
-      "vol_ratio": 0.497,
-      "rs_3m": -0.0056
+      "vol_ratio": 0.436,
+      "rs_3m": -0.0068
     },
     "091220": {
       "name": "TIGER 200금융",
@@ -4734,13 +4749,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 16610,
+      "close": 16560,
       "hi_52w": 17905,
-      "vol_ratio": 0.76,
-      "rs_3m": -0.0037
+      "vol_ratio": 0.377,
+      "rs_3m": -0.0096
     },
     "139290": {
       "name": "TIGER 200증권",
@@ -4749,13 +4764,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 26315,
+      "close": 27070,
       "hi_52w": 35810,
-      "vol_ratio": 0.452,
-      "rs_3m": -0.0453
+      "vol_ratio": 0.2,
+      "rs_3m": -0.021
     },
     "117680": {
       "name": "KODEX 철강",
@@ -4764,13 +4779,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 10225,
+      "close": 10485,
       "hi_52w": 17980,
-      "vol_ratio": 0.717,
-      "rs_3m": -0.3648
+      "vol_ratio": 0.105,
+      "rs_3m": -0.3537
     },
     "139250": {
       "name": "TIGER 200중공업",
@@ -4779,13 +4794,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 16385,
+      "close": 16860,
       "hi_52w": 21520,
-      "vol_ratio": 0.237,
-      "rs_3m": -0.1146
+      "vol_ratio": 0.406,
+      "rs_3m": -0.0882
     },
     "117460": {
       "name": "KODEX 에너지화학",
@@ -4793,14 +4808,14 @@
       "N": false,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 2,
+      "I": false,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 12540,
+      "close": 12820,
       "hi_52w": 19240,
-      "vol_ratio": 0.327,
-      "rs_3m": -0.2539
+      "vol_ratio": 0.342,
+      "rs_3m": -0.2382
     },
     "139230": {
       "name": "TIGER 200산업재",
@@ -4809,13 +4824,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 12460,
+      "close": 12765,
       "hi_52w": 20975,
-      "vol_ratio": 0.464,
-      "rs_3m": -0.2579
+      "vol_ratio": 0.363,
+      "rs_3m": -0.25
     },
     "466920": {
       "name": "SOL 조선TOP3플러스",
@@ -4824,13 +4839,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 26980,
+      "close": 27730,
       "hi_52w": 42274,
-      "vol_ratio": 0.386,
-      "rs_3m": -0.235
+      "vol_ratio": 0.402,
+      "rs_3m": -0.2306
     },
     "449450": {
       "name": "PLUS K방산",
@@ -4839,13 +4854,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 51035,
+      "close": 51720,
       "hi_52w": 81560,
-      "vol_ratio": 0.395,
-      "rs_3m": -0.3546
+      "vol_ratio": 0.418,
+      "rs_3m": -0.3354
     },
     "266390": {
       "name": "KODEX 경기소비재",
@@ -4854,13 +4869,13 @@
       "S": false,
       "L": true,
       "I": true,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 14670,
+      "close": 14870,
       "hi_52w": 19755,
-      "vol_ratio": 0.077,
-      "rs_3m": 0.2735
+      "vol_ratio": 0.007,
+      "rs_3m": 0.286
     },
     "266420": {
       "name": "KODEX 필수소비재",
@@ -4869,13 +4884,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 15300,
+      "close": 15090,
       "hi_52w": 25350,
-      "vol_ratio": 0.301,
-      "rs_3m": -0.3167
+      "vol_ratio": 0.323,
+      "rs_3m": -0.3194
     },
     "227560": {
       "name": "TIGER 200경기소비재",
@@ -4884,28 +4899,28 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 1,
+      "M": false,
+      "score": 0,
       "all_pass": false,
-      "close": 12195,
+      "close": 12065,
       "hi_52w": 14558,
-      "vol_ratio": 1.364,
-      "rs_3m": -0.118
+      "vol_ratio": 0.561,
+      "rs_3m": -0.1326
     },
     "360750": {
       "name": "TIGER 미국S&P500",
       "sector": "ETF/미국주식",
       "N": true,
-      "S": true,
+      "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 27370,
+      "close": 27525,
       "hi_52w": 28875,
-      "vol_ratio": 2.047,
-      "rs_3m": 0.0641
+      "vol_ratio": 1.082,
+      "rs_3m": 0.0636
     },
     "133690": {
       "name": "TIGER 미국나스닥100",
@@ -4914,28 +4929,28 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 188910,
+      "close": 189625,
       "hi_52w": 207780,
-      "vol_ratio": 1.188,
-      "rs_3m": 0.0998
+      "vol_ratio": 1.068,
+      "rs_3m": 0.0981
     },
     "379800": {
       "name": "KODEX 미국S&P500TR",
       "sector": "ETF/미국주식",
       "N": true,
-      "S": true,
+      "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 3,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 24950,
+      "close": 25115,
       "hi_52w": 26320,
-      "vol_ratio": 1.671,
-      "rs_3m": 0.0641
+      "vol_ratio": 1.117,
+      "rs_3m": 0.0646
     },
     "379810": {
       "name": "KODEX 미국나스닥100TR",
@@ -4944,13 +4959,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 28295,
+      "close": 28400,
       "hi_52w": 31100,
-      "vol_ratio": 0.775,
-      "rs_3m": 0.1007
+      "vol_ratio": 0.532,
+      "rs_3m": 0.099
     },
     "381180": {
       "name": "TIGER 미국필라델피아반도체나스닥",
@@ -4959,13 +4974,13 @@
       "S": false,
       "L": true,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 46510,
+      "close": 46580,
       "hi_52w": 57815,
-      "vol_ratio": 0.651,
-      "rs_3m": 0.295
+      "vol_ratio": 0.665,
+      "rs_3m": 0.2862
     },
     "458730": {
       "name": "TIGER 미국S&P500레버리지(합성H)",
@@ -4974,13 +4989,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 15360,
+      "close": 15440,
       "hi_52w": 15880,
-      "vol_ratio": 0.714,
-      "rs_3m": 0.0724
+      "vol_ratio": 0.619,
+      "rs_3m": 0.0676
     },
     "465580": {
       "name": "ACE 미국빅테크TOP7Plus",
@@ -4988,14 +5003,14 @@
       "N": true,
       "S": false,
       "L": false,
-      "I": true,
-      "M": true,
-      "score": 3,
+      "I": false,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 24660,
+      "close": 24675,
       "hi_52w": 26885,
-      "vol_ratio": 1.344,
-      "rs_3m": 0.0335
+      "vol_ratio": 0.553,
+      "rs_3m": 0.0337
     },
     "192090": {
       "name": "TIGER 차이나CSI300",
@@ -5004,13 +5019,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 13590,
+      "close": 13600,
       "hi_52w": 15150,
-      "vol_ratio": 0.919,
-      "rs_3m": 0.0082
+      "vol_ratio": 0.443,
+      "rs_3m": 0.0059
     },
     "117690": {
       "name": "TIGER 차이나H",
@@ -5019,13 +5034,13 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 20995,
+      "close": 20645,
       "hi_52w": 24271,
-      "vol_ratio": 0.191,
-      "rs_3m": -0.0437
+      "vol_ratio": 0.288,
+      "rs_3m": -0.0616
     },
     "211900": {
       "name": "KODEX 배당가치",
@@ -5034,28 +5049,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 27885,
+      "close": 27925,
       "hi_52w": 32364,
-      "vol_ratio": 0.188,
-      "rs_3m": -0.0744
+      "vol_ratio": 0.184,
+      "rs_3m": -0.0688
     },
     "352560": {
       "name": "KODEX 한국부동산리츠인프라",
       "sector": "ETF/리츠",
       "N": true,
-      "S": true,
+      "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 4,
+      "M": false,
+      "score": 2,
       "all_pass": false,
-      "close": 12755,
+      "close": 12680,
       "hi_52w": 12760,
-      "vol_ratio": 3.362,
-      "rs_3m": 0.0501
+      "vol_ratio": 1.139,
+      "rs_3m": 0.0359
     },
     "132030": {
       "name": "KODEX 골드선물(H)",
@@ -5064,28 +5079,28 @@
       "S": false,
       "L": false,
       "I": true,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 22900,
+      "close": 23165,
       "hi_52w": 32125,
-      "vol_ratio": 0.926,
-      "rs_3m": -0.1629
+      "vol_ratio": 1.042,
+      "rs_3m": -0.1474
     },
     "319640": {
       "name": "TIGER 골드선물(H)",
       "sector": "ETF/원자재",
       "N": false,
-      "S": false,
+      "S": true,
       "L": false,
       "I": true,
-      "M": true,
+      "M": false,
       "score": 2,
       "all_pass": false,
-      "close": 24090,
+      "close": 24410,
       "hi_52w": 33915,
-      "vol_ratio": 0.511,
-      "rs_3m": -0.1644
+      "vol_ratio": 1.786,
+      "rs_3m": -0.1474
     },
     "195930": {
       "name": "TIGER 글로벌4차산업혁신기술",
@@ -5094,13 +5109,13 @@
       "S": false,
       "L": false,
       "I": false,
-      "M": true,
-      "score": 2,
+      "M": false,
+      "score": 1,
       "all_pass": false,
-      "close": 22900,
+      "close": 23100,
       "hi_52w": 23630,
-      "vol_ratio": 0.216,
-      "rs_3m": 0.0602
+      "vol_ratio": 0.395,
+      "rs_3m": 0.0787
     }
   }
 }
