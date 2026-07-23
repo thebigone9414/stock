@@ -11938,5 +11938,13 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-07-23 16:32",
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "111770",
+      "name": "영원무역",
+      "candle_body_ratio": 0.035388,
+      "has_ma744": true,
+      "date": "2026-07-23"
+    }
+  ]
 }
