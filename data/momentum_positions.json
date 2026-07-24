@@ -1,22 +1,13 @@
 {
   "entry_pending": [
     {
-      "code": "161390",
-      "name": "한국타이어앤테크놀로지",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.424,
-      "ma5": 72740,
-      "date": "2026-07-23"
-    },
-    {
       "code": "078930",
       "name": "GS",
       "buyer_type": "institution",
       "consec_days": 5,
-      "vol_ratio": 2.532,
-      "ma5": 85260,
-      "date": "2026-07-23"
+      "vol_ratio": 2.23,
+      "ma5": 87760,
+      "date": "2026-07-24"
     }
   ],
   "positions": {
@@ -33,5 +24,5 @@
       }
     }
   },
-  "updated_at": "2026-07-23"
+  "updated_at": "2026-07-24"
 }
