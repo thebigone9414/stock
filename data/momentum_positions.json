@@ -1,15 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "078930",
-      "name": "GS",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 2.23,
-      "ma5": 87760,
-      "date": "2026-07-24"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -24,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-07-24"
+  "updated_at": "2026-07-27"
 }
