@@ -1,5 +1,15 @@
 {
-  "entry_pending": [],
+  "entry_pending": [
+    {
+      "code": "073240",
+      "name": "금호타이어",
+      "buyer_type": "foreign",
+      "consec_days": 3,
+      "vol_ratio": 2.392,
+      "ma5": 7250,
+      "date": "2026-08-06"
+    }
+  ],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -14,5 +24,5 @@
       }
     }
   },
-  "updated_at": "2026-08-05"
+  "updated_at": "2026-08-06"
 }
