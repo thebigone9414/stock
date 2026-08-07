@@ -1,13 +1,13 @@
 {
   "entry_pending": [
     {
-      "code": "073240",
-      "name": "금호타이어",
-      "buyer_type": "foreign",
-      "consec_days": 3,
-      "vol_ratio": 2.392,
-      "ma5": 7250,
-      "date": "2026-08-06"
+      "code": "051900",
+      "name": "LG생활건강",
+      "buyer_type": "institution",
+      "consec_days": 5,
+      "vol_ratio": 1.839,
+      "ma5": 305000,
+      "date": "2026-08-07"
     }
   ],
   "positions": {
@@ -24,5 +24,5 @@
       }
     }
   },
-  "updated_at": "2026-08-06"
+  "updated_at": "2026-08-07"
 }
