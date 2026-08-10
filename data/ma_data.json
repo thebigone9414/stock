@@ -11938,20 +11938,5 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-08-10 16:32",
-  "entry_pending": [
-    {
-      "code": "007070",
-      "name": "GS리테일",
-      "candle_body_ratio": 0.056437,
-      "has_ma744": true,
-      "date": "2026-08-07"
-    },
-    {
-      "code": "091170",
-      "name": "KODEX 은행",
-      "candle_body_ratio": 0.03253,
-      "has_ma744": true,
-      "date": "2026-08-07"
-    }
-  ]
+  "entry_pending": []
 }
