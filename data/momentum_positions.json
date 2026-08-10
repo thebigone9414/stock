@@ -1,15 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "051900",
-      "name": "LG생활건강",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.839,
-      "ma5": 305000,
-      "date": "2026-08-07"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -24,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-08-07"
+  "updated_at": "2026-08-10"
 }
