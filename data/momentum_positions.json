@@ -1,31 +1,13 @@
 {
   "entry_pending": [
     {
-      "code": "078930",
-      "name": "GS",
-      "buyer_type": "institution",
-      "consec_days": 4,
-      "vol_ratio": 1.402,
-      "ma5": 104040,
-      "date": "2026-08-14"
-    },
-    {
       "code": "001450",
       "name": "현대해상",
       "buyer_type": "institution",
       "consec_days": 5,
-      "vol_ratio": 2.059,
-      "ma5": 43000,
-      "date": "2026-08-14"
-    },
-    {
-      "code": "073240",
-      "name": "금호타이어",
-      "buyer_type": "foreign",
-      "consec_days": 3,
-      "vol_ratio": 1.488,
-      "ma5": 7718,
-      "date": "2026-08-14"
+      "vol_ratio": 2.461,
+      "ma5": 44740,
+      "date": "2026-08-18"
     }
   ],
   "positions": {
@@ -42,5 +24,5 @@
       }
     }
   },
-  "updated_at": "2026-08-14"
+  "updated_at": "2026-08-18"
 }
