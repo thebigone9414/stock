@@ -5,9 +5,9 @@
       "name": "현대해상",
       "buyer_type": "institution",
       "consec_days": 5,
-      "vol_ratio": 2.461,
-      "ma5": 44740,
-      "date": "2026-08-18"
+      "vol_ratio": 1.606,
+      "ma5": 45930,
+      "date": "2026-08-19"
     }
   ],
   "positions": {
@@ -24,5 +24,5 @@
       }
     }
   },
-  "updated_at": "2026-08-18"
+  "updated_at": "2026-08-19"
 }
