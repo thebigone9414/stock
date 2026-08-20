@@ -1,15 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "001450",
-      "name": "현대해상",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.606,
-      "ma5": 45930,
-      "date": "2026-08-19"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -24,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-08-19"
+  "updated_at": "2026-08-20"
 }
