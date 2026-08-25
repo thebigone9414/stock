@@ -5,27 +5,9 @@
       "name": "팬오션",
       "buyer_type": "institution",
       "consec_days": 5,
-      "vol_ratio": 2.362,
-      "ma5": 5998,
-      "date": "2026-08-24"
-    },
-    {
-      "code": "008930",
-      "name": "한미사이언스",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 18.979,
-      "ma5": 47090,
-      "date": "2026-08-24"
-    },
-    {
-      "code": "192820",
-      "name": "코스맥스",
-      "buyer_type": "institution",
-      "consec_days": 4,
-      "vol_ratio": 1.43,
-      "ma5": 260500,
-      "date": "2026-08-24"
+      "vol_ratio": 1.507,
+      "ma5": 6066,
+      "date": "2026-08-25"
     }
   ],
   "positions": {
@@ -42,5 +24,5 @@
       }
     }
   },
-  "updated_at": "2026-08-24"
+  "updated_at": "2026-08-25"
 }
