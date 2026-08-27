@@ -1,15 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "280360",
-      "name": "롯데웰푸드",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 2.253,
-      "ma5": 132300,
-      "date": "2026-08-26"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -24,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-08-26"
+  "updated_at": "2026-08-27"
 }
