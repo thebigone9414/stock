@@ -11938,5 +11938,20 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-08-28 16:32",
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "192820",
+      "name": "코스맥스",
+      "candle_body_ratio": 0.067657,
+      "has_ma744": true,
+      "date": "2026-08-28"
+    },
+    {
+      "code": "175330",
+      "name": "JB금융지주",
+      "candle_body_ratio": 0.04475,
+      "has_ma744": true,
+      "date": "2026-08-28"
+    }
+  ]
 }
