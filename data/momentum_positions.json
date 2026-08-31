@@ -1,24 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "280360",
-      "name": "롯데웰푸드",
-      "buyer_type": "institution",
-      "consec_days": 5,
-      "vol_ratio": 1.496,
-      "ma5": 137500,
-      "date": "2026-08-28"
-    },
-    {
-      "code": "096530",
-      "name": "씨젠",
-      "buyer_type": "institution",
-      "consec_days": 3,
-      "vol_ratio": 3.164,
-      "ma5": 32670,
-      "date": "2026-08-28"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -33,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-08-28"
+  "updated_at": "2026-08-31"
 }
