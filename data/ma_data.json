@@ -11938,13 +11938,5 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-09-02 16:32",
-  "entry_pending": [
-    {
-      "code": "138040",
-      "name": "메리츠금융지주",
-      "candle_body_ratio": 0.03429,
-      "has_ma744": true,
-      "date": "2026-09-01"
-    }
-  ]
+  "entry_pending": []
 }
