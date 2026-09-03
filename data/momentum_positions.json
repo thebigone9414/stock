@@ -1,5 +1,24 @@
 {
-  "entry_pending": [],
+  "entry_pending": [
+    {
+      "code": "055550",
+      "name": "신한지주",
+      "buyer_type": "institution",
+      "consec_days": 5,
+      "vol_ratio": 1.453,
+      "ma5": 110940,
+      "date": "2026-09-03"
+    },
+    {
+      "code": "086790",
+      "name": "하나금융지주",
+      "buyer_type": "institution",
+      "consec_days": 5,
+      "vol_ratio": 1.354,
+      "ma5": 136820,
+      "date": "2026-09-03"
+    }
+  ],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -14,5 +33,5 @@
       }
     }
   },
-  "updated_at": "2026-09-02"
+  "updated_at": "2026-09-03"
 }
