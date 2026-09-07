@@ -1,15 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "003490",
-      "name": "대한항공",
-      "buyer_type": "both",
-      "consec_days": 5,
-      "vol_ratio": 1.849,
-      "ma5": 29020,
-      "date": "2026-09-04"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -24,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-09-04"
+  "updated_at": "2026-09-07"
 }
