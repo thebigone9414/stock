@@ -1,15 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "008930",
-      "name": "한미사이언스",
-      "buyer_type": "both",
-      "consec_days": 5,
-      "vol_ratio": 1.461,
-      "ma5": 52800,
-      "date": "2026-09-08"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -24,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-09-08"
+  "updated_at": "2026-09-09"
 }
