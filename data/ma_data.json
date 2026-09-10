@@ -11940,18 +11940,11 @@
   "updated_at_kst": "2026-09-10 16:32",
   "entry_pending": [
     {
-      "code": "131290",
-      "name": "티에스이",
-      "candle_body_ratio": 0.039106,
+      "code": "006360",
+      "name": "GS건설",
+      "candle_body_ratio": 0.057718,
       "has_ma744": true,
-      "date": "2026-09-09"
-    },
-    {
-      "code": "031980",
-      "name": "피에스케이홀딩스",
-      "candle_body_ratio": 0.038058,
-      "has_ma744": true,
-      "date": "2026-09-09"
+      "date": "2026-09-10"
     }
   ]
 }
