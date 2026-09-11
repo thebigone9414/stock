@@ -11938,13 +11938,5 @@
   },
   "base_capital": 10000000,
   "updated_at_kst": "2026-09-11 16:32",
-  "entry_pending": [
-    {
-      "code": "006360",
-      "name": "GS건설",
-      "candle_body_ratio": 0.057718,
-      "has_ma744": true,
-      "date": "2026-09-10"
-    }
-  ]
+  "entry_pending": []
 }
