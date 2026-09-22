@@ -1,5 +1,15 @@
 {
-  "entry_pending": [],
+  "entry_pending": [
+    {
+      "code": "053800",
+      "name": "안랩",
+      "buyer_type": "both",
+      "consec_days": 5,
+      "vol_ratio": 2.022,
+      "ma5": 67180,
+      "date": "2026-09-22"
+    }
+  ],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -14,5 +24,5 @@
       }
     }
   },
-  "updated_at": "2026-09-21"
+  "updated_at": "2026-09-22"
 }
