@@ -1,4 +1,12 @@
 {
   "positions": {},
-  "entry_pending": []
+  "entry_pending": [
+    {
+      "code": "053800",
+      "name": "안랩",
+      "score": 5,
+      "rs_3m": 0.4893,
+      "date": "2026-09-29"
+    }
+  ]
 }
