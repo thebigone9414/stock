@@ -1,24 +1,5 @@
 {
-  "entry_pending": [
-    {
-      "code": "096530",
-      "name": "씨젠",
-      "buyer_type": "foreign",
-      "consec_days": 5,
-      "vol_ratio": 1.922,
-      "ma5": 34870,
-      "date": "2026-10-01"
-    },
-    {
-      "code": "036540",
-      "name": "SFA반도체",
-      "buyer_type": "foreign",
-      "consec_days": 5,
-      "vol_ratio": 2.079,
-      "ma5": 10716,
-      "date": "2026-10-01"
-    }
-  ],
+  "entry_pending": [],
   "positions": {
     "010950": {
       "2026-07-21": {
@@ -33,5 +14,5 @@
       }
     }
   },
-  "updated_at": "2026-10-01"
+  "updated_at": "2026-10-02"
 }
