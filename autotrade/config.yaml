@@ -88,7 +88,7 @@ order:
 
 # ── 안전장치 ────────────────────────────────────────────────────
 safety:
-  dry_run: true               # true = 실제 주문 안 함 (2주 운영 후 false)
+  dry_run: false              # false = 실전 주문 접수. 재가동 전 신중히!
   etf_dd_cutoff: 0.35         # 전고점 대비 -35% 이상 → ETF 신규 매수 중지
   stock_dd_cutoff: 0.45       # 전고점 대비 -45% 이상 → 종목 신규 매수 중지
   stop_file: "autotrade/STOP" # 이 파일 존재 시 매수 금지 (매도·손절만)

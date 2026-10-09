@@ -21,7 +21,12 @@ from kis.factory import KIS
 
 
 def _compare_holdings(kis_positions: list, local_etf: pd.DataFrame, local_stock: pd.DataFrame) -> list[str]:
-    """KIS 잔고 vs 로컬 positions. 수량 차이·누락 종목 리스트 반환."""
+    """KIS 잔고 vs 로컬 positions. 수량 차이·누락 종목 리스트 반환.
+
+    **autotrade 가 추적하는 종목만 비교**: 로컬 positions 에 있는 코드만.
+    KIS 계좌의 수동 보유 종목(KODEX 레버리지·2차전지·현대차 등)은 로컬에 없어도 무시.
+    autotrade 가 매수한 종목이 KIS 잔고에서 사라졌거나 수량이 다를 때만 경고.
+    """
     diffs: list[str] = []
 
     # KIS 잔고 — {code: qty}
@@ -48,13 +53,18 @@ def _compare_holdings(kis_positions: list, local_etf: pd.DataFrame, local_stock:
         if code:
             local_map[code] = local_map.get(code, 0) + qty
 
-    # 비교
-    all_codes = set(kis_map) | set(local_map)
-    for code in sorted(all_codes):
+    # 비교: autotrade 추적 종목만. "KIS >= 로컬"이면 OK (수동 추가 보유 허용).
+    # 사용자가 수동으로 KODEX 레버리지를 더 가지고 있어도 autotrade N주 >= KIS 보유라면 통과.
+    # 반대 (KIS < 로컬)는 autotrade 포지션이 KIS에서 사라진 것 → 이상.
+    for code in sorted(local_map):
+        l_qty = local_map[code]
         k_qty = kis_map.get(code, 0)
-        l_qty = local_map.get(code, 0)
-        if k_qty != l_qty:
-            diffs.append(f"[{code}] KIS={k_qty}주  로컬={l_qty}주  차이 {k_qty - l_qty:+}")
+        if k_qty < l_qty:
+            diffs.append(
+                f"[{code}] KIS={k_qty}주  로컬 autotrade={l_qty}주  부족 {l_qty - k_qty}  "
+                f"(autotrade 포지션이 KIS 잔고에 없음)"
+            )
+
     return diffs
 
 
