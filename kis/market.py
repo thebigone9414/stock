@@ -304,7 +304,7 @@ class KISMarket:
         """KOSPI/KOSDAQ 지수 전일대비 등락률 조회 (FHKUP03500100)
 
         Args:
-            index_code: "0001"=KOSPI, "1001"=KOSDAQ
+            index_code: "0001"=KOSPI, "1001"=KOSDAQ, "2001"=KOSPI200
         Returns:
             등락률(%) — 예: -2.35, +1.10. 조회 실패 시 0.0
         """
@@ -322,6 +322,100 @@ class KISMarket:
             return float(str(raw).replace(",", "").strip())
         except (ValueError, TypeError):
             return 0.0
+
+    def get_index_quote(self, index_code: str = "2001") -> dict:
+        """국내 업종지수 당일 OHLC + 등락률 조회 (FHKUP03500100)
+
+        20:10 지수 종가 확정 수집·일중 조회 양쪽에 사용.
+        지수는 '현재가' 개념이 지수값 자체 (장중엔 현재지수, 장후엔 종가).
+
+        Args:
+            index_code: "0001"=KOSPI, "1001"=KOSDAQ, "2001"=KOSPI200 등
+        Returns:
+            {"code", "open", "high", "low", "close", "change_rate"} 모두 float
+            조회 실패 시 모든 값 0.0
+        """
+        try:
+            data = self.client.get(
+                "/uapi/domestic-stock/v1/quotations/inquire-index-price",
+                tr_id="FHKUP03500100",
+                params={
+                    "fid_cond_mrkt_div_code": "U",
+                    "fid_input_iscd": index_code,
+                },
+            )
+        except Exception as e:
+            logger.warning(f"[지수조회] [{index_code}] 실패: {e}")
+            return {"code": index_code, "open": 0.0, "high": 0.0, "low": 0.0, "close": 0.0, "change_rate": 0.0}
+
+        o = data.get("output", {}) or {}
+
+        def _f(key: str) -> float:
+            raw = o.get(key, "0") or "0"
+            try:
+                return float(str(raw).replace(",", "").strip())
+            except (ValueError, TypeError):
+                return 0.0
+
+        return {
+            "code":        index_code,
+            "close":       _f("bstp_nmix_prpr"),  # 현재지수 (장후엔 당일 종가)
+            "open":        _f("bstp_nmix_oprc"),
+            "high":        _f("bstp_nmix_hgpr"),
+            "low":         _f("bstp_nmix_lwpr"),
+            "change_rate": _f("bstp_nmix_prdy_ctrt"),
+        }
+
+    def get_index_ohlcv(
+        self,
+        index_code: str = "2001",
+        start_date: str = "",
+        end_date: str = "",
+        period: str = "D",
+    ) -> pd.DataFrame:
+        """국내 업종지수 기간별 일봉 조회 (FHKUP03500100 일자별 모드)
+
+        20:10 수집 실패·지난 몇일 재적재용. start_date~end_date 범위 지수 OHLC.
+
+        TR 응답: output2 리스트의 각 행에 bstp_nmix_* 필드.
+        """
+        try:
+            data = self.client.get(
+                "/uapi/domestic-stock/v1/quotations/inquire-index-daily-price",
+                tr_id="FHPUP02120000",
+                params={
+                    "fid_cond_mrkt_div_code": "U",
+                    "fid_input_iscd":         index_code,
+                    "fid_input_date_1":       start_date,
+                    "fid_input_date_2":       end_date,
+                    "fid_period_div_code":    period.upper(),
+                },
+            )
+        except Exception as e:
+            logger.warning(f"[지수일봉] [{index_code}] 실패: {e}")
+            return pd.DataFrame()
+
+        rows = data.get("output2") or data.get("output") or []
+        if not rows:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(rows)
+        rename = {
+            "stck_bsop_date": "date",
+            "bstp_nmix_oprc": "open",
+            "bstp_nmix_hgpr": "high",
+            "bstp_nmix_lwpr": "low",
+            "bstp_nmix_prpr": "close",
+        }
+        df = df.rename(columns=rename)
+        for c in ("open", "high", "low", "close"):
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="coerce")
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"], errors="coerce")
+            df = df.sort_values("date").reset_index(drop=True)
+        keep = [c for c in ("date", "open", "high", "low", "close") if c in df.columns]
+        return df[keep]
 
     # ── 호가 조회 ────────────────────────────────────────────────
     def get_orderbook(self, code: str) -> dict:
