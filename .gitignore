@@ -47,3 +47,5 @@ data/csv/*.csv
 # Trading
 tokens/
 *.token
+engine_v3/panel.pkl
+engine_v3/stockdata/panel.pkl
