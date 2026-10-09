@@ -1,0 +1,98 @@
+# 자동매매 설정 (지시서 v12 기준)
+# 레거시 전환 - config.yaml만 바꾸면 대부분 조정 가능
+
+# ── 자본 배분 ────────────────────────────────────────────────────
+capital:
+  # 초기 자본 (고정 — 매일 잔고 조회로 갱신하지 않음)
+  initial: 40000000           # 4,000만원
+  # 두 규칙 몫 (초기 1회 배분, 각자 평가자산으로 복리 운용)
+  etf_share: 0.70             # 2,800만원
+  stock_share: 0.30           # 1,200만원
+  # 건당 비중 (각 규칙 몫의 비율)
+  etf_long_frac: 0.20         # KODEX 레버리지 1건당 20% (ETF 몫 대비)
+  etf_short_frac: 0.40        # KODEX 인버스 1건당 40% (ETF 몫 대비)
+  stock_frac: 0.10            # 종목 1건당 10% (종목 몫 대비)
+  # 최대 보유 건수
+  etf_max_positions: 5        # ETF 롱+숏 합산 최대 5건
+  stock_max_positions: 10     # 종목 최대 10건
+  # 현금 부족 시 "남은 현금 >= 건당 금액 x 이 비율"이면 축소 매수
+  min_cash_ratio: 0.5
+  # 종목 1주 가격이 "건당 금액 x 이 비율" 초과 시 건너뜀
+  stock_price_cap_ratio: 1.5
+
+# ── 운용 수단 (ETF 코드) ─────────────────────────────────────────
+etf:
+  long_code: "122630"         # KODEX 레버리지 (롱 1~10)
+  short_code: "114800"        # KODEX 인버스 (숏 #11)
+  long_name: "KODEX 레버리지"
+  short_name: "KODEX 인버스"
+
+# ── 지수 ────────────────────────────────────────────────────────
+index:
+  k200_code: "2001"           # 코스피200 (KIS 지수 코드)
+
+# ── 체크포인트 (손절 감시) ────────────────────────────────────────
+# STOP 주문 모드가 활성화되지 않은 경우에만 적용
+stoploss:
+  mode: "checkpoint"          # "stop_market" | "stop_limit_hybrid" | "checkpoint"
+  # STOP 지정가 하이브리드 모드: 손절가 - margin_pct 로 지정가 예약
+  stop_limit_margin_pct: 0.03  # 3%
+  # 체크포인트 시각 (KST, HH:MM)
+  checkpoints:
+    - "09:05"
+    - "10:00"
+    - "11:00"
+    - "12:00"
+    - "13:00"
+    - "14:00"
+    - "15:00"
+    - "15:15"
+
+# ── 하루 일정 ────────────────────────────────────────────────────
+schedule:
+  reconcile_at: "08:20"       # 잔고 대사
+  sell_at:      "08:50"       # 매도 집행
+  stop_register_at: "08:55"   # STOP 등록 (지원 시)
+  buy_at:       "15:18"       # 매수 집행 (KIS 지연 감안 15:21 → 15:18)
+  stop_confirm_at: "15:35"    # STOP 체결 확인
+  decide_at:    "20:10"       # 데이터 수집 + 판정 + 보고
+
+# ── 데이터 ──────────────────────────────────────────────────────
+data:
+  engine_dir: "engine_v3"
+  k200_csv: "engine_v3/k200.csv"
+  ohlcv_gz: "engine_v3/stockdata/ohlcv.csv.gz"
+  universe_sources:
+    - "data/kospi200_cache.json"
+    - "data/kosdaq150_cache.json"
+  # 검증
+  min_data_coverage_pct: 95   # 수집 성공률 하한 (미달 시 중단)
+  max_daily_change_pct: 30    # 전일 대비 ± 이 % 초과 시 수상 종목으로 경고
+
+# ── 주문 ────────────────────────────────────────────────────────
+order:
+  max_buy_per_day: 15
+  max_sell_per_day: 15
+  min_buy_fill_ratio: 0.90    # 매수 체결 수량/계획 비율 하한
+
+# ── 안전장치 ────────────────────────────────────────────────────
+safety:
+  dry_run: true               # true = 실제 주문 안 함 (2주 운영 후 false)
+  etf_dd_cutoff: 0.35         # 전고점 대비 -35% 이상 → ETF 신규 매수 중지
+  stock_dd_cutoff: 0.45       # 전고점 대비 -45% 이상 → 종목 신규 매수 중지
+  stop_file: "autotrade/STOP" # 이 파일 존재 시 매수 금지 (매도·손절만)
+
+# ── 상태 파일 경로 ───────────────────────────────────────────────
+paths:
+  positions_etf: "engine_v3/positions_v3.csv"
+  positions_stock: "engine_v3/positions_stock.csv"
+  orders_dir: "autotrade/orders"       # orders_YYYYMMDD.json
+  trade_log_etf: "autotrade/trade_log_v3.csv"
+  trade_log_stock: "autotrade/trade_log_stock.csv"
+  equity_log: "autotrade/equity_log.csv"
+  state_dir: "autotrade/state"         # 멱등성 상태 파일
+
+# ── 텔레그램 ────────────────────────────────────────────────────
+telegram:
+  enabled: true
+  # bot_token, chat_id는 config/settings.py에서 환경변수로 로드
