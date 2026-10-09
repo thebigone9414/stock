@@ -1,0 +1,37 @@
+name: OHLCV 10년치 추출 (수동)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract-ohlcv-10y:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pykrx openpyxl xlsxwriter loguru
+
+      - name: Extract 10y OHLCV
+        run: python batch/extract_ohlcv_10y.py
+
+      - name: Upload Excel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ohlcv-10y-${{ github.run_id }}
+          path: scratchpad/ohlcv_10y_*.xlsx
+          retention-days: 14
