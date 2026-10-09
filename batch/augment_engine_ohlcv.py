@@ -47,7 +47,7 @@ def load_target_codes() -> dict[str, str]:
 
 
 def load_existing_codes() -> set[str]:
-    df = pd.read_csv(ENGINE_OHLCV)
+    df = pd.read_csv(ENGINE_OHLCV, dtype={"code": str})
     return set(df["code"].unique())
 
 
@@ -66,7 +66,7 @@ def fetch_one(code: str, name: str, fromdate: str, todate: str) -> pd.DataFrame:
     df = df[["date", "open", "high", "low", "close", "volume"]].copy()
     df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
     df.insert(0, "name", name)
-    df.insert(0, "code", code)
+    df.insert(0, "code", str(code).zfill(6))
     return df
 
 
@@ -120,14 +120,15 @@ def main() -> int:
 
     # engine_v3 ohlcv.csv.gz에 병합
     logger.info(f"기존 로드: {ENGINE_OHLCV}")
-    existing_df = pd.read_csv(ENGINE_OHLCV)
+    existing_df = pd.read_csv(ENGINE_OHLCV, dtype={"code": str})
     logger.info(f"  기존 {len(existing_df):,}행")
 
     merged = pd.concat([existing_df, new_df], ignore_index=True)
+    merged["code"] = merged["code"].astype(str).str.zfill(6)
     merged = merged.drop_duplicates(subset=["code", "date"], keep="last")
     merged = merged.sort_values(["code", "date"]).reset_index(drop=True)
 
-    logger.info(f"병합 후 {len(merged):,}행 ({len(merged) - len(existing_df):+,})")
+    logger.info(f"병합 후 {len(merged):,}행 ({len(merged) - len(existing_df):+,})  유니크 code {merged['code'].nunique()}")
 
     # 압축 저장
     with gzip.open(ENGINE_OHLCV, "wt", encoding="utf-8", newline="") as f:
