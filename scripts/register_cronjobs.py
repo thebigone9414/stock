@@ -95,26 +95,58 @@ def build_job_body(hhmm: str, cmd: str, gh_owner: str, gh_repo: str,
     }
 
 
+def _request_with_retry(method, url, session: requests.Session, retries: int = 4, **kwargs):
+    """429/503 등 일시적 오류 재시도 + 지수 백오프."""
+    delay = 5.0
+    last_exc = None
+    for attempt in range(retries + 1):
+        try:
+            r = session.request(method, url, timeout=30, **kwargs)
+            if r.status_code == 429 or r.status_code >= 500:
+                if attempt < retries:
+                    print(f"    [retry] {method} {url.split('/')[-1]} status={r.status_code} → {delay:.0f}s 후 재시도 ({attempt+1}/{retries})")
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+            r.raise_for_status()
+            return r
+        except requests.HTTPError as e:
+            if attempt < retries and e.response is not None and (e.response.status_code == 429 or e.response.status_code >= 500):
+                print(f"    [retry] {e} → {delay:.0f}s 후 ({attempt+1}/{retries})")
+                time.sleep(delay)
+                delay *= 2
+                last_exc = e
+                continue
+            raise
+        except (requests.ConnectionError, requests.Timeout) as e:
+            if attempt < retries:
+                print(f"    [retry] network: {e} → {delay:.0f}s 후 ({attempt+1}/{retries})")
+                time.sleep(delay)
+                delay *= 2
+                last_exc = e
+                continue
+            raise
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("retry exhausted")
+
+
 def list_jobs(session: requests.Session) -> list[dict]:
-    r = session.get(f"{API}/jobs", timeout=30)
-    r.raise_for_status()
+    r = _request_with_retry("GET", f"{API}/jobs", session)
     return r.json().get("jobs", [])
 
 
 def create_job(session: requests.Session, body: dict) -> int:
-    r = session.put(f"{API}/jobs", json=body, timeout=30)
-    r.raise_for_status()
+    r = _request_with_retry("PUT", f"{API}/jobs", session, json=body)
     return int(r.json().get("jobId"))
 
 
 def update_job(session: requests.Session, job_id: int, body: dict) -> None:
-    r = session.patch(f"{API}/jobs/{job_id}", json=body, timeout=30)
-    r.raise_for_status()
+    _request_with_retry("PATCH", f"{API}/jobs/{job_id}", session, json=body)
 
 
 def delete_job(session: requests.Session, job_id: int) -> None:
-    r = session.delete(f"{API}/jobs/{job_id}", timeout=30)
-    r.raise_for_status()
+    _request_with_retry("DELETE", f"{API}/jobs/{job_id}", session)
 
 
 def main() -> int:
@@ -189,7 +221,7 @@ def main() -> int:
                 new_id = create_job(session, body)
                 created += 1
                 print(f"  created  jobId={new_id:>6}  {title}")
-            time.sleep(0.2)  # rate limit 완화
+            time.sleep(3.0)  # rate limit 완화 (14건 × 3초 = 42초)
         except Exception as e:
             failed += 1
             print(f"  FAIL     {title}: {e}", file=sys.stderr)
