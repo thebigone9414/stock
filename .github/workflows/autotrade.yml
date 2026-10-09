@@ -1,0 +1,113 @@
+name: autotrade (v3)
+
+on:
+  workflow_dispatch:
+    inputs:
+      cmd:
+        description: 'autotrade 명령'
+        required: true
+        type: choice
+        options:
+          - reconcile      # 08:20
+          - sell           # 08:50
+          - stop-register  # 08:55
+          - stop-check     # 09:05~15:15
+          - buy            # 15:18
+          - stop-confirm   # 15:35
+          - nightly        # 20:10 (datafeed + judge + report)
+          - judge          # judge 단독 (디버그)
+          - datafeed       # datafeed 단독 (디버그)
+          - report         # 가장 최근 orders 로 보고만 재생성
+      date:
+        description: '리플레이 날짜 YYYY-MM-DD (judge 전용, 선택)'
+        required: false
+
+concurrency:
+  # 같은 cmd 는 중복 실행 방지 (앞 작업 완료 대기)
+  # 다른 cmd 끼리는 병행 (nightly 가 길어도 다음날 reconcile 블록 안 함)
+  group: autotrade-${{ github.event.inputs.cmd }}
+  cancel-in-progress: false
+
+jobs:
+  autotrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+
+    env:
+      KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+      KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+      KIS_ACCOUNT_NO: ${{ secrets.KIS_ACCOUNT_NO }}
+      KIS_IS_PAPER_TRADING: ${{ secrets.KIS_IS_PAPER_TRADING || 'true' }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      LOG_LEVEL: INFO
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r engine_v3/requirements.txt
+
+      - name: Build panel if missing
+        if: contains(fromJSON('["nightly","judge"]'), github.event.inputs.cmd)
+        run: |
+          python3 -c "import sys; sys.path.insert(0,'engine_v3'); import stock_lib; stock_lib.build_panel()"
+
+      - name: Run autotrade
+        env:
+          CMD: ${{ github.event.inputs.cmd }}
+          DATE_ARG: ${{ github.event.inputs.date }}
+        run: |
+          ARGS="--cmd $CMD"
+          if [ -n "$DATE_ARG" ]; then
+            ARGS="$ARGS --date $DATE_ARG"
+          fi
+          echo "python -m autotrade $ARGS"
+          python -m autotrade $ARGS
+
+      - name: Commit state changes
+        if: always()
+        run: |
+          git config user.email "noreply@anthropic.com"
+          git config user.name "Claude"
+          CHANGED=0
+          for p in engine_v3/positions_v3.csv engine_v3/positions_stock.csv engine_v3/k200.csv engine_v3/stockdata/ohlcv.csv.gz autotrade/orders autotrade/state autotrade/trade_log_v3.csv autotrade/trade_log_stock.csv autotrade/equity_log.csv; do
+            if [ -e "$p" ]; then
+              git add "$p" 2>/dev/null || true
+            fi
+          done
+          if ! git diff --cached --quiet; then
+            git commit -m "state: autotrade ${{ github.event.inputs.cmd }} $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # Rebase on latest dev then push, retry 3x
+            for i in 1 2 3; do
+              git pull --rebase origin dev && git push origin dev && break
+              echo "push retry $i"; sleep 3
+            done
+          else
+            echo "no state changes"
+          fi
+
+      - name: Upload log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autotrade-${{ github.event.inputs.cmd }}-${{ github.run_id }}
+          path: |
+            autotrade/state
+            autotrade/orders
+          retention-days: 14
+          if-no-files-found: ignore
