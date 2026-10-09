@@ -1,0 +1,50 @@
+name: Register autotrade cron-jobs
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: '모드'
+        required: true
+        type: choice
+        default: register
+        options:
+          - register    # 14개 자동매매 cron 생성/업데이트
+          - dry-run     # 미리보기 (실제 호출 X)
+          - delete      # 자동매매 cron 전체 삭제 (복구용)
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      CRONJOB_API_KEY: ${{ secrets.CRONJOB_API_KEY }}
+      GH_WORKFLOW_PAT: ${{ secrets.GH_WORKFLOW_PAT }}
+      GH_OWNER: thebigone9414
+      GH_REPO: stock
+      GH_WORKFLOW: autotrade.yml
+      GH_REF: dev
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Register cron-jobs
+        env:
+          MODE: ${{ github.event.inputs.mode }}
+        run: |
+          case "$MODE" in
+            register)   python scripts/register_cronjobs.py ;;
+            dry-run)    python scripts/register_cronjobs.py --dry-run ;;
+            delete)     python scripts/register_cronjobs.py --delete-only ;;
+            *)          echo "unknown mode: $MODE"; exit 1 ;;
+          esac
