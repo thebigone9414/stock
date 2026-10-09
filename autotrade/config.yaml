@@ -39,10 +39,16 @@ index:
 # ── 체크포인트 (손절 감시) ────────────────────────────────────────
 # STOP 주문 모드가 활성화되지 않은 경우에만 적용
 stoploss:
-  mode: "checkpoint"          # "stop_market" | "stop_limit_hybrid" | "checkpoint"
+  # "stop_market" | "stop_limit_hybrid" | "checkpoint"
+  # - stop_market       : KIS가 STOP 시장가 TR 지원 시 (현재 미지원으로 알려짐, placeholder)
+  # - stop_limit_hybrid : (사용자 선택) 08:55 "손절가-margin 지정가 매도" 걸어둠.
+  #                       체크포인트에서 지정가 미체결 + 현재가 ≤ 손절가면 취소 + 시장가 보강
+  # - checkpoint        : STOP 안 걸고 체크포인트에서 현재가 비교 (지시서 §3-3 fallback)
+  mode: "stop_limit_hybrid"
   # STOP 지정가 하이브리드 모드: 손절가 - margin_pct 로 지정가 예약
+  # 급락 시 미체결 리스크 해소. 체크포인트에서 추가 감시.
   stop_limit_margin_pct: 0.03  # 3%
-  # 체크포인트 시각 (KST, HH:MM)
+  # 체크포인트 시각 (KST, HH:MM) — 리스트 수정으로 간소화·강화 가능
   checkpoints:
     - "09:05"
     - "10:00"
