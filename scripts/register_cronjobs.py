@@ -32,21 +32,12 @@ import requests
 
 API = "https://api.cron-job.org"
 
-# 평일 자동매매 하루 일정 (KST). cmd 는 autotrade.yml의 workflow_dispatch input 값과 일치.
+# 평일 자동매매 하루 일정 (KST, v2 기준). cmd 는 autotrade.yml의 workflow_dispatch input 값과 일치.
+# v2: 장중 손절 없음 → 4개로 축소 (reconcile / sell / buy / nightly)
 SCHEDULE: list[tuple[str, str]] = [
     ("08:20", "reconcile"),
     ("08:50", "sell"),
-    ("08:55", "stop-register"),
-    ("09:05", "stop-check"),
-    ("10:00", "stop-check"),
-    ("11:00", "stop-check"),
-    ("12:00", "stop-check"),
-    ("13:00", "stop-check"),
-    ("14:00", "stop-check"),
-    ("15:00", "stop-check"),
-    ("15:15", "stop-check"),
-    ("15:18", "buy"),
-    ("15:35", "stop-confirm"),
+    ("15:21", "buy"),
     ("20:10", "nightly"),
 ]
 

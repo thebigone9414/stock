@@ -4,16 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       cmd:
-        description: 'autotrade 명령'
+        description: 'autotrade 명령 (v2)'
         required: true
         type: choice
         options:
           - reconcile      # 08:20
           - sell           # 08:50
-          - stop-register  # 08:55
-          - stop-check     # 09:05~15:15
-          - buy            # 15:18
-          - stop-confirm   # 15:35
+          - buy            # 15:21
           - nightly        # 20:10 (datafeed + judge + report)
           - judge          # judge 단독 (디버그)
           - datafeed       # datafeed 단독 (디버그)
@@ -85,7 +82,7 @@ jobs:
           git config user.email "noreply@anthropic.com"
           git config user.name "Claude"
           CHANGED=0
-          for p in engine_v3/positions_v3.csv engine_v3/positions_stock.csv engine_v3/k200.csv engine_v3/stockdata/ohlcv.csv.gz autotrade/orders autotrade/state autotrade/trade_log_v3.csv autotrade/trade_log_stock.csv autotrade/equity_log.csv; do
+          for p in engine_v3/positions_v3.csv engine_v3/positions_B.csv engine_v3/k200.csv engine_v3/stockdata/ohlcv.csv.gz autotrade/orders autotrade/state autotrade/trade_log.csv autotrade/ledger_A.csv autotrade/ledger_B.csv; do
             if [ -e "$p" ]; then
               git add "$p" 2>/dev/null || true
             fi

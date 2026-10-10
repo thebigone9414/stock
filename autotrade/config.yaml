@@ -1,107 +1,81 @@
-# 자동매매 설정 (지시서 v12 기준)
-# 레거시 전환 - config.yaml만 바꾸면 대부분 조정 가능
+# 자동매매 설정 (지시서 v2 기준, 2026-10-10)
+# 모듈 A (ETF 11패턴) + 모듈 B (월말 모멘텀). 장중 손절·체크포인트 없음.
 
-# ── 자본 배분 ────────────────────────────────────────────────────
+# ── 모듈별 자본 (장부 분리) ───────────────────────────────────────
+# 평가자산 = 모듈 현금 + 보유 평가액. "복리" 플래그가 false 이면
+# initial × 비중으로 매번 재계산 (사용자 선택: 고정 모드).
+modules:
+  A:
+    initial:        25000000   # 모듈 A 시작 자본 (ETF 11패턴)
+    long_frac:      0.20       # 롱 1건 = initial × 20% = 500만원
+    short_frac:     0.40       # 숏 #11 = initial × 40% = 1,000만원
+    max_positions:  5
+    compound:       false      # false = 매번 initial 기준 재계산 (고정)
+  B:
+    initial:        10000000   # 모듈 B 시작 자본 (월말 모멘텀)
+    top:            10         # 상위 N 종목 보유
+    # 종목당 금액 = initial / top = 100만원 (compound=false 기준)
+    stock_price_cap_ratio: 1.5   # 1주 가격이 종목당 금액 × 이 비율 초과면 건너뛰고 다음 순위
+    compound:       false
+
+# 공통
 capital:
-  # 초기 자본 (고정 — 매일 잔고 조회로 갱신하지 않음)
-  initial: 40000000           # 4,000만원
-  # 복리 운용 여부
-  # false (기본, 사용자 지시): CAPITAL 고정, 매번 initial 기준으로 매수 금액 재계산
-  #                            사용자가 입금해서 매수. 체결 후 포지션 추적만.
-  # true  (지시서 v12 원안): 각 규칙 평가자산(현금+보유평가액)으로 복리 운용
-  compound: false
-  # 두 규칙 몫 (초기 1회 배분, 각자 평가자산으로 복리 운용)
-  etf_share: 0.70             # 2,800만원
-  stock_share: 0.30           # 1,200만원
-  # 건당 비중 (각 규칙 몫의 비율)
-  etf_long_frac: 0.20         # KODEX 레버리지 1건당 20% (ETF 몫 대비)
-  etf_short_frac: 0.40        # KODEX 인버스 1건당 40% (ETF 몫 대비)
-  stock_frac: 0.10            # 종목 1건당 10% (종목 몫 대비)
-  # 최대 보유 건수
-  etf_max_positions: 5        # ETF 롱+숏 합산 최대 5건
-  stock_max_positions: 10     # 종목 최대 10건
-  # 현금 부족 시 "남은 현금 >= 건당 금액 x 이 비율"이면 축소 매수
-  min_cash_ratio: 0.5
-  # 종목 1주 가격이 "건당 금액 x 이 비율" 초과 시 건너뜀
-  stock_price_cap_ratio: 1.5
+  min_cash_ratio: 0.5          # 현금이 건당 금액의 절반 이상이면 감액 매수
 
 # ── 운용 수단 (ETF 코드) ─────────────────────────────────────────
 etf:
-  long_code: "122630"         # KODEX 레버리지 (롱 1~10)
-  short_code: "114800"        # KODEX 인버스 (숏 #11)
-  long_name: "KODEX 레버리지"
+  long_code:  "122630"         # KODEX 레버리지
+  short_code: "114800"         # KODEX 인버스
+  long_name:  "KODEX 레버리지"
   short_name: "KODEX 인버스"
 
 # ── 지수 ────────────────────────────────────────────────────────
 index:
-  k200_code: "2001"           # 코스피200 (KIS 지수 코드)
+  k200_code: "2001"            # 코스피200 (KIS 지수 코드)
 
-# ── 체크포인트 (손절 감시) ────────────────────────────────────────
-# STOP 주문 모드가 활성화되지 않은 경우에만 적용
-stoploss:
-  # "stop_market" | "stop_limit_hybrid" | "checkpoint"
-  # - stop_market       : KIS가 STOP 시장가 TR 지원 시 (현재 미지원으로 알려짐, placeholder)
-  # - stop_limit_hybrid : (사용자 선택) 08:55 "손절가-margin 지정가 매도" 걸어둠.
-  #                       체크포인트에서 지정가 미체결 + 현재가 ≤ 손절가면 취소 + 시장가 보강
-  # - checkpoint        : STOP 안 걸고 체크포인트에서 현재가 비교 (지시서 §3-3 fallback)
-  mode: "stop_limit_hybrid"
-  # STOP 지정가 하이브리드 모드: 손절가 - margin_pct 로 지정가 예약
-  # 급락 시 미체결 리스크 해소. 체크포인트에서 추가 감시.
-  stop_limit_margin_pct: 0.03  # 3%
-  # 체크포인트 시각 (KST, HH:MM) — 리스트 수정으로 간소화·강화 가능
-  checkpoints:
-    - "09:05"
-    - "10:00"
-    - "11:00"
-    - "12:00"
-    - "13:00"
-    - "14:00"
-    - "15:00"
-    - "15:15"
-
-# ── 하루 일정 ────────────────────────────────────────────────────
+# ── 하루 일정 (장중 손절 없음) ─────────────────────────────────────
 schedule:
-  reconcile_at: "08:20"       # 잔고 대사
-  sell_at:      "08:50"       # 매도 집행
-  stop_register_at: "08:55"   # STOP 등록 (지원 시)
-  buy_at:       "15:18"       # 매수 집행 (KIS 지연 감안 15:21 → 15:18)
-  stop_confirm_at: "15:35"    # STOP 체결 확인
-  decide_at:    "20:10"       # 데이터 수집 + 판정 + 보고
+  reconcile_at: "08:20"
+  sell_at:      "08:50"
+  buy_at:       "15:21"
+  decide_at:    "20:10"
 
 # ── 데이터 ──────────────────────────────────────────────────────
 data:
   engine_dir: "engine_v3"
-  k200_csv: "engine_v3/k200.csv"
-  ohlcv_gz: "engine_v3/stockdata/ohlcv.csv.gz"
+  k200_csv:   "engine_v3/k200.csv"
+  ohlcv_gz:   "engine_v3/stockdata/ohlcv.csv.gz"
   universe_sources:
     - "data/kospi200_cache.json"
     - "data/kosdaq150_cache.json"
-  # 검증
-  min_data_coverage_pct: 95   # 수집 성공률 하한 (미달 시 중단)
-  max_daily_change_pct: 30    # 전일 대비 ± 이 % 초과 시 수상 종목으로 경고
+  min_data_coverage_pct: 95
+  max_daily_change_pct:  30
 
 # ── 주문 ────────────────────────────────────────────────────────
 order:
-  max_buy_per_day: 15
+  max_buy_per_day:  15
   max_sell_per_day: 15
-  min_buy_fill_ratio: 0.90    # 매수 체결 수량/계획 비율 하한
+  min_buy_fill_ratio: 0.90
 
 # ── 안전장치 ────────────────────────────────────────────────────
 safety:
-  dry_run: false              # false = 실전 주문 접수. 재가동 전 신중히!
-  etf_dd_cutoff: 0.35         # 전고점 대비 -35% 이상 → ETF 신규 매수 중지
-  stock_dd_cutoff: 0.45       # 전고점 대비 -45% 이상 → 종목 신규 매수 중지
-  stop_file: "autotrade/STOP" # 이 파일 존재 시 매수 금지 (매도·손절만)
+  # dry-run 플래그 — 초기 가동은 true. 10/13 수동 매수 기록 후 10/27까지 유지,
+  # 10/27부터 false 로 전환해 실주문. 10/30 B 첫 교체는 실주문.
+  dry_run: true
+  dd_cutoff_A: 0.35            # 모듈 A 전고점 -35% → 신규 매수 중지
+  dd_cutoff_B: 0.45            # 모듈 B 전고점 -45% → 신규 매수 중지
+  stop_file_A: "autotrade/STOP_A"
+  stop_file_B: "autotrade/STOP_B"
 
 # ── 상태 파일 경로 ───────────────────────────────────────────────
 paths:
-  positions_etf: "engine_v3/positions_v3.csv"
-  positions_stock: "engine_v3/positions_stock.csv"
-  orders_dir: "autotrade/orders"       # orders_YYYYMMDD.json
-  trade_log_etf: "autotrade/trade_log_v3.csv"
-  trade_log_stock: "autotrade/trade_log_stock.csv"
-  equity_log: "autotrade/equity_log.csv"
-  state_dir: "autotrade/state"         # 멱등성 상태 파일
+  positions_A: "engine_v3/positions_v3.csv"
+  positions_B: "engine_v3/positions_B.csv"
+  orders_dir:  "autotrade/orders"
+  state_dir:   "autotrade/state"
+  trade_log:   "autotrade/trade_log.csv"       # 모듈 열 포함
+  ledger_A:    "autotrade/ledger_A.csv"
+  ledger_B:    "autotrade/ledger_B.csv"
 
 # ── 텔레그램 ────────────────────────────────────────────────────
 telegram:

@@ -210,6 +210,10 @@ def append_bars(rows, rebuild=True):
     같은 (code,date) 가 이미 있으면 새 값으로 덮어씀. ohlcv.pkl 이 있으면 pkl, 없으면 ohlcv.csv.gz 에 저장."""
     import os
     new=pd.DataFrame(rows); new['code']=new['code'].astype(str).str.zfill(6); new['date']=pd.to_datetime(new['date'])
+    for c in ('open','high','low'):   # 시고저가 없으면 종가로 채움 (모듈 B 는 종가·거래량만 필요)
+        if c not in new.columns: new[c]=new['close']
+        new[c]=new[c].where(new[c].notna(),new['close'])
+    if 'name' not in new.columns: new['name']=''
     new=new[['code','name','date','open','high','low','close','volume']]
     if os.path.exists(DATA): df=pd.read_pickle(DATA)
     else: df=pd.read_csv(DATA_CSV,dtype={'code':str}); df['date']=pd.to_datetime(df['date'])

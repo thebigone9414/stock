@@ -6,7 +6,7 @@
                                                         오늘 행(시가 고가 저가 종가) 추가/덮어쓰기 후 판정
   python3 daily_v3.py --dep 44858790                    예수금 지정 (기본값은 아래 DEP)
 보유 포지션은 positions_v3.csv (패턴,진입일,진입가,계약수[,손절]) 에 기록. 진입일=신호일, 진입가=신호일 지수 종가.
-운용 수단은 KODEX 레버리지 예수금 20%씩(동시 5건), 숏 #11은 KODEX 인버스 40%. 매수는 신호 다음날 15:20~15:30 동시호가(종가), 매도는 청산 신호 다음날 시가.
+운용 수단은 KODEX 레버리지 예수금 20%씩(동시 5건), 숏 #11은 KODEX 인버스 40%. 매수는 신호 다음날 15:20~15:30 동시호가(종가), 매도는 청산 신호 다음날 시가. 손절도 종가 판정(종가 < 손절선 → 다음날 시가 매도), 장중 감시 없음.
 패턴·지표 정의는 백테스트와 같은 코드(lib.py, hunt.py)를 그대로 씀.
 """
 import sys, os, warnings; warnings.filterwarnings('ignore')
@@ -15,7 +15,7 @@ BASE=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,BASE)
 from lib import build
 from hunt import make
 
-DEP=44_858_790; MULT=50_000; RISK=0.03; NAVCAP=1.5; STOPK=5.0; STOPCAP=0.10; MAXPOS=5
+DEP=25_000_000; MULT=50_000; RISK=0.03; NAVCAP=1.5; STOPK=5.0; STOPCAP=0.10; MAXPOS=5
 POSF=os.path.join(BASE,'positions_v3.csv'); K200=os.path.join(BASE,'k200.csv')
 
 # 번호: (트리거, 상태들, 방향, 이름, 청산 설명)
@@ -48,7 +48,9 @@ def judge(dep=DEP, posf=None, k200=None):
     """자동매매용 구조화 판정 (k200.csv 마지막 행 = 오늘 종가 기준). 출력 없음.
     반환 dict:
       date, close, chg, ma5, ma21, ma62, sl62, ma248, sl248, rsi, atr, stop_dist(손절폭 비율)
-      positions: [dict(pat, dir(1 롱/-1 숏), name, entry_date, entry_px, qty, stop, pnl_pct, stop_hit(오늘 저가/고가가 손절선 통과), exit_signal(종가 청산 조건 성립 → 내일 시가 매도), exit_desc)]
+      positions: [dict(pat, dir(1 롱/-1 숏), name, entry_date, entry_px, qty, stop, pnl_pct,
+                       stop_close(오늘 종가가 손절선 밖 → 내일 시가 매도. 운용 규격의 손절 판정), stop_hit(오늘 저가/고가가 손절선을 스쳤는지. 참고용),
+                       exit_signal(종가 청산 조건 성립 → 내일 시가 매도), sell(내일 시가 매도 여부 = stop_close or exit_signal), why('손절'/'청산'/''), exit_desc)]
       signals:   [dict(pat, dir, name, stop(지수 손절선), exit_desc, vehicle('KODEX 레버리지'/'KODEX 인버스'), frac(0.2/0.4), amount(dep x frac), dup(이미 보유 중 → 추가 진입 없음))]
       near:      [dict(pat, name, missing=[조건 설명])]  참고용
       free_slots: 오늘 신호 중 실제로 진입 가능한 건수 (동시 보유 한도 MAXPOS 기준)"""
@@ -65,9 +67,9 @@ def judge(dep=DEP, posf=None, k200=None):
         j=int(idx.searchsorted(pd.Timestamp(r.진입일)))
         st=float(r.진입가)-dr*min(STOPK*atr[j],STOPCAP*C[j])
         if '손절' in P.columns and pd.notna(r.get('손절')) and str(r.get('손절')).strip()!='': st=float(r.손절)
-        hit=bool((LO[i]<=st) if dr==1 else (HI[i]>=st)); ex=bool(T[tk][1](j,i))
+        hit=bool((LO[i]<=st) if dr==1 else (HI[i]>=st)); hc=bool((C[i]<=st) if dr==1 else (C[i]>=st)); ex=bool(T[tk][1](j,i))
         out['positions'].append(dict(pat=n,dir=dr,name=nm,entry_date=str(r.진입일),entry_px=float(r.진입가),qty=int(r.계약수),stop=float(st),
-                                     pnl_pct=float((C[i]-float(r.진입가))*dr/float(r.진입가)),stop_hit=hit,exit_signal=ex,exit_desc=exd))
+                                     pnl_pct=float((C[i]-float(r.진입가))*dr/float(r.진입가)),stop_close=hc,stop_hit=hit,exit_signal=ex,sell=(hc or ex),why=('손절' if hc else ('청산' if ex else '')),exit_desc=exd))
     for n,(tk,sts,dr,nm,exd) in PAT.items():
         if bool(T[tk][0][i]) and all(bool(S[s][i]) for s in sts):
             fr=0.20 if dr==1 else 0.40
@@ -105,10 +107,10 @@ def main():
         j=int(idx.searchsorted(pd.Timestamp(r.진입일)))
         st=float(r.진입가)-dr*min(STOPK*atr[j],STOPCAP*C[j])
         if '손절' in P.columns and pd.notna(r.get('손절')) and str(r.get('손절')).strip()!='': st=float(r.손절)
-        hit=(LO[i]<=st) if dr==1 else (HI[i]>=st)
+        hit=(LO[i]<=st) if dr==1 else (HI[i]>=st); hc=(C[i]<=st) if dr==1 else (C[i]>=st)
         ex=T[tk][1](j,i)
         pnl=(C[i]-float(r.진입가))*dr; R=pnl/(STOPK*atr[j])
-        flag='★ 손절 발동 (장중)' if hit else ('★ 청산 신호 → 내일 시가 매도' if ex else '보유 유지')
+        flag='★ 손절 (종가가 손절선 밖) → 내일 시가 매도' if hc else ('★ 청산 신호 → 내일 시가 매도' if ex else ('보유 유지 (장중에 손절선을 스쳤지만 종가 회복)' if hit else '보유 유지'))
         print(f"  #{n} {nm}  {'롱' if dr==1 else '숏'} {r.진입일} {float(r.진입가):,.2f} x{int(r.계약수)}  손절 {st:,.2f}  평가 {pnl/float(r.진입가)*100:+.2f}%  → {flag}")
         print(f"       청산 조건: {exd}")
     if npos==0: print('  없음')
@@ -119,7 +121,7 @@ def main():
         if trig and all(v for _,v in conds):
             fired.append(n); dup=n in held
             print(f"  #{n} {nm}  → {'롱 매수' if dr==1 else '숏 매도'}"+(' (이미 보유 중 → 추가 진입 없음)' if dup else ''))
-            print(f"       지수 손절선 {C[i]-dr*min(STOPK*atr[i],STOPCAP*C[i]):,.2f}   청산: {exd}   → 다음날 15:20~15:30 동시호가 {'KODEX 레버리지' if dr==1 else 'KODEX 인버스'} {dep*(0.20 if dr==1 else 0.40):,.0f}원 시장가")
+            print(f"       지수 손절선 {C[i]-dr*min(STOPK*atr[i],STOPCAP*C[i]):,.2f} (종가 판정)   청산: {exd}   → 다음날 15:20~15:30 동시호가 {'KODEX 레버리지' if dr==1 else 'KODEX 인버스'} {dep*(0.20 if dr==1 else 0.40):,.0f}원 시장가")
     if not fired: print('  없음 (11개 패턴 모두 미충족)')
     # 근접 조건 (참고): 트리거는 맞는데 상태가 안 맞는 것
     near=[(n,PAT[n][3],[(DESC[s],v) for s,v in [(s,bool(S[s][i])) for s in PAT[n][1]] if not v]) for n in PAT if bool(T[PAT[n][0]][0][i]) and n not in fired]

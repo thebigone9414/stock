@@ -74,9 +74,10 @@ def roll_single(x,P,lev=2,stopk=5.0,roll='diff',short='ignore',inv=2,cost=0.0002
         curve.append((idx[i],eq if pos is None else val(i),pos is not None))
     return pd.DataFrame(trades),pd.DataFrame(curve,columns=['date','eq','inpos']),ev
 
-def multi_mtm(x,P,lev=2,cash_frac=0.2,maxpos=5,stopk=5.0,inv=1,cost=0.0002,fee_yr=0.0064,start=300,end=None,risk=None,navcap=1.5,stoppct=None,stopcap=None,close_entry=(),entry_at='open',exit_at='open'):
+def multi_mtm(x,P,lev=2,cash_frac=0.2,maxpos=5,stopk=5.0,inv=1,cost=0.0002,fee_yr=0.0064,start=300,end=None,risk=None,navcap=1.5,stoppct=None,stopcap=None,close_entry=(),entry_at='open',exit_at='open',stop_at='intraday'):
     """entry_at: 'open'(신호 다음날 시가) / 'next_close'(다음날 종가) / 'next_close_if_up'(다음날 종가가 신호일 종가보다 높을 때만)
-       exit_at : 'open'(청산신호 다음날 시가) / 'next_close'(다음날 종가)"""
+       exit_at : 'open'(청산신호 다음날 시가) / 'next_close'(다음날 종가)
+       stop_at : 'intraday'(장중 손절선 터치 시 손절선 체결, 갭이면 시가) / 'close'(종가가 손절선을 넘으면 다음날 시가 매도 - 장중 감시 없음)"""
     """고정 비중 다중 포지션, 일간 평가"""
     C,O,LO,HI,atr,idx=x['C'],x['O'],x['LO'],x['HI'],x['atr'],x['idx']; N=len(C) if end is None else end
     ret,fee,G=prep(x,fee_yr)
@@ -93,7 +94,7 @@ def multi_mtm(x,P,lev=2,cash_frac=0.2,maxpos=5,stopk=5.0,inv=1,cost=0.0002,fee_y
         if exit_at=='open':
             for s in pend_ex:
                 if s in open_:
-                    val=v(s,i,O[i])*(1-cost); free+=val; trades.append(dict(date=idx[i],pat=s['k'],r=val/s['cash']-1,pnl=val-s['cash'],why='이유소멸',days=i-s['e'])); open_.remove(s)
+                    val=v(s,i,O[i])*(1-cost); free+=val; trades.append(dict(date=idx[i],pat=s['k'],r=val/s['cash']-1,pnl=val-s['cash'],why=s.get('why','이유소멸'),days=i-s['e'])); open_.remove(s)
             pend_ex=[]
         else:
             pend_ex_c=list(pend_ex); pend_ex=[]
@@ -121,6 +122,10 @@ def multi_mtm(x,P,lev=2,cash_frac=0.2,maxpos=5,stopk=5.0,inv=1,cost=0.0002,fee_y
         pend=[]
         keep=[]
         for s in open_:
+            if stop_at=='close':
+                if ((C[i]<=s['stop']) if s['dr']==1 else (C[i]>=s['stop'])) and s not in pend_ex: s['why']='손절'; pend_ex.append(s)
+                elif i>s['a'] and P[s['k']]['ex'](s['a'],i) and s not in pend_ex: pend_ex.append(s)
+                keep.append(s); continue
             hit=(LO[i]<=s['stop']) if s['dr']==1 else (HI[i]>=s['stop'])
             if hit:
                 px=min(s['stop'],O[i]) if s['dr']==1 else max(s['stop'],O[i])
@@ -148,7 +153,7 @@ def multi_mtm(x,P,lev=2,cash_frac=0.2,maxpos=5,stopk=5.0,inv=1,cost=0.0002,fee_y
         if exit_at!='open':
             for s in pend_ex_c:
                 if s in open_:
-                    val=v(s,i)*(1-cost); free+=val; trades.append(dict(date=idx[i],pat=s['k'],r=val/s['cash']-1,pnl=val-s['cash'],why='이유소멸',days=i-s['e'])); open_.remove(s)
+                    val=v(s,i)*(1-cost); free+=val; trades.append(dict(date=idx[i],pat=s['k'],r=val/s['cash']-1,pnl=val-s['cash'],why=s.get('why','이유소멸'),days=i-s['e'])); open_.remove(s)
             pend_ex_c=[]
         if entry_at!='open':
             eq_now=free+sum(v(s,i) for s in open_)
