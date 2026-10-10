@@ -74,7 +74,7 @@ def ensure_dirs() -> None:
     for key in ("paths.orders_dir", "paths.state_dir"):
         p = cfg.abspath(cfg.get(key))
         p.mkdir(parents=True, exist_ok=True)
-    for key in ("paths.trade_log_etf", "paths.trade_log_stock", "paths.equity_log"):
+    for key in ("paths.trade_log", "paths.ledger_A", "paths.ledger_B"):
         p = cfg.abspath(cfg.get(key))
         p.parent.mkdir(parents=True, exist_ok=True)
 

@@ -1,12 +1,10 @@
-"""autotrade/reconcile.py — 08:20 잔고 대사
+"""autotrade/reconcile.py — 08:20 잔고·장부 대사 (v2)
 
-증권사 KIS 잔고를 조회해 로컬 상태 파일(positions_v3.csv / positions_stock.csv) 과 비교.
-불일치 발견 시 자동매매 중단 + 텔레그램 경고.
+autotrade 추적 종목(positions_v3.csv + positions_B.csv) 과 KIS 잔고 비교.
+사용자 수동 보유(KODEX 레버리지·2차전지·현대차 등)는 간섭 안 함:
+  'KIS 수량 >= 로컬 autotrade 수량' 이면 OK, 반대면 경고.
 
-CAPITAL 고정 모드라 잔고 금액 검증은 하지 않음 (사용자가 입금 책임).
-수량/보유 종목만 비교.
-
-실행: python -m autotrade.reconcile
+CAPITAL 고정 모드라 잔고 금액 검증은 생략.
 """
 from __future__ import annotations
 
@@ -20,42 +18,29 @@ from config.settings import get_settings
 from kis.factory import KIS
 
 
-def _compare_holdings(kis_positions: list, local_etf: pd.DataFrame, local_stock: pd.DataFrame) -> list[str]:
-    """KIS 잔고 vs 로컬 positions. 수량 차이·누락 종목 리스트 반환.
-
-    **autotrade 가 추적하는 종목만 비교**: 로컬 positions 에 있는 코드만.
-    KIS 계좌의 수동 보유 종목(KODEX 레버리지·2차전지·현대차 등)은 로컬에 없어도 무시.
-    autotrade 가 매수한 종목이 KIS 잔고에서 사라졌거나 수량이 다를 때만 경고.
-    """
+def _compare(kis_positions: list, local_A: pd.DataFrame, local_B: pd.DataFrame) -> list[str]:
     diffs: list[str] = []
 
-    # KIS 잔고 — {code: qty}
     kis_map: dict[str, int] = {}
     for p in kis_positions:
         code = str(p.code).zfill(6)
         kis_map[code] = int(p.quantity)
 
-    # 로컬 — ETF
     local_map: dict[str, int] = {}
-    etf_long = str(cfg.get("etf.long_code")).zfill(6)
+    etf_long  = str(cfg.get("etf.long_code")).zfill(6)
     etf_short = str(cfg.get("etf.short_code")).zfill(6)
-    for _, r in local_etf.iterrows():
-        qty = int(r.get("계약수") or 0)
+    for _, r in local_A.iterrows():
         pat = int(r.get("패턴") or 0)
-        # pat 11은 숏 (인버스), 나머지는 롱 (레버리지)
+        qty = int(r.get("계약수") or 0)
         code = etf_short if pat == 11 else etf_long
         local_map[code] = local_map.get(code, 0) + qty
-
-    # 로컬 — 종목
-    for _, r in local_stock.iterrows():
+    for _, r in local_B.iterrows():
         code = str(r.get("code") or "").zfill(6)
         qty = int(r.get("수량") or 0)
         if code:
             local_map[code] = local_map.get(code, 0) + qty
 
-    # 비교: autotrade 추적 종목만. "KIS >= 로컬"이면 OK (수동 추가 보유 허용).
-    # 사용자가 수동으로 KODEX 레버리지를 더 가지고 있어도 autotrade N주 >= KIS 보유라면 통과.
-    # 반대 (KIS < 로컬)는 autotrade 포지션이 KIS에서 사라진 것 → 이상.
+    # "KIS >= 로컬" 이면 OK (수동 추가 보유 허용)
     for code in sorted(local_map):
         l_qty = local_map[code]
         k_qty = kis_map.get(code, 0)
@@ -64,7 +49,6 @@ def _compare_holdings(kis_positions: list, local_etf: pd.DataFrame, local_stock:
                 f"[{code}] KIS={k_qty}주  로컬 autotrade={l_qty}주  부족 {l_qty - k_qty}  "
                 f"(autotrade 포지션이 KIS 잔고에 없음)"
             )
-
     return diffs
 
 
@@ -87,10 +71,10 @@ def run() -> int:
             notifier.notify(f"[reconcile] 잔고 조회 실패\n{str(e)[:300]}")
         return 1
 
-    local_etf = S.load_etf_positions()
-    local_stock = S.load_stock_positions()
+    local_A = S.load_A_positions()
+    local_B = S.load_B_positions()
 
-    diffs = _compare_holdings(bal.positions, local_etf, local_stock)
+    diffs = _compare(bal.positions, local_A, local_B)
     if diffs:
         msg = R.format_reconcile_mismatch(diffs)
         logger.error(msg)
@@ -99,8 +83,8 @@ def run() -> int:
         return 1
 
     logger.info(
-        f"[reconcile] 대사 OK — KIS 잔고 {len(bal.positions)}종목  "
-        f"로컬 ETF {len(local_etf)}건 / 종목 {len(local_stock)}건"
+        f"[reconcile] 대사 OK — KIS {len(bal.positions)}종목  "
+        f"로컬 A {len(local_A)}건 / B {len(local_B)}건"
     )
     return 0
 

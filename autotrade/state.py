@@ -41,60 +41,67 @@ def load_orders(target_date: str) -> Optional[dict]:
         return json.load(f)
 
 
-# ── Positions (ETF) ─────────────────────────────────────────────
-# 컬럼: 패턴, 진입일, 진입가(지수), 계약수(ETF 주수), 손절(지수), etf_매수가(옵션)
-ETF_POS_COLS = ["패턴", "진입일", "진입가", "계약수", "손절", "etf_매수가"]
+# ── Positions (ETF = 모듈 A) ─────────────────────────────────────
+# engine_v3 가 읽는 처음 5개 컬럼: 패턴, 진입일, 진입가, 계약수, 손절
+# 자동매매가 추가하는 열: etf매수가, etf매수일 (10/13 이후)
+A_POS_COLS = ["패턴", "진입일", "진입가", "계약수", "손절", "etf매수가", "etf매수일"]
 
 
-def load_etf_positions() -> pd.DataFrame:
-    p = cfg.abspath(cfg.get("paths.positions_etf"))
+def load_A_positions() -> pd.DataFrame:
+    p = cfg.abspath(cfg.get("paths.positions_A"))
     if not p.exists() or p.stat().st_size == 0:
-        return pd.DataFrame(columns=ETF_POS_COLS)
+        return pd.DataFrame(columns=A_POS_COLS)
     df = pd.read_csv(p)
-    for c in ETF_POS_COLS:
+    for c in A_POS_COLS:
         if c not in df.columns:
             df[c] = None
     return df
 
 
-def save_etf_positions(df: pd.DataFrame) -> None:
-    p = cfg.abspath(cfg.get("paths.positions_etf"))
-    # engine_v3가 읽는 처음 5개 컬럼 순서 유지. 추가 컬럼은 뒤에.
-    base = [c for c in ETF_POS_COLS if c in df.columns]
-    extra = [c for c in df.columns if c not in ETF_POS_COLS]
+def save_A_positions(df: pd.DataFrame) -> None:
+    p = cfg.abspath(cfg.get("paths.positions_A"))
+    base = [c for c in A_POS_COLS if c in df.columns]
+    extra = [c for c in df.columns if c not in A_POS_COLS]
     df[base + extra].to_csv(p, index=False)
 
 
-# ── Positions (종목) ─────────────────────────────────────────────
-# 컬럼: code, 패턴, 매수일, 매수가, 손절가, 수량
-STOCK_POS_COLS = ["code", "패턴", "매수일", "매수가", "손절가", "수량"]
+# ── Positions (종목 = 모듈 B) ────────────────────────────────────
+# engine_v3 가 읽는 열: code, name, 매수일, 매수가, 수량
+B_POS_COLS = ["code", "name", "매수일", "매수가", "수량"]
 
 
-def load_stock_positions() -> pd.DataFrame:
-    p = cfg.abspath(cfg.get("paths.positions_stock"))
+def load_B_positions() -> pd.DataFrame:
+    p = cfg.abspath(cfg.get("paths.positions_B"))
     if not p.exists() or p.stat().st_size == 0:
-        return pd.DataFrame(columns=STOCK_POS_COLS)
+        return pd.DataFrame(columns=B_POS_COLS)
     df = pd.read_csv(p, dtype={"code": str})
     df["code"] = df["code"].astype(str).str.zfill(6)
-    for c in STOCK_POS_COLS:
+    for c in B_POS_COLS:
         if c not in df.columns:
             df[c] = None
     return df
 
 
-def save_stock_positions(df: pd.DataFrame) -> None:
-    p = cfg.abspath(cfg.get("paths.positions_stock"))
-    base = [c for c in STOCK_POS_COLS if c in df.columns]
-    extra = [c for c in df.columns if c not in STOCK_POS_COLS]
+def save_B_positions(df: pd.DataFrame) -> None:
+    p = cfg.abspath(cfg.get("paths.positions_B"))
+    base = [c for c in B_POS_COLS if c in df.columns]
+    extra = [c for c in df.columns if c not in B_POS_COLS]
     df[base + extra].to_csv(p, index=False)
+
+
+# 하위 호환 (v1 이름)
+load_etf_positions = load_A_positions
+save_etf_positions = save_A_positions
+load_stock_positions = load_B_positions
+save_stock_positions = save_B_positions
 
 
 # ── Trade log ──────────────────────────────────────────────────
-def append_trade_log(rule: str, row: dict) -> None:
-    """rule: 'etf' | 'stock'"""
-    key = "paths.trade_log_etf" if rule == "etf" else "paths.trade_log_stock"
-    p = cfg.abspath(cfg.get(key))
+def append_trade_log(module: str, row: dict) -> None:
+    """module: 'A' | 'B' — 하나의 trade_log.csv 에 'module' 열로 구분 저장."""
+    p = cfg.abspath(cfg.get("paths.trade_log"))
     p.parent.mkdir(parents=True, exist_ok=True)
+    row = {"module": module, **row}
     is_new = not p.exists()
     with open(p, "a", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(row.keys()))
@@ -103,9 +110,11 @@ def append_trade_log(rule: str, row: dict) -> None:
         w.writerow(row)
 
 
-# ── Equity log ─────────────────────────────────────────────────
-def append_equity_log(row: dict) -> None:
-    p = cfg.abspath(cfg.get("paths.equity_log"))
+# ── 모듈별 Ledger ──────────────────────────────────────────────
+def append_ledger(module: str, row: dict) -> None:
+    """module 'A' | 'B'. 날짜별 현금·보유평가·평가자산 기록."""
+    key = "paths.ledger_A" if module == "A" else "paths.ledger_B"
+    p = cfg.abspath(cfg.get(key))
     p.parent.mkdir(parents=True, exist_ok=True)
     is_new = not p.exists()
     with open(p, "a", encoding="utf-8", newline="") as f:
