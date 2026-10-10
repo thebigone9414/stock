@@ -41,6 +41,34 @@ def is_trading_today() -> bool:
     return is_trading_day(today_kst())
 
 
+def next_trading_date(from_date: date | str) -> date:
+    """다음 거래일 (오늘 다음, 휴장일 건너뜀)."""
+    from datetime import date as _date, timedelta
+    if isinstance(from_date, str):
+        from_date = datetime.strptime(from_date, "%Y-%m-%d").date()
+    d = from_date + timedelta(days=1)
+    while not is_trading_day(d):
+        d += timedelta(days=1)
+    return d
+
+
+def is_last_trading_day_of_month(d: date | None = None) -> bool:
+    """d 가 그 달의 마지막 거래일인가. (휴장일 조정 포함)"""
+    from datetime import timedelta
+    d = d or today_kst()
+    nxt = next_trading_date(d)
+    return nxt.month != d.month
+
+
+def is_eve_of_last_trading_day_of_month(d: date | None = None) -> bool:
+    """내일(=다음 거래일)이 그 달의 마지막 거래일인가.
+    → True 이면 20:10 판정 시 B 모듈 rebalance=True 로 호출.
+    """
+    d = d or today_kst()
+    nxt = next_trading_date(d)
+    return is_last_trading_day_of_month(nxt)
+
+
 def ensure_dirs() -> None:
     """config에 정의된 디렉토리들을 미리 생성."""
     for key in ("paths.orders_dir", "paths.state_dir"):
@@ -65,9 +93,13 @@ def setup(command: str = "autotrade") -> Notifier:
     return get_notifier()
 
 
-def is_stopped() -> bool:
-    """STOP 파일 존재 체크. True면 매수 금지, 매도·손절만 수행."""
-    return cfg.abspath(cfg.get("safety.stop_file")).exists()
+def is_stopped(module: str = "both") -> bool:
+    """STOP 파일 체크. module='A'/'B'/'both'. True 면 해당 모듈 매수 금지."""
+    sa = cfg.abspath(cfg.get("safety.stop_file_A", "autotrade/STOP_A")).exists()
+    sb = cfg.abspath(cfg.get("safety.stop_file_B", "autotrade/STOP_B")).exists()
+    if module == "A":    return sa
+    if module == "B":    return sb
+    return sa or sb
 
 
 def is_dry_run() -> bool:
