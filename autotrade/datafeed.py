@@ -211,9 +211,19 @@ def run(check_only: bool = False) -> int:
     idx_code = cfg.get("index.k200_code")
     bar = fetch_index_bar(kis, idx_code)
     if not bar:
-        logger.error("[datafeed] 코스피200 지수 수집 실패 — 중단")
-        return 1
-    logger.info(f"[datafeed] K200 {bar['date']} O:{bar['open']:.2f} H:{bar['high']:.2f} L:{bar['low']:.2f} C:{bar['close']:.2f}")
+        # 폴백: k200.csv 에 당일 행이 이미 있으면 (수동 추가 등) 통과
+        import pandas as pd
+        k = pd.read_csv(cfg.abspath(cfg.get("data.k200_csv")))
+        k["date"] = pd.to_datetime(k["date"]).dt.strftime("%Y-%m-%d")
+        today = common.today_str()
+        if today in k["date"].values:
+            logger.warning(f"[datafeed] 지수 자동 수집 실패했지만 k200.csv 에 {today} 행 존재 → 통과")
+            bar = None  # append_k200_csv 호출 skip 표시
+        else:
+            logger.error(f"[datafeed] 코스피200 지수 수집 실패 + k200.csv 에 {today} 행 없음 — 중단")
+            return 1
+    if bar:
+        logger.info(f"[datafeed] K200 {bar['date']} O:{bar['open']:.2f} H:{bar['high']:.2f} L:{bar['low']:.2f} C:{bar['close']:.2f}")
 
     # 2) 종목
     universe = load_universe()
@@ -237,9 +247,12 @@ def run(check_only: bool = False) -> int:
     for w in warnings[:20]:
         logger.warning(w)
 
-    # 5) 지수 추가
-    append_k200_csv(bar)
-    logger.info("[datafeed] k200.csv 갱신 완료")
+    # 5) 지수 추가 (bar가 있을 때만 — 수동 추가본이 있으면 bar=None 통과 상태)
+    if bar:
+        append_k200_csv(bar)
+        logger.info("[datafeed] k200.csv 갱신 완료")
+    else:
+        logger.info("[datafeed] k200.csv 추가 skip (수동 추가본 사용)")
 
     # 6) 종목 추가
     added = append_ohlcv_gz(rows)
