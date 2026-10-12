@@ -51,17 +51,47 @@ def load_universe() -> list[tuple[str, str]]:
 
 
 def fetch_index_bar(kis: KIS, idx_code: str) -> Optional[dict]:
-    """코스피200 지수 당일 OHLC 조회."""
-    q = kis.market.get_index_quote(idx_code)
-    if not q or q.get("close", 0) <= 0:
-        return None
-    return {
-        "date":  common.today_str(),
-        "open":  q["open"],
-        "high":  q["high"],
-        "low":   q["low"],
-        "close": q["close"],
-    }
+    """코스피200 지수 당일 OHLC 조회.
+
+    1차: pykrx (KRX 공식, 안정) — KOSPI200 지수 코드 '1028'
+    2차: KIS get_index_quote fallback
+    """
+    today_yyyymmdd = common.now_kst().strftime("%Y%m%d")
+    today = common.today_str()
+
+    # 1차: pykrx
+    try:
+        from pykrx import stock as pstock
+        krx_code = "1028"  # KOSPI200 (KRX 공식 지수 코드)
+        df = pstock.get_index_ohlcv(today_yyyymmdd, today_yyyymmdd, krx_code)
+        if df is not None and not df.empty:
+            r = df.iloc[-1]
+            return {
+                "date":  today,
+                "open":  float(r["시가"]),
+                "high":  float(r["고가"]),
+                "low":   float(r["저가"]),
+                "close": float(r["종가"]),
+            }
+        logger.warning(f"[datafeed] pykrx 지수 조회 결과 비어있음 ({today_yyyymmdd})")
+    except Exception as e:
+        logger.warning(f"[datafeed] pykrx 지수 조회 실패: {e}")
+
+    # 2차: KIS fallback
+    try:
+        q = kis.market.get_index_quote(idx_code)
+        if q and q.get("close", 0) > 0:
+            return {
+                "date":  today,
+                "open":  q["open"],
+                "high":  q["high"],
+                "low":   q["low"],
+                "close": q["close"],
+            }
+    except Exception as e:
+        logger.warning(f"[datafeed] KIS 지수 조회 실패: {e}")
+
+    return None
 
 
 def fetch_stock_bars(kis: KIS, universe: list[tuple[str, str]]) -> tuple[list[dict], list[tuple[str, str, str]]]:
