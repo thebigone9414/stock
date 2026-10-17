@@ -56,3 +56,4 @@ scripts/insider_backtest/out/
 scripts/insider_backtest/prices/
 scripts/insider_backtest/logs/
 scripts/insider_backtest/__pycache__/
+# debug_logs는 실패 디버깅용 — git에 commit 허용

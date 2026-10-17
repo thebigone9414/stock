@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     permissions:
-      contents: read
+      contents: write
 
     env:
       SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT || 'Autotrade Research thebigone9414@gmail.com' }}
@@ -67,3 +67,35 @@ jobs:
             scripts/insider_backtest/logs/
           retention-days: 30
           if-no-files-found: ignore
+
+      - name: Commit debug logs on failure
+        if: failure()
+        run: |
+          git config user.email "noreply@anthropic.com"
+          git config user.name "Claude"
+          mkdir -p scripts/insider_backtest/debug_logs
+          # 각 로그 파일 뒤쪽 500줄만 (너무 크면 commit 느려짐)
+          for f in scripts/insider_backtest/logs/*.log; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f")
+              tail -500 "$f" > "scripts/insider_backtest/debug_logs/$name"
+            fi
+          done
+          # tsv 파일 샘플 저장 (실제 컬럼명 확인용)
+          for d in scripts/insider_backtest/raw/*/; do
+            tag=$(basename "$d")
+            for tsv in SUBMISSION.tsv REPORTINGOWNER.tsv NONDERIV_TRANS.tsv; do
+              if [ -f "$d$tsv" ]; then
+                head -3 "$d$tsv" > "scripts/insider_backtest/debug_logs/${tag}_${tsv}_sample.tsv" 2>/dev/null || true
+              fi
+            done
+            break   # 첫 분기만
+          done
+          git add scripts/insider_backtest/debug_logs/ 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "debug: insider_backtest 실패 로그 (run ${{ github.run_id }})"
+            for i in 1 2 3; do
+              git pull --rebase origin dev && git push origin dev && break
+              sleep 3
+            done
+          fi
