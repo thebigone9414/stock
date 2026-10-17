@@ -273,6 +273,10 @@ def main() -> int:
     if args.only:
         quarters = [d for d in quarters if d.name == args.only]
 
+    if not quarters:
+        log.error(f"raw/ 아래 분기 폴더 없음 — download_form4 먼저 실행 필요")
+        return 1
+
     log.info(f"처리 대상 분기 {len(quarters)}")
 
     P_frames = []
@@ -288,6 +292,10 @@ def main() -> int:
 
     P_all = pd.concat(P_frames, ignore_index=True) if P_frames else pd.DataFrame()
     S_all = pd.concat(S_frames, ignore_index=True) if S_frames else pd.DataFrame()
+
+    if len(P_all) == 0:
+        log.error("insider_P 결과 0건 — 파싱 로직·데이터 확인 필요")
+        return 1
 
     out_P = OUT_DIR / "insider_P.csv.gz"
     out_S = OUT_DIR / "insider_S_agg.csv.gz"

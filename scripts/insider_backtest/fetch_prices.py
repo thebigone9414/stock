@@ -30,7 +30,14 @@ def load_tickers_from_P() -> list[str]:
     if not p.exists():
         log.error(f"insider_P.csv.gz 없음 — parse_form4 먼저 실행 필요")
         return []
-    df = pd.read_csv(p, usecols=["ticker"], dtype=str)
+    try:
+        df = pd.read_csv(p, usecols=["ticker"], dtype=str)
+    except pd.errors.EmptyDataError:
+        log.error(f"insider_P.csv.gz 가 비어있음 — parse_form4 결과 0건 (download 실패 가능성)")
+        return []
+    except Exception as e:
+        log.error(f"insider_P.csv.gz 읽기 실패: {e}")
+        return []
     tickers = sorted({t for t in df["ticker"].dropna().unique() if t})
     return tickers
 
@@ -121,6 +128,9 @@ def main() -> int:
 
     tickers = load_tickers_from_P()
     log.info(f"insider_P 유니크 티커 {len(tickers)}개")
+    if not tickers:
+        log.error("티커 0개 — fetch 중단")
+        return 1
     if args.max_tickers > 0:
         tickers = tickers[: args.max_tickers]
 
