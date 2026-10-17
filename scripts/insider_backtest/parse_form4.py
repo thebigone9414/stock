@@ -210,15 +210,33 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     # 보고자 관계 필터 (Other 만인 것은 제외)
     P = P[(P["is_director"] + P["is_officer"] + P["is_tenpct"]) >= 1]
 
-    # role 분류
-    P["role"] = P.apply(
-        lambda r: role_from(r["officer_title"], int(r["is_officer"]), int(r["is_director"]), int(r["is_tenpct"])),
-        axis=1,
+    # 중복 컬럼 방지 (merge 과정에서 생겼을 수 있음)
+    P = P.loc[:, ~P.columns.duplicated()].copy()
+
+    # role 분류 — vectorized (apply(lambda) 금지, pandas 2.x corner case 회피)
+    title = P["officer_title"].fillna("").astype(str)
+    is_off = P["is_officer"].astype(int) == 1
+    is_dir = P["is_director"].astype(int) == 1
+    is_ten = P["is_tenpct"].astype(int) == 1
+    P["role"] = np.select(
+        [
+            is_off & title.str.contains(_CEO_RE, regex=True, na=False),
+            is_off & title.str.contains(_CFO_RE, regex=True, na=False),
+            is_off & title.str.contains(_CHAIR_RE, regex=True, na=False),
+            is_off & title.str.contains(_COO_RE, regex=True, na=False),
+            is_off,
+            is_dir,
+            is_ten,
+        ],
+        ["CEO", "CFO", "CHAIR", "COO", "OTHER_OFFICER", "DIRECTOR", "TENPCT"],
+        default="OTHER",
     )
 
     # footnotes
     P["footnotes"] = P["accession"].map(fn_grp).fillna("").astype(str).str.slice(0, 500)
-    P["fn_flag"]   = (P["footnotes"].fillna("") + " | " + P["nature_of_ownership"].fillna("")).map(tag_fn_flags)
+    # fn_flag — vectorized
+    fn_src = (P["footnotes"].fillna("") + " | " + P["nature_of_ownership"].fillna("")).astype(str)
+    P["fn_flag"] = fn_src.map(tag_fn_flags)
 
     P_out_cols = [
         "accession", "doc_type", "filing_date",
@@ -246,9 +264,22 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     S = S[S["value"] >= 10000]
     S = S[(S["is_officer"] + S["is_director"]) >= 1]
     if len(S):
-        S["role"] = S.apply(
-            lambda r: role_from(r["officer_title"], int(r["is_officer"]), int(r["is_director"]), 0),
-            axis=1,
+        S = S.loc[:, ~S.columns.duplicated()].copy()
+        # role — vectorized (10%만은 매도 집계에서 제외했으므로 OFFICER/DIRECTOR 만 처리)
+        title_s = S["officer_title"].fillna("").astype(str)
+        is_off_s = S["is_officer"].astype(int) == 1
+        is_dir_s = S["is_director"].astype(int) == 1
+        S["role"] = np.select(
+            [
+                is_off_s & title_s.str.contains(_CEO_RE, regex=True, na=False),
+                is_off_s & title_s.str.contains(_CFO_RE, regex=True, na=False),
+                is_off_s & title_s.str.contains(_CHAIR_RE, regex=True, na=False),
+                is_off_s & title_s.str.contains(_COO_RE, regex=True, na=False),
+                is_off_s,
+                is_dir_s,
+            ],
+            ["CEO", "CFO", "CHAIR", "COO", "OTHER_OFFICER", "DIRECTOR"],
+            default="OTHER",
         )
         S["has_ceo"] = (S["role"] == "CEO").astype(int)
         S["has_cfo"] = (S["role"] == "CFO").astype(int)

@@ -69,28 +69,25 @@ def build_events_frame(P: pd.DataFrame) -> pd.DataFrame:
     }
     ev = grouped.agg(**agg_dict).reset_index()
 
-    # roles / has_* / fn_flag / aff10b5one
-    ev_roles = sub.groupby(["accession", "issuer_cik"]).apply(
-        lambda g: pd.Series({
+    # roles / has_* / fn_flag / aff10b5one — DataFrameGroupBy.apply (단일 Series 반환 OK)
+    def _row_agg(g):
+        return pd.Series({
             "roles":      ";".join(sorted(set(g["role"].astype(str)))),
             "has_ceo":    int((g["role"] == "CEO").any()),
             "has_cfo":    int((g["role"] == "CFO").any()),
             "has_chair":  int((g["role"] == "CHAIR").any()),
             "fn_flag":    ";".join(sorted(set(";".join(g["fn_flag"].astype(str).fillna("")).split(";")) - {""})),
             "aff10b5one": int(((g["aff10b5one"].astype(str) == "1") | (g["aff10b5one"].astype(str).str.lower() == "true")).any()),
-        }),
-        include_groups=False,
-    ).reset_index()
+        })
+    ev_roles = sub.groupby(["accession", "issuer_cik"]).apply(_row_agg, include_groups=False).reset_index()
     ev = ev.merge(ev_roles, on=["accession", "issuer_cik"], how="left")
 
-    # price_avg (금액 가중)
-    ev["price_avg"] = ev.apply(
-        lambda r: (
-            sub[(sub["accession"] == r["accession"]) & (sub["issuer_cik"] == r["issuer_cik"])]
-            .pipe(lambda g: (g["price"] * g["value"]).sum() / g["value"].sum() if g["value"].sum() > 0 else np.nan)
-        ),
-        axis=1,
-    )
+    # price_avg (금액 가중) — vectorized groupby
+    sub["_pv"] = sub["price"] * sub["value"]
+    pv_sum = sub.groupby(["accession", "issuer_cik"])["_pv"].sum()
+    v_sum  = sub.groupby(["accession", "issuer_cik"])["value"].sum()
+    price_avg = (pv_sum / v_sum.replace(0, np.nan)).rename("price_avg").reset_index()
+    ev = ev.merge(price_avg, on=["accession", "issuer_cik"], how="left")
     ev["filing_date"] = pd.to_datetime(ev["filing_date"], errors="coerce").dt.strftime("%Y-%m-%d")
     return ev
 
