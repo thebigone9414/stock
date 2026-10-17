@@ -109,13 +109,24 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     non = _read_tsv(quarter_dir, "NONDERIV_TRANS.tsv")
     fn  = _read_tsv(quarter_dir, "FOOTNOTES.tsv")
     if sub is None or own is None or non is None:
-        log.warning(f"[{quarter_dir.name}] 필수 테이블 누락 — skip")
+        # 재시도: 디렉토리에 어떤 파일들이 있는지 확인
+        actual = sorted(f.name for f in quarter_dir.iterdir() if f.is_file())
+        log.warning(f"[{quarter_dir.name}] 필수 테이블 누락 — skip. 실제 파일 {actual[:10]}")
         return pd.DataFrame(), pd.DataFrame()
 
-    # 컬럼명 upper
+    # 로드 직후 상태 로그
+    log.info(f"[{quarter_dir.name}] 로드: SUB={len(sub):,} OWN={len(own):,} NON={len(non):,}")
+
+    # 컬럼명 정규화: upper + strip + 공백→underscore
     for df in (sub, own, non, fn if fn is not None else None):
         if df is None: continue
-        df.columns = [c.upper() for c in df.columns]
+        df.columns = [str(c).strip().upper().replace(" ", "_") for c in df.columns]
+
+    # 첫 분기 처리 시 컬럼명 한 번 로그
+    if quarter_dir.name.endswith("q1") or len(sub) < 100:
+        log.info(f"[{quarter_dir.name}] SUB cols: {list(sub.columns)[:20]}")
+        log.info(f"[{quarter_dir.name}] NON cols: {list(non.columns)[:20]}")
+        log.info(f"[{quarter_dir.name}] OWN cols: {list(own.columns)[:20]}")
 
     # SUBMISSION 핵심
     sub = sub.rename(columns={
@@ -138,16 +149,29 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     # REPORTINGOWNER
     rel_cols = {
-        "ISDIRECTOR":  "is_director",
-        "ISOFFICER":   "is_officer",
-        "ISTENPERCENTOWNER": "is_tenpct",
-        "ISOTHER":     "is_other",
+        # 가능한 모든 변형 이름 → is_* 플래그
+        "IS_DIRECTOR":          "is_director",
+        "ISDIRECTOR":           "is_director",
+        "IS_OFFICER":           "is_officer",
+        "ISOFFICER":            "is_officer",
+        "IS_TEN_PERCENT_OWNER": "is_tenpct",
+        "ISTENPERCENTOWNER":    "is_tenpct",
+        "IS_OTHER":             "is_other",
+        "ISOTHER":              "is_other",
     }
-    for src, dst in rel_cols.items():
-        if src in own.columns:
-            own[dst] = (own[src].astype(str).str.strip() == "1").astype(int)
-        else:
-            own[dst] = 0
+    # 각 is_* 는 가능한 소스 중 첫 번째를 사용
+    def _flag(df: pd.DataFrame, candidates: list[str]) -> pd.Series:
+        for c in candidates:
+            if c in df.columns:
+                raw = df[c].astype(str).str.strip().str.upper()
+                return raw.isin(["1", "Y", "TRUE", "T"]).astype(int)
+        return pd.Series(0, index=df.index)
+
+    own["is_director"] = _flag(own, ["IS_DIRECTOR", "ISDIRECTOR"])
+    own["is_officer"]  = _flag(own, ["IS_OFFICER", "ISOFFICER"])
+    own["is_tenpct"]   = _flag(own, ["IS_TEN_PERCENT_OWNER", "ISTENPERCENTOWNER"])
+    own["is_other"]    = _flag(own, ["IS_OTHER", "ISOTHER"])
+
     own = own.rename(columns={
         "ACCESSION_NUMBER":  "accession",
         "RPTOWNERCIK":       "owner_cik",
@@ -160,6 +184,7 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
         if c not in own.columns:
             own[c] = ""
     own = own[keep_own]
+    log.info(f"[{quarter_dir.name}] OWN 관계 분포: dir={own['is_director'].sum():,} off={own['is_officer'].sum():,} ten={own['is_tenpct'].sum():,}")
 
     # NONDERIV_TRANS
     non = non.rename(columns={
@@ -178,6 +203,14 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
         if c in non.columns:
             non[c] = pd.to_numeric(non[c], errors="coerce")
     non["trans_date"] = pd.to_datetime(non["trans_date"], errors="coerce").dt.strftime("%Y-%m-%d")
+
+    # 거래 코드 분포 로그
+    if "trans_code" in non.columns:
+        tc_dist = non["trans_code"].value_counts().head(10).to_dict()
+        log.info(f"[{quarter_dir.name}] trans_code 분포 top10: {tc_dist}")
+    if "ad_code" in non.columns:
+        ad_dist = non["ad_code"].value_counts().head(5).to_dict()
+        log.info(f"[{quarter_dir.name}] ad_code 분포: {ad_dist}")
 
     # FOOTNOTES 매핑: accession 안에서 인덱스 묶음
     if fn is not None:
@@ -199,16 +232,22 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = sn.merge(own, on="accession", how="inner", suffixes=("", "_o"))
 
     # ──── insider_P (매수) ────
-    P = df[
-        (df["trans_code"] == "P")
-        & (df["ad_code"].astype(str).str.strip() == "A")
-        & (df["shares"].fillna(0) > 0)
-        & (df["price"].fillna(0) > 0)
-    ].copy()
+    log.info(f"[{quarter_dir.name}] sn merge: {len(sn):,}  df merge: {len(df):,}")
+    _p1 = df[df["trans_code"] == "P"]
+    log.info(f"[{quarter_dir.name}] P 필터: trans_code=='P' → {len(_p1):,}")
+    _p2 = _p1[_p1["ad_code"].astype(str).str.strip() == "A"]
+    log.info(f"[{quarter_dir.name}] P 필터: + ad_code=='A' → {len(_p2):,}")
+    _p3 = _p2[(_p2["shares"].fillna(0) > 0) & (_p2["price"].fillna(0) > 0)]
+    log.info(f"[{quarter_dir.name}] P 필터: + shares>0 price>0 → {len(_p3):,}")
+
+    P = _p3.copy()
     P["value"] = P["shares"] * P["price"]
-    P = P[P["value"] >= 5000]
-    # 보고자 관계 필터 (Other 만인 것은 제외)
-    P = P[(P["is_director"] + P["is_officer"] + P["is_tenpct"]) >= 1]
+    _p4 = P[P["value"] >= 5000]
+    log.info(f"[{quarter_dir.name}] P 필터: + value>=5000 → {len(_p4):,}")
+    P = _p4
+    _p5 = P[(P["is_director"] + P["is_officer"] + P["is_tenpct"]) >= 1]
+    log.info(f"[{quarter_dir.name}] P 필터: + 임원·이사·10% → {len(_p5):,}")
+    P = _p5
 
     # 중복 컬럼 방지 (merge 과정에서 생겼을 수 있음)
     P = P.loc[:, ~P.columns.duplicated()].copy()

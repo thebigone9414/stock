@@ -145,6 +145,7 @@ def main() -> int:
         return 1
 
     ok = fail = skip = 0
+    fail_tags = []
     for tag in target_tags:
         if already_extracted(tag):
             skip += 1
@@ -157,10 +158,18 @@ def main() -> int:
                 log.info(f"[{tag}] {n}개 파일 추출 완료")
             else:
                 fail += 1
+                fail_tags.append(tag)
         else:
             fail += 1
+            fail_tags.append(tag)
 
     log.info(f"완료 — 신규 {ok}  skip {skip}  실패 {fail}  총 {len(target_tags)}")
+    if fail_tags:
+        log.warning(f"실패 분기 {len(fail_tags)}개: {fail_tags[:30]}{'...' if len(fail_tags)>30 else ''}")
+    # 성공한 raw 디렉토리 목록
+    import os as _os
+    actual = sorted(d.name for d in RAW_DIR.iterdir() if d.is_dir())
+    log.info(f"현재 raw/ 아래 분기 폴더 {len(actual)}개: {actual[:20]}{'...' if len(actual)>20 else ''}")
     # 실패가 전체의 50% 넘으면 pipeline 중단 (파일 하나 둘 빠진 건 OK)
     if (ok + skip) == 0:
         log.error("단 하나도 다운로드/압축해제 성공 못함")
