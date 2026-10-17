@@ -49,3 +49,10 @@ tokens/
 *.token
 engine_v3/panel.pkl
 engine_v3/stockdata/panel.pkl
+
+# insider_backtest (산출물·raw는 artifact로만)
+scripts/insider_backtest/raw/
+scripts/insider_backtest/out/
+scripts/insider_backtest/prices/
+scripts/insider_backtest/logs/
+scripts/insider_backtest/__pycache__/
