@@ -139,7 +139,8 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     })
     sub = sub[["accession", "doc_type", "filing_date", "issuer_cik", "issuer_name", "ticker_raw"]]
     sub["ticker"] = sub["ticker_raw"].map(normalize_ticker)
-    sub["filing_date"] = pd.to_datetime(sub["filing_date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    # SEC 날짜 포맷: "31-MAR-2006" (DD-MMM-YYYY). pandas 자동 추론은 느리고 에러 많음.
+    sub["filing_date"] = pd.to_datetime(sub["filing_date"], format="%d-%b-%Y", errors="coerce").dt.strftime("%Y-%m-%d")
 
     # 10b5-1 체크박스 열 (2023-04 이후 양식)
     if "AFF_10B5ONE" in sub.columns:
@@ -148,29 +149,27 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
         sub["aff10b5one"] = ""
 
     # REPORTINGOWNER
-    rel_cols = {
-        # 가능한 모든 변형 이름 → is_* 플래그
-        "IS_DIRECTOR":          "is_director",
-        "ISDIRECTOR":           "is_director",
-        "IS_OFFICER":           "is_officer",
-        "ISOFFICER":            "is_officer",
-        "IS_TEN_PERCENT_OWNER": "is_tenpct",
-        "ISTENPERCENTOWNER":    "is_tenpct",
-        "IS_OTHER":             "is_other",
-        "ISOTHER":              "is_other",
-    }
-    # 각 is_* 는 가능한 소스 중 첫 번째를 사용
-    def _flag(df: pd.DataFrame, candidates: list[str]) -> pd.Series:
-        for c in candidates:
-            if c in df.columns:
-                raw = df[c].astype(str).str.strip().str.upper()
-                return raw.isin(["1", "Y", "TRUE", "T"]).astype(int)
-        return pd.Series(0, index=df.index)
-
-    own["is_director"] = _flag(own, ["IS_DIRECTOR", "ISDIRECTOR"])
-    own["is_officer"]  = _flag(own, ["IS_OFFICER", "ISOFFICER"])
-    own["is_tenpct"]   = _flag(own, ["IS_TEN_PERCENT_OWNER", "ISTENPERCENTOWNER"])
-    own["is_other"]    = _flag(own, ["IS_OTHER", "ISOTHER"])
+    # 핵심 수정: 실제 SEC TSV 는 IS_DIRECTOR 플래그 컬럼이 없고
+    #           RPTOWNER_RELATIONSHIP (쉼표 구분 문자열: "Director,Officer" 등)
+    #           만 있음.
+    if "RPTOWNER_RELATIONSHIP" in own.columns:
+        rel = own["RPTOWNER_RELATIONSHIP"].fillna("").astype(str)
+        own["is_director"] = rel.str.contains("Director", case=False, regex=False, na=False).astype(int)
+        own["is_officer"]  = rel.str.contains("Officer",  case=False, regex=False, na=False).astype(int)
+        own["is_tenpct"]   = rel.str.contains("TenPercent|TenPct|10[%\\s]Owner", case=False, regex=True,  na=False).astype(int)
+        own["is_other"]    = rel.str.contains("Other",    case=False, regex=False, na=False).astype(int)
+    else:
+        # 폴백: 혹시 신 포맷에 플래그 컬럼이 있는 경우 (SEC 포맷 변경 대비)
+        def _flag(df: pd.DataFrame, candidates: list[str]) -> pd.Series:
+            for c in candidates:
+                if c in df.columns:
+                    raw = df[c].astype(str).str.strip().str.upper()
+                    return raw.isin(["1", "Y", "TRUE", "T"]).astype(int)
+            return pd.Series(0, index=df.index)
+        own["is_director"] = _flag(own, ["IS_DIRECTOR", "ISDIRECTOR"])
+        own["is_officer"]  = _flag(own, ["IS_OFFICER", "ISOFFICER"])
+        own["is_tenpct"]   = _flag(own, ["IS_TEN_PERCENT_OWNER", "ISTENPERCENTOWNER"])
+        own["is_other"]    = _flag(own, ["IS_OTHER", "ISOTHER"])
 
     own = own.rename(columns={
         "ACCESSION_NUMBER":  "accession",
@@ -202,7 +201,7 @@ def process_quarter(quarter_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     for c in ["shares", "price", "shares_after"]:
         if c in non.columns:
             non[c] = pd.to_numeric(non[c], errors="coerce")
-    non["trans_date"] = pd.to_datetime(non["trans_date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    non["trans_date"] = pd.to_datetime(non["trans_date"], format="%d-%b-%Y", errors="coerce").dt.strftime("%Y-%m-%d")
 
     # 거래 코드 분포 로그
     if "trans_code" in non.columns:
